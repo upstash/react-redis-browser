@@ -1,6 +1,6 @@
 {
   "name": "@upstash/react-databrowser",
-  "version": "0.3.20",
+  "version": "0.0.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "license": "MIT",
@@ -9,13 +9,12 @@
     "access": "public"
   },
   "bugs": {
-    "url": "https://github.com/upstash/react-ui/issues"
+    "url": "https://github.com/upstash/redis-databrowser/issues"
   },
-  "homepage": "https://github.com/upstash/react-ui#readme",
+  "homepage": "https://github.com/upstash/redis-databrowser",
   "files": [
     "./dist/**"
   ],
-  "author": "Oguzhan Olguncu <oguzhan@upstash.com>",
   "scripts": {
     "build": "tsup",
     "dev": "vite",
