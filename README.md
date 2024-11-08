@@ -1,14 +1,6 @@
-# @upstash/react-databrowser
+# Databrowser for Upstash Redis
 
-<p align="center">
-    <h2 align="center">Databrowser for Upstash Redis</h2>
-</p>
-
----
-
-## Introduction
-
-`@upstash/react-databrowser` is a React component that provides a UI for browsing data in your Upstash Redis instances. It’s easy to set up and integrate into your React applications. This guide will help you get started with the installation and basic usage.
+`@upstash/react-databrowser` is a React component that provides a UI for browsing and editing data in your Upstash Redis instances. It’s easy to set up and integrate into your React applications. This guide will help you get started with the installation and basic usage.
 
 ## Table of Contents
 
@@ -44,8 +36,6 @@ In your React application, create a new component that will utilize @upstash/rea
 Here's a basic example of how to use the component:
 
 ```tsx
-// /app/components/DatabrowserDemo.tsx
-
 import { Databrowser } from "@upstash/react-databrowser"
 
 import "@upstash/react-databrowser/dist/index.css"
