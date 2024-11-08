@@ -14,7 +14,7 @@ import { DataDisplay } from "./components/display"
 import { Sidebar } from "./components/sidebar"
 import { KeysProvider } from "./hooks/use-keys"
 
-export const Databrowser = ({ token, url }: RedisCredentials) => {
+export const RedisBrowser = ({ token, url }: RedisCredentials) => {
   const credentials = useMemo(() => ({ token, url }), [token, url])
 
   return (

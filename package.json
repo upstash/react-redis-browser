@@ -1,5 +1,5 @@
 {
-  "name": "@upstash/react-databrowser",
+  "name": "@upstash/react-redis-browser",
   "version": "0.0.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -9,9 +9,9 @@
     "access": "public"
   },
   "bugs": {
-    "url": "https://github.com/upstash/redis-databrowser/issues"
+    "url": "https://github.com/upstash/react-redis-browser/issues"
   },
-  "homepage": "https://github.com/upstash/redis-databrowser",
+  "homepage": "https://github.com/upstash/react-redis-browser",
   "files": [
     "./dist/**"
   ],
