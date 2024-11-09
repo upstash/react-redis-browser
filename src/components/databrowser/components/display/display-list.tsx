@@ -91,17 +91,19 @@ export const ListItems = ({
             <td
               className={cn(
                 "cursor-pointer truncate px-3",
-                type === "list" || type === "stream" ? "w-24" : ""
+                type === "list" || type === "stream" ? "w-24" : "max-w-0"
               )}
             >
               {key}
             </td>
             {value !== undefined && (
-              <td className={cn("cursor-pointer truncate px-3", type === "zset" ? "w-24" : "")}>
+              <td
+                className={cn("cursor-pointer truncate px-3", type === "zset" ? "w-24" : "max-w-0")}
+              >
                 {value}
               </td>
             )}
-            {type !== "stream" && (
+            {/* {type !== "stream" && (
               <td width={20} className="px-3">
                 <DeleteAlertDialog
                   onDeleteConfirm={(e) => {
@@ -120,7 +122,7 @@ export const ListItems = ({
                   </Button>
                 </DeleteAlertDialog>
               </td>
-            )}
+            )} */}
           </tr>
         </ItemContextMenu>
       ))}
