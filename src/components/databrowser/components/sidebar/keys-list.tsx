@@ -46,7 +46,7 @@ const KeyItem = ({ data }: { data: RedisKey }) => {
           "relative flex h-10 w-full items-center justify-start gap-2 px-3 py-0 ",
           "select-none border border-transparent text-left",
           isKeySelected && "shadow-sm",
-          keyStyles[dataType]
+          isKeySelected && keyStyles[dataType]
         )}
         onClick={() => setSelectedKey(dataKey)}
       >
