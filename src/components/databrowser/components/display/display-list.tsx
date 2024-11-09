@@ -91,7 +91,7 @@ export const ListItems = ({
             <td
               className={cn(
                 "cursor-pointer truncate px-3",
-                type === "list" || type === "stream" ? "w-24" : "max-w-0"
+                type === "list" || type === "stream" ? "w-32 min-w-24" : "max-w-0"
               )}
             >
               {key}
