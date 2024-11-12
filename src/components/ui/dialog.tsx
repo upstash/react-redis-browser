@@ -1,6 +1,7 @@
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 
+import { portalRoot } from "@/lib/portal-root"
 import { cn } from "@/lib/utils"
 
 const Dialog = DialogPrimitive.Root
@@ -8,7 +9,7 @@ const Dialog = DialogPrimitive.Root
 const DialogTrigger = DialogPrimitive.Trigger
 
 const DialogPortal = (props: DialogPrimitive.DialogPortalProps) => (
-  <DialogPrimitive.Portal {...props} />
+  <DialogPrimitive.Portal container={portalRoot} {...props} />
 )
 DialogPortal.displayName = DialogPrimitive.Portal.displayName
 

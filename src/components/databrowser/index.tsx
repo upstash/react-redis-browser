@@ -22,26 +22,28 @@ export const RedisBrowser = ({ token, url }: RedisCredentials) => {
       <TooltipProvider>
         <DatabrowserProvider redisCredentials={credentials}>
           <KeysProvider>
-            <PanelGroup
-              autoSaveId="persistence"
-              direction="horizontal"
-              // ups-db is the custom class used to prefix every style in the css bundle
-              className="ups-db h-full w-full gap-0.5 text-sm antialiased"
-            >
-              <Panel defaultSize={30} minSize={30}>
-                <Sidebar />
-              </Panel>
-              <PanelResizeHandle className="h-fullm flex w-1.5 items-center justify-center rounded-full hover:bg-zinc-300/20">
-                <IconDotsVertical
-                  size={16}
-                  stroke={1}
-                  className="pointer-events-none shrink-0 opacity-20"
-                />
-              </PanelResizeHandle>
-              <Panel minSize={40}>
-                <DataDisplay />
-              </Panel>
-            </PanelGroup>
+            {/* ups-db is the custom class used to prefix every style in the css bundle */}
+            <div className="ups-db">
+              <PanelGroup
+                autoSaveId="persistence"
+                direction="horizontal"
+                className="h-full w-full gap-0.5 text-sm antialiased"
+              >
+                <Panel defaultSize={30} minSize={30}>
+                  <Sidebar />
+                </Panel>
+                <PanelResizeHandle className="h-fullm flex w-1.5 items-center justify-center rounded-full hover:bg-zinc-300/20">
+                  <IconDotsVertical
+                    size={16}
+                    stroke={1}
+                    className="pointer-events-none shrink-0 opacity-20"
+                  />
+                </PanelResizeHandle>
+                <Panel minSize={40}>
+                  <DataDisplay />
+                </Panel>
+              </PanelGroup>
+            </div>
             <Toaster />
           </KeysProvider>
         </DatabrowserProvider>
