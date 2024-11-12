@@ -103,7 +103,7 @@ export const ListItems = ({
                 {value}
               </td>
             )}
-            {/* {type !== "stream" && (
+            {type !== "stream" && (
               <td width={20} className="px-3">
                 <DeleteAlertDialog
                   onDeleteConfirm={(e) => {
@@ -122,7 +122,7 @@ export const ListItems = ({
                   </Button>
                 </DeleteAlertDialog>
               </td>
-            )} */}
+            )}
           </tr>
         </ItemContextMenu>
       ))}
