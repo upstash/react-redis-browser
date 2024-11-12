@@ -39,12 +39,12 @@ export const SizeBadge = ({ dataKey }: { dataKey: string }) => {
 
   return (
     <Badge label="Size:">
-      {size ? (
+      {size === undefined || size === null ? (
+        <Skeleton className="ml-1 h-3 w-10 rounded-md opacity-50" />
+      ) : (
         bytes(size, {
           unitSeparator: " ",
         })
-      ) : (
-        <Skeleton className="ml-1 h-3 w-10 rounded-md opacity-50" />
       )}
     </Badge>
   )
