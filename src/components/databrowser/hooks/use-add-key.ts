@@ -46,6 +46,12 @@ export const useAddKey = () => {
           redis.set(key, "value")
           break
         }
+        case "json": {
+          redis.json.set(key, "$", {
+            foo: "bar",
+          })
+          break
+        }
         default: {
           throw new Error(`Invalid type provided to useAddKey: "${type}"`)
         }
