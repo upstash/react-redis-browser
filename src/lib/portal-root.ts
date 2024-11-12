@@ -10,9 +10,12 @@ let root
 //   <DialogPrimitive.Portal container={portalRoot} {...props} />
 // )
 if (typeof document !== "undefined") {
-  root = document.createElement("div")
+  const id = "react-redis-browser-portal-root"
+
+  root = document.querySelector(`#${id}`) ?? document.createElement("div")
 
   root.classList.add("ups-db")
+  root.id = "react-redis-browser-portal-root"
 
   document.body.append(root)
 }
