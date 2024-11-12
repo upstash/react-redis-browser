@@ -23,7 +23,7 @@ export const RedisBrowser = ({ token, url }: RedisCredentials) => {
         <DatabrowserProvider redisCredentials={credentials}>
           <KeysProvider>
             {/* ups-db is the custom class used to prefix every style in the css bundle */}
-            <div className="ups-db">
+            <div className="ups-db h-full">
               <PanelGroup
                 autoSaveId="persistence"
                 direction="horizontal"
@@ -32,7 +32,7 @@ export const RedisBrowser = ({ token, url }: RedisCredentials) => {
                 <Panel defaultSize={30} minSize={30}>
                   <Sidebar />
                 </Panel>
-                <PanelResizeHandle className="h-fullm flex w-1.5 items-center justify-center rounded-full hover:bg-zinc-300/20">
+                <PanelResizeHandle className="h-full flex w-1.5 items-center justify-center rounded-full hover:bg-zinc-300/20">
                   <IconDotsVertical
                     size={16}
                     stroke={1}
