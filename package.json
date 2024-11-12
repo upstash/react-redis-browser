@@ -51,6 +51,7 @@
     "zustand": "5.0.0"
   },
   "devDependencies": {
+    "postcss-prefix-selector": "^2.1.0",
     "@types/node": "^22.8.4",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",

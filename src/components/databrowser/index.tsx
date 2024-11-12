@@ -25,7 +25,8 @@ export const RedisBrowser = ({ token, url }: RedisCredentials) => {
             <PanelGroup
               autoSaveId="persistence"
               direction="horizontal"
-              className="h-full w-full gap-0.5 text-sm antialiased"
+              // ups-db is the custom class used to prefix every style in the css bundle
+              className="ups-db h-full w-full gap-0.5 text-sm antialiased"
             >
               <Panel defaultSize={30} minSize={30}>
                 <Sidebar />
