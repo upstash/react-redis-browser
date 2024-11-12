@@ -14,8 +14,8 @@ export const KeysList = () => {
 
   return (
     <div className="pr-3">
-      {keys.map((data) => (
-        <KeyItem key={data[0]} data={data} />
+      {keys.map((data, i) => (
+        <KeyItem key={data[0]} nextKey={keys.at(i + 1)?.[0] ?? ""} data={data} />
       ))}
     </div>
   )
@@ -31,11 +31,12 @@ const keyStyles = {
   stream: "border-green-400 !bg-green-50 text-green-900",
 } as Record<DataType, string>
 
-const KeyItem = ({ data }: { data: RedisKey }) => {
+const KeyItem = ({ data, nextKey }: { data: RedisKey; nextKey: string }) => {
   const { selectedKey, setSelectedKey } = useDatabrowserStore()
 
   const [dataKey, dataType] = data
   const isKeySelected = selectedKey === dataKey
+  const isNextKeySelected = selectedKey === nextKey
 
   return (
     <SidebarContextMenu dataKey={dataKey} key={dataKey}>
@@ -53,7 +54,9 @@ const KeyItem = ({ data }: { data: RedisKey }) => {
         <TypeTag variant={dataType} type="icon" />
         <p className="truncate whitespace-nowrap">{dataKey}</p>
 
-        {!isKeySelected && <span className="absolute -bottom-px left-3 right-3 h-px bg-zinc-100" />}
+        {!isKeySelected && !isNextKeySelected && (
+          <span className="absolute -bottom-px left-3 right-3 h-px bg-zinc-100" />
+        )}
       </Button>
     </SidebarContextMenu>
   )
