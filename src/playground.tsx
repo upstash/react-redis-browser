@@ -8,7 +8,7 @@ ReactDOM.createRoot(document.querySelector("#root")!).render(
           height: "500px",
           width: "100vw",
           maxWidth: "900px",
-          margin: "auto 0",
+          margin: "0 auto",
           padding: "20px",
         }}
     >
