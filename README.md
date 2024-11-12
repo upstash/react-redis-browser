@@ -46,29 +46,14 @@ export default function RedisBrowserDemo() {
 
   return (
     <main style={mainStyle}>
-      <div style={divStyle}>
-        <RedisBrowser token={redisToken} url={redisUrl} />
-      </div>
+      <RedisBrowser token={redisToken} url={redisUrl} />
     </main>
   )
 }
 
 const mainStyle = {
-  height: "100vh",
   width: "100vw",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  flexDirection: "column",
-  background: "rgb(250,250,250)",
+  maxWidth: "900px",
+  height: "500px",
+  margin: "0 auto",
 }
-
-const divStyle = {
-  height: "100%",
-  width: "100%",
-  maxHeight: "45rem",
-  maxWidth: "64rem",
-  borderRadius: "0.5rem",
-  overflow: "hidden",
-}
-```
