@@ -37,16 +37,14 @@ Here's a basic example of how to use the component:
 
 ```tsx
 import { RedisBrowser } from "@upstash/react-redis-browser"
-
 import "@upstash/react-redis-browser/dist/index.css"
 
 export default function RedisBrowserDemo() {
-  const redisUrl = process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_URL
-  const redisToken = process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_TOKEN
-
   return (
     <main style={mainStyle}>
-      <RedisBrowser token={redisToken} url={redisUrl} />
+      <RedisBrowser 
+        url={UPSTASH_REDIS_REST_URL} 
+        token={UPSTASH_REDIS_REST_TOKEN} />
     </main>
   )
 }
