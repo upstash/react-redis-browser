@@ -5,16 +5,22 @@ import { RedisBrowser } from "@/components/databrowser"
 ReactDOM.createRoot(document.querySelector("#root")!).render(
     <main
         style={{
-          height: "500px",
-          width: "100vw",
-          maxWidth: "900px",
-          margin: "0 auto",
+          position: "fixed",
+          inset: 0,
+          backgroundColor: "#eee",
           padding: "20px",
         }}
     >
-    <RedisBrowser
-      token={process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_TOKEN}
-      url={process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_URL}
-    />
-  </main>
+      <div style={{
+        height: "500px",
+        width: "100%",
+        maxWidth: "900px",
+        margin: "0 auto",
+      }}>
+        <RedisBrowser
+            token={process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_TOKEN}
+            url={process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_URL}
+        />
+      </div>
+    </main>
 )

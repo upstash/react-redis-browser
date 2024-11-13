@@ -12,7 +12,7 @@ export function Sidebar() {
   const { keys, query } = useKeys()
 
   return (
-    <div className="flex h-full flex-col gap-2 rounded-xl border p-1">
+    <div className="flex h-full flex-col gap-2 rounded-xl border p-1 bg-white">
       <div className="rounded-lg bg-zinc-100 px-3 py-2">
         {/* Meta */}
         <div className="flex h-10 items-center justify-between pl-1">
