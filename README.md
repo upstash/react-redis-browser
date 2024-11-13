@@ -1,5 +1,7 @@
 # RedisBrowser for Upstash Redis
 
+![redis-browser.png](public%2Fredis-browser.png)
+
 `@upstash/react-redis-browser` is a React component that provides a UI for browsing and editing data in your Upstash Redis instances.
 
 ### Install
