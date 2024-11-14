@@ -5,7 +5,7 @@ import { IconPlus } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 
 import { TypeTag } from "../type-tag"
-import { Badge, LengthBadge, SizeBadge, TTLBadge } from "./header-badges"
+import { LengthBadge, SizeBadge, TTLBadge } from "./header-badges"
 import { KeyActions } from "./key-actions"
 
 export const DisplayHeader = ({
@@ -17,8 +17,6 @@ export const DisplayHeader = ({
   dataKey: string
   type: DataType
 }) => {
-  const size = content?.length
-  const length = content?.length
 
   const { setSelectedListItem } = useDatabrowserStore()
 
@@ -52,7 +50,6 @@ export const DisplayHeader = ({
         <TypeTag variant={type} type="badge" />
         <SizeBadge dataKey={dataKey} />
         <LengthBadge dataKey={dataKey} type={type} content={content} />
-        {length && <Badge label="Length:">{size}</Badge>}
         <TTLBadge dataKey={dataKey} />
       </div>
     </div>
