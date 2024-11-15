@@ -104,8 +104,15 @@ export const ListItems = ({
               </td>
             )}
             {type !== "stream" && (
-              <td width={20} className="px-3">
+              <td
+                width={20}
+                className="px-3"
+                onClick={(e) => {
+                  e.stopPropagation()
+                }}
+              >
                 <DeleteAlertDialog
+                  deletionType="item"
                   onDeleteConfirm={(e) => {
                     e.stopPropagation()
                     editItem({
