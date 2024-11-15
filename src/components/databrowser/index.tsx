@@ -23,7 +23,7 @@ export const RedisBrowser = ({ token, url }: RedisCredentials) => {
         <DatabrowserProvider redisCredentials={credentials}>
           <KeysProvider>
             {/* ups-db is the custom class used to prefix every style in the css bundle */}
-            <div className="ups-db" style={{height:"100%"}}>
+            <div className="ups-db" style={{ height: "100%" }}>
               <PanelGroup
                 autoSaveId="persistence"
                 direction="horizontal"
@@ -43,8 +43,8 @@ export const RedisBrowser = ({ token, url }: RedisCredentials) => {
                   <DataDisplay />
                 </Panel>
               </PanelGroup>
+              <Toaster />
             </div>
-            <Toaster />
           </KeysProvider>
         </DatabrowserProvider>
       </TooltipProvider>
