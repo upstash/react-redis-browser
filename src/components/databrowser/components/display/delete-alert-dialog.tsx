@@ -17,11 +17,13 @@ export function DeleteAlertDialog({
   onDeleteConfirm,
   open,
   onOpenChange,
+  deletionType,
 }: {
   children?: React.ReactNode
   onDeleteConfirm: MouseEventHandler
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  deletionType: "item" | "key"
 }) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -29,24 +31,20 @@ export function DeleteAlertDialog({
 
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Irreversible Action!</AlertDialogTitle>
+          <AlertDialogTitle>
+            {deletionType === "item" ? "Delete Item" : "Delete Key"}
+          </AlertDialogTitle>
           <AlertDialogDescription className="mt-5">
-            <span className="font-bold">This action CANNOT BE UNDONE.</span>
-            <br />
-            <br />
-            By proceeding, you will <span className="font-bold">PERMANENTLY REMOVE</span> your data
-            from our servers, resulting in complete and irreversible loss of your information.
+            Are you sure you want to delete this {deletionType}? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel type="button" onClick={(e) => e.stopPropagation()}>
-            Cancel
-          </AlertDialogCancel>
+          <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
           <AlertDialogAction
             className="bg-red-500 text-gray-50 hover:bg-red-600"
             onClick={onDeleteConfirm}
           >
-            Delete
+            Yes, Delete
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
