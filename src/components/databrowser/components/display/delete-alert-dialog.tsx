@@ -39,7 +39,9 @@ export function DeleteAlertDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel type="button" onClick={(e) => e.stopPropagation()}>
+            Cancel
+          </AlertDialogCancel>
           <AlertDialogAction
             className="bg-red-500 text-gray-50 hover:bg-red-600"
             onClick={onDeleteConfirm}
