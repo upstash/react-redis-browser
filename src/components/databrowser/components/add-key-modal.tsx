@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useDatabrowserStore } from "@/store"
 import { DATA_TYPES, type DataType } from "@/types"
+import { DialogDescription } from "@radix-ui/react-dialog"
 import { PlusIcon } from "@radix-ui/react-icons"
 import { Controller, useForm } from "react-hook-form"
 
@@ -79,6 +80,9 @@ export function AddKeyModal() {
         <DialogHeader>
           <DialogTitle>Create new key</DialogTitle>
         </DialogHeader>
+        <div className="sr-only">
+          <DialogDescription>Create new key</DialogDescription>
+        </div>
 
         <form className="mt-4" onSubmit={onSubmit}>
           <div className="flex gap-1">
