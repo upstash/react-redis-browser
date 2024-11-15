@@ -64,17 +64,22 @@ const ListEditForm = ({
     <FormProvider {...form}>
       <form onSubmit={onSubmit} className="flex flex-col gap-2">
         <div className="flex grow flex-col gap-2">
-          {type !== "list" && <FormItem name="key" label={keyLabel} />}
+          {type !== "list" && (
+            <FormItem name="key" height={type === "set" ? 250 : 100} label={keyLabel} />
+          )}
 
           {type === "zset" ? (
             <NumberFormItem name="value" label={valueLabel} />
           ) : (
-            type !== "set" && <FormItem name="value" label={valueLabel} />
+            type !== "set" && (
+              <FormItem name="value" height={type === "list" ? 250 : 100} label={valueLabel} />
+            )
           )}
         </div>
 
         <div className="flex justify-end gap-2">
           <Button
+            type="button"
             onClick={() => {
               setSelectedListItem(undefined)
             }}
@@ -122,12 +127,21 @@ const NumberFormItem = ({ name, label }: { name: string; label: string }) => {
   )
 }
 
-const FormItem = ({ name, label }: { name: string; label: string; isNumber?: boolean }) => {
+const FormItem = ({
+  name,
+  label,
+  height,
+}: {
+  name: string
+  label: string
+  isNumber?: boolean
+  height?: number
+}) => {
   const form = useFormContext()
   const { editor, selector } = useField({
     name,
     form,
-    isEditorDynamic: true,
+    height: height,
     showCopyButton: true,
   })
 
