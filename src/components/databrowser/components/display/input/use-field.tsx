@@ -7,12 +7,12 @@ import { CustomEditor } from "./custom-editor"
 export const useField = ({
   name,
   form,
-  isEditorDynamic = false,
+  height,
   showCopyButton,
 }: {
   name: string
   form: UseFormReturn<any>
-  isEditorDynamic?: boolean
+  height?: number
   showCopyButton?: boolean
 }) => {
   const { field, fieldState } = useController<Record<string, string>>({
@@ -58,7 +58,7 @@ export const useField = ({
           language={contentType === "JSON" ? "json" : "plaintext"}
           value={field.value}
           onChange={field.onChange}
-          maxDynamicHeight={isEditorDynamic ? 100 : undefined}
+          height={height}
           showCopyButton={showCopyButton}
         />
       </>
