@@ -19,7 +19,7 @@ export const useFetchListItems = ({ dataKey, type }: { dataKey: string; type: Li
       })
 
       return {
-        cursor: nextCursor,
+        cursor: nextCursor === "0" ? undefined : nextCursor,
         keys: (keys as string[]).map((key) => ({ key })),
       }
     },
@@ -38,7 +38,8 @@ export const useFetchListItems = ({ dataKey, type }: { dataKey: string; type: Li
       })
 
       return {
-        cursor: lastIndex + LIST_DISPLAY_PAGE_SIZE,
+        cursor:
+          res.length < LIST_DISPLAY_PAGE_SIZE ? undefined : lastIndex + LIST_DISPLAY_PAGE_SIZE,
         keys: transformArray(res as any),
       }
     },
@@ -56,7 +57,7 @@ export const useFetchListItems = ({ dataKey, type }: { dataKey: string; type: Li
       })
 
       return {
-        cursor: res[0],
+        cursor: res[0] === "0" ? undefined : res[0],
         keys: transformArray(res[1]),
       }
     },
@@ -73,7 +74,8 @@ export const useFetchListItems = ({ dataKey, type }: { dataKey: string; type: Li
       const values = await redis.lrange(dataKey, lastIndex, lastIndex + LIST_DISPLAY_PAGE_SIZE)
 
       return {
-        cursor: lastIndex + LIST_DISPLAY_PAGE_SIZE,
+        cursor:
+          values.length < LIST_DISPLAY_PAGE_SIZE ? undefined : lastIndex + LIST_DISPLAY_PAGE_SIZE,
         keys: values.map((value, i) => ({
           key: (lastIndex + i).toString(),
           value,
@@ -87,19 +89,20 @@ export const useFetchListItems = ({ dataKey, type }: { dataKey: string; type: Li
   const streamQuery = useInfiniteQuery({
     enabled: type === "stream",
     queryKey: [FETCH_LIST_ITEMS_QUERY_KEY, dataKey, "stream"],
-    initialPageParam: "0",
+    initialPageParam: "-",
     queryFn: async ({ pageParam: lastId }) => {
       const messages = (await redis.xrange(
         dataKey,
-        lastId,
+        lastId === "-" ? "-" : `(${lastId}`,
         "+",
-        LIST_DISPLAY_PAGE_SIZE
+        // +1 since first message is the last one
+        LIST_DISPLAY_PAGE_SIZE + 1
       )) as unknown as [string, string[]][]
 
       const lastMessageId = messages.length > 0 ? messages.at(-1)?.[0] : undefined
 
       return {
-        cursor: lastMessageId,
+        cursor: messages.length < LIST_DISPLAY_PAGE_SIZE ? undefined : lastMessageId,
         keys: messages.map(([id, fields]) => ({
           key: id,
           value: fields.join("\n"),
