@@ -31,6 +31,7 @@ export const ItemContextMenu = ({
   return (
     <>
       <DeleteAlertDialog
+        deletionType="item"
         open={isAlertOpen}
         onOpenChange={setAlertOpen}
         onDeleteConfirm={(e) => {

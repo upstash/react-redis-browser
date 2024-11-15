@@ -24,6 +24,7 @@ export const SidebarContextMenu = ({
   return (
     <>
       <DeleteAlertDialog
+        deletionType="key"
         open={isAlertOpen}
         onOpenChange={setAlertOpen}
         onDeleteConfirm={(e) => {
