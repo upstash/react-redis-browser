@@ -18,8 +18,8 @@ ReactDOM.createRoot(document.querySelector("#root")!).render(
         margin: "0 auto",
       }}>
         <RedisBrowser
-            token={process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_TOKEN}
-            url={process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_URL}
+            token={process.env.UPSTASH_REDIS_REST_TOKEN}
+            url={process.env.UPSTASH_REDIS_REST_URL}
         />
       </div>
     </main>
