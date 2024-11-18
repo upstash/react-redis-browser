@@ -5,9 +5,7 @@ import type { Redis } from "@upstash/redis"
 
 const PAGE_SIZE = 30
 
-// Fetch 100 keys every single time
-const INITIAL_FETCH_COUNT = 100
-const MAX_FETCH_COUNT = 1000
+const FETCH_COUNTS = [100, 200, 400, 800]
 
 export type RedisKey = [string, DataType]
 
@@ -17,19 +15,16 @@ export const useFetchKeys = (search: SearchFilter) => {
   const cache = useRef<PaginationCache | undefined>()
   const lastKey = useRef<string | undefined>()
 
-  const getPage = useCallback(
-    (page: number) => {
-      const newKey = JSON.stringify(search)
+  const fetchKeys = useCallback(() => {
+    const newKey = JSON.stringify(search)
 
-      if (!cache.current || lastKey.current !== newKey) {
-        cache.current = new PaginationCache(redis, search.key, search.type)
-        lastKey.current = newKey
-      }
+    if (!cache.current || lastKey.current !== newKey) {
+      cache.current = new PaginationCache(redis, search.key, search.type)
+      lastKey.current = newKey
+    }
 
-      return cache.current.getPage(page)
-    },
-    [search]
-  )
+    return cache.current.fetchNewKeys()
+  }, [search])
 
   const resetCache = useCallback(() => {
     cache.current = undefined
@@ -37,13 +32,9 @@ export const useFetchKeys = (search: SearchFilter) => {
   }, [])
 
   return {
-    getPage,
+    fetchKeys,
     resetCache,
   }
-}
-
-function slicePage(keys: RedisKey[], page: number) {
-  return keys.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 }
 
 class PaginationCache {
@@ -64,10 +55,10 @@ class PaginationCache {
     }
   }
 
-  async getPage(page: number) {
+  async fetchNewKeys() {
+    const initialKeys = new Set(this.getKeys().map(([key]) => key))
     // The number of keys we need to have in the cache to satisfy this function call
-    // +1 here to fetch one more than needed to check if there is a next page
-    this.targetCount = (page + 1) * PAGE_SIZE + 1
+    this.targetCount = this.getKeys().length + PAGE_SIZE
 
     // Starts the fetching loop if it's not already started
     void this.startFetch()
@@ -82,12 +73,10 @@ class PaginationCache {
       }, 100)
     })
 
-    const hasEnoughForNextPage = this.getLength() > (page + 1) * PAGE_SIZE
-
-    const hasNextPage = !this.isAllEnded() || hasEnoughForNextPage
+    const hasNextPage = !this.isAllEnded()
 
     return {
-      keys: slicePage(this.getKeys(), page),
+      keys: this.getKeys().filter(([key]) => !initialKeys.has(key)),
       hasNextPage,
     }
   }
@@ -119,7 +108,7 @@ class PaginationCache {
   }
 
   private fetchForType = async (type: string) => {
-    let fetchCount = INITIAL_FETCH_COUNT
+    let i = 0
 
     while (true) {
       const cursor = this.cache[type].cursor
@@ -127,36 +116,28 @@ class PaginationCache {
         break
       }
 
+      const fetchCount = FETCH_COUNTS[Math.min(i, FETCH_COUNTS.length - 1)]
+
       const [nextCursor, newKeys] = await this.redis.scan(cursor, {
         count: fetchCount,
         match: this.searchTerm,
         type: type,
       })
 
-      fetchCount = Math.min(fetchCount * 2, MAX_FETCH_COUNT)
-
-      // Dedupe here because redis can and will return duplicates for example when
-      // a key is deleted because of ttl etc.
-      const dedupedSet = new Set([...this.cache[type].keys, ...newKeys])
-
-      this.cache[type].keys = [...dedupedSet]
+      this.cache[type].keys = [...this.cache[type].keys, ...newKeys]
       this.cache[type].cursor = nextCursor === "0" ? "-1" : nextCursor
+      i++
     }
   }
 
   private async fetch() {
-    // Fetch pages of each type until they are enough
+    // Fetch pages of each type until we have enough
     const types = this.typeFilter ? [this.typeFilter] : DATA_TYPES
     await Promise.all(types.map(this.fetchForType))
   }
 
-  // TODO: Yusuf, implement this function
   private isAllEnded(): boolean {
     const types = this.typeFilter ? [this.typeFilter] : DATA_TYPES
-
-    if (!Array.isArray(types)) {
-      throw new TypeError("types is not an array")
-    }
 
     return types.every((type) => this.cache[type] && this.cache[type].cursor === "-1")
   }
