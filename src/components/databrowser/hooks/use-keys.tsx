@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  type PropsWithChildren,
-} from "react"
+import { createContext, useCallback, useContext, useMemo, type PropsWithChildren } from "react"
 import { useDatabrowserStore } from "@/store"
 import { useInfiniteQuery, type UseInfiniteQueryResult } from "@tanstack/react-query"
 
@@ -33,25 +26,18 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     [searchState]
   )
 
-  const { fetchKeys, resetCache } = useFetchKeys(search)
-  const pageRef = useRef(0)
+  const { getPage, resetCache } = useFetchKeys(search)
 
   const query = useInfiniteQuery({
     queryKey: [FETCH_KEYS_QUERY_KEY, search],
-
     initialPageParam: 0,
-    queryFn: async ({ pageParam: page }) => {
-      // We should reset the cache when the pagination is reset
-      if (pageRef.current > page) resetCache()
-      pageRef.current = page
-
-      return await fetchKeys()
+    queryFn: async ({ pageParam: pageIndex }) => {
+      return getPage(pageIndex)
     },
     select: (data) => data,
     getNextPageParam: (lastPage, __, lastPageIndex) => {
       return lastPage.hasNextPage ? lastPageIndex + 1 : undefined
     },
-    refetchOnMount: false,
   })
 
   const refetch = useCallback(() => {
@@ -62,17 +48,9 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
   const keys = useMemo(() => {
     const keys = query.data?.pages.flatMap((page) => page.keys) ?? []
 
-    // deduplication
-    const keysSet = new Set<string>()
-    const dedupedKeys: RedisKey[] = []
+    const keysSet = new Set(keys.map(([key, _]) => key))
 
-    for (const key of keys) {
-      if (keysSet.has(key[0])) continue
-
-      keysSet.add(key[0])
-      dedupedKeys.push(key)
-    }
-    return dedupedKeys
+    return keys.filter(([key, _]) => keysSet.has(key))
   }, [query.data])
 
   return (

@@ -12,15 +12,18 @@ import { toast } from "@/components/ui/use-toast"
 import { useDeleteKey } from "../hooks"
 import { DeleteAlertDialog } from "./display/delete-alert-dialog"
 
-export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
+export const SidebarContextMenu = ({
+  children,
+  dataKey,
+}: PropsWithChildren<{
+  dataKey: string
+}>) => {
   const { mutate: deleteKey } = useDeleteKey()
   const [isAlertOpen, setAlertOpen] = useState(false)
-  const [dataKey, setDataKey] = useState("")
 
   return (
     <>
       <DeleteAlertDialog
-        deletionType="key"
         open={isAlertOpen}
         onOpenChange={setAlertOpen}
         onDeleteConfirm={(e) => {
@@ -30,21 +33,7 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
         }}
       />
       <ContextMenu>
-        <ContextMenuTrigger
-          // NOTE: We did not put the ContextMenu on every key because of performance reasons
-          onContextMenu={(e) => {
-            const el = e.target as HTMLElement
-            const key = el.closest("[data-key]")
-
-            if (key && key instanceof HTMLElement && key.dataset.key !== undefined) {
-              setDataKey(key.dataset.key)
-            } else {
-              throw new Error("Key not found")
-            }
-          }}
-        >
-          {children}
-        </ContextMenuTrigger>
+        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
         <ContextMenuContent>
           <ContextMenuItem
             onClick={() => {
