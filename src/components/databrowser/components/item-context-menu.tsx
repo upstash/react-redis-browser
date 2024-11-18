@@ -12,65 +12,45 @@ import { toast } from "@/components/ui/use-toast"
 
 import { useEditListItem } from "../hooks"
 import { DeleteAlertDialog } from "./display/delete-alert-dialog"
-import type { ItemData } from "./display/display-list"
 
 export const ItemContextMenu = ({
   children,
   dataKey,
+  itemKey,
+  itemValue,
   type,
 }: PropsWithChildren<{
   dataKey: string
   type: ListDataType
+  itemKey: string
+  itemValue?: string
 }>) => {
   const { mutate: editItem } = useEditListItem()
   const [isAlertOpen, setAlertOpen] = useState(false)
-  const [data, setData] = useState<ItemData | undefined>()
 
   return (
     <>
       <DeleteAlertDialog
-        deletionType="item"
         open={isAlertOpen}
         onOpenChange={setAlertOpen}
         onDeleteConfirm={(e) => {
           e.stopPropagation()
-          if (data) {
-            editItem({
-              type,
-              dataKey,
-              itemKey: data?.key,
-              // For deletion
-              newKey: undefined,
-            })
-          }
+          editItem({
+            type,
+            dataKey,
+            itemKey,
+            // For deletion
+            newKey: undefined,
+          })
           setAlertOpen(false)
         }}
       />
       <ContextMenu>
-        <ContextMenuTrigger
-          asChild
-          // NOTE: We did not put the ContextMenu on every key because of performance reasons
-          onContextMenu={(e) => {
-            const el = e.target as HTMLElement
-            const item = el.closest("[data-item-key]")
-
-            if (item && item instanceof HTMLElement && item.dataset.itemKey !== undefined) {
-              setData({
-                key: item.dataset.itemKey,
-                value: item.dataset.itemValue,
-              })
-            } else {
-              throw new Error("Key not found")
-            }
-          }}
-        >
-          {children}
-        </ContextMenuTrigger>
+        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
         <ContextMenuContent>
           <ContextMenuItem
             onClick={() => {
-              if (!data) return
-              navigator.clipboard.writeText(data?.key)
+              navigator.clipboard.writeText(itemKey)
               toast({
                 description: "Key copied to clipboard",
               })
@@ -78,10 +58,10 @@ export const ItemContextMenu = ({
           >
             Copy key
           </ContextMenuItem>
-          {data?.value && (
+          {itemValue !== undefined && (
             <ContextMenuItem
               onClick={() => {
-                navigator.clipboard.writeText(data?.value ?? "")
+                navigator.clipboard.writeText(itemValue)
                 toast({
                   description: "Value copied to clipboard",
                 })
