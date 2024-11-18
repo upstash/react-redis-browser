@@ -35,7 +35,8 @@ export function DeleteAlertDialog({
             {deletionType === "item" ? "Delete Item" : "Delete Key"}
           </AlertDialogTitle>
           <AlertDialogDescription className="mt-5">
-            Are you sure you want to delete this {deletionType}? This action cannot be undone.
+            Are you sure you want to delete this {deletionType}?<br />
+            This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
