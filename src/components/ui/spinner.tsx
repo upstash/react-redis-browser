@@ -1,7 +1,9 @@
 import type { PropsWithChildren } from "react"
 
+import { cn } from "@/lib/utils"
+
 export interface SpinnerProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  isLoadingText: string
+  isLoadingText?: string
   isLoading: boolean
 }
 
@@ -26,7 +28,7 @@ export const Spinner = ({
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="ml-2 h-4 w-4 animate-spin"
+            className={cn("h-4 w-4 animate-spin", isLoadingText ? "ml-2" : "")}
           >
             <path d="M21 12a9 9 0 1 1-6.219-8.56" />
           </svg>
