@@ -42,7 +42,7 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     initialPageParam: 0,
     queryFn: async ({ pageParam: page }) => {
       // We should reset the cache when the pagination is reset
-      if (pageRef.current > page) resetCache()
+      if (pageRef.current >= page) resetCache()
       pageRef.current = page
 
       return await fetchKeys()
