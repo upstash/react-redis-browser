@@ -8,13 +8,13 @@ export const CustomEditor = ({
   language,
   value,
   onChange,
-  maxDynamicHeight,
+  height,
   showCopyButton,
 }: {
   language: string
   value: string
   onChange: (value: string) => void
-  maxDynamicHeight?: number
+  height?: number
   showCopyButton?: boolean
 }) => {
   const monaco = useMonaco()
@@ -31,9 +31,9 @@ export const CustomEditor = ({
 
   return (
     <div
-      className={cn("group/editor relative", maxDynamicHeight === undefined && "h-full p-2")}
+      className={cn("group/editor relative", height === undefined && "h-full p-2")}
       style={{
-        height: maxDynamicHeight,
+        height: height,
       }}
     >
       <Editor

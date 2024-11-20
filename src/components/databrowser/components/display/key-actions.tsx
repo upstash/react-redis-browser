@@ -36,7 +36,10 @@ export function KeyActions({ dataKey, content }: { dataKey: string; content?: st
             Copy content
           </DropdownMenuItem>
         )}
-        <DeleteAlertDialog onDeleteConfirm={async () => await deleteKey(dataKey)}>
+        <DeleteAlertDialog
+          deletionType="key"
+          onDeleteConfirm={async () => await deleteKey(dataKey)}
+        >
           <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Delete key</DropdownMenuItem>
         </DeleteAlertDialog>
       </DropdownMenuContent>

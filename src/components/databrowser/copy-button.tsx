@@ -2,7 +2,7 @@ import { useState } from "react"
 import { IconCheck, IconCopy } from "@tabler/icons-react"
 
 import { cn } from "@/lib/utils"
-import type { ButtonProps } from "@/components/ui/button";
+import type { ButtonProps } from "@/components/ui/button"
 import { Button } from "@/components/ui/button"
 
 interface Props extends ButtonProps {

@@ -17,7 +17,6 @@ export const DisplayHeader = ({
   dataKey: string
   type: DataType
 }) => {
-
   const { setSelectedListItem } = useDatabrowserStore()
 
   const handleAddItem = () => {

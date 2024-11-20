@@ -14,9 +14,13 @@ export const KeysList = () => {
 
   return (
     <div className="pr-3">
-      {keys.map((data, i) => (
-        <KeyItem key={data[0]} nextKey={keys.at(i + 1)?.[0] ?? ""} data={data} />
-      ))}
+      <SidebarContextMenu>
+        <>
+          {keys.map((data, i) => (
+            <KeyItem key={data[0]} nextKey={keys.at(i + 1)?.[0] ?? ""} data={data} />
+          ))}
+        </>
+      </SidebarContextMenu>
     </div>
   )
 }
@@ -39,25 +43,23 @@ const KeyItem = ({ data, nextKey }: { data: RedisKey; nextKey: string }) => {
   const isNextKeySelected = selectedKey === nextKey
 
   return (
-    <SidebarContextMenu dataKey={dataKey} key={dataKey}>
-      <Button
-        data-key={dataKey}
-        variant={isKeySelected ? "default" : "ghost"}
-        className={cn(
-          "relative flex h-10 w-full items-center justify-start gap-2 px-3 py-0 ",
-          "select-none border border-transparent text-left",
-          isKeySelected && "shadow-sm",
-          isKeySelected && keyStyles[dataType]
-        )}
-        onClick={() => setSelectedKey(dataKey)}
-      >
-        <TypeTag variant={dataType} type="icon" />
-        <p className="truncate whitespace-nowrap">{dataKey}</p>
+    <Button
+      data-key={dataKey}
+      variant={isKeySelected ? "default" : "ghost"}
+      className={cn(
+        "relative flex h-10 w-full items-center justify-start gap-2 px-3 py-0 ",
+        "select-none border border-transparent text-left",
+        isKeySelected && "shadow-sm",
+        isKeySelected && keyStyles[dataType]
+      )}
+      onClick={() => setSelectedKey(dataKey)}
+    >
+      <TypeTag variant={dataType} type="icon" />
+      <p className="truncate whitespace-nowrap">{dataKey}</p>
 
-        {!isKeySelected && !isNextKeySelected && (
-          <span className="absolute -bottom-px left-3 right-3 h-px bg-zinc-100" />
-        )}
-      </Button>
-    </SidebarContextMenu>
+      {!isKeySelected && !isNextKeySelected && (
+        <span className="absolute -bottom-px left-3 right-3 h-px bg-zinc-100" />
+      )}
+    </Button>
   )
 }

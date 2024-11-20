@@ -39,9 +39,11 @@ export const ListDisplay = ({ dataKey, type }: { dataKey: string; type: ListData
         <InfiniteScroll query={query}>
           <div className="pr-3">
             <table className="w-full">
-              <tbody>
-                <ListItems dataKey={dataKey} type={type} query={query} />
-              </tbody>
+              <ItemContextMenu dataKey={dataKey} type={type}>
+                <tbody>
+                  <ListItems dataKey={dataKey} type={type} query={query} />
+                </tbody>
+              </ItemContextMenu>
             </table>
           </div>
         </InfiniteScroll>
@@ -50,7 +52,7 @@ export const ListDisplay = ({ dataKey, type }: { dataKey: string; type: ListData
   )
 }
 
-type ItemData = {
+export type ItemData = {
   key: string
   value?: string
 }
@@ -75,56 +77,58 @@ export const ListItems = ({
   return (
     <>
       {keys.map(({ key, value }, i) => (
-        <ItemContextMenu
+        <tr
           key={`${dataKey}-${key}-${i}`}
-          dataKey={dataKey}
-          type={type}
-          itemKey={key}
-          itemValue={value}
+          data-item-key={key}
+          data-item-value={value}
+          onClick={() => {
+            setSelectedListItem({ key, value })
+          }}
+          className="h-10 border-b border-b-zinc-100 hover:bg-zinc-50"
         >
-          <tr
-            onClick={() => {
-              setSelectedListItem({ key, value })
-            }}
-            className="h-10 border-b border-b-zinc-100 hover:bg-zinc-50"
+          <td
+            className={cn(
+              "cursor-pointer truncate px-3",
+              type === "list" || type === "stream" ? "w-32 min-w-24" : "max-w-0"
+            )}
           >
+            {key}
+          </td>
+          {value !== undefined && (
             <td
-              className={cn(
-                "cursor-pointer truncate px-3",
-                type === "list" || type === "stream" ? "w-32 min-w-24" : "max-w-0"
-              )}
+              className={cn("cursor-pointer truncate px-3", type === "zset" ? "w-24" : "max-w-0")}
             >
-              {key}
+              {value}
             </td>
-            {value !== undefined && (
-              <td
-                className={cn("cursor-pointer truncate px-3", type === "zset" ? "w-24" : "max-w-0")}
+          )}
+          {type !== "stream" && (
+            <td
+              width={20}
+              className="px-3"
+              onClick={(e) => {
+                e.stopPropagation()
+              }}
+            >
+              <DeleteAlertDialog
+                deletionType="item"
+                onDeleteConfirm={(e) => {
+                  e.stopPropagation()
+                  editItem({
+                    type,
+                    dataKey,
+                    itemKey: key,
+                    // For deletion
+                    newKey: undefined,
+                  })
+                }}
               >
-                {value}
-              </td>
-            )}
-            {type !== "stream" && (
-              <td width={20} className="px-3">
-                <DeleteAlertDialog
-                  onDeleteConfirm={(e) => {
-                    e.stopPropagation()
-                    editItem({
-                      type,
-                      dataKey,
-                      itemKey: key,
-                      // For deletion
-                      newKey: undefined,
-                    })
-                  }}
-                >
-                  <Button size="icon-sm" variant="secondary" onClick={(e) => e.stopPropagation()}>
-                    <IconTrash className="size-4 text-zinc-500" />
-                  </Button>
-                </DeleteAlertDialog>
-              </td>
-            )}
-          </tr>
-        </ItemContextMenu>
+                <Button size="icon-sm" variant="secondary" onClick={(e) => e.stopPropagation()}>
+                  <IconTrash className="size-4 text-zinc-500" />
+                </Button>
+              </DeleteAlertDialog>
+            </td>
+          )}
+        </tr>
       ))}
     </>
   )
