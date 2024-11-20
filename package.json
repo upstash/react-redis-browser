@@ -19,7 +19,7 @@
     "build": "tsup",
     "dev": "vite",
     "lint": "tsc && eslint",
-    "fmt": "prettier --write ."
+    "fmt": "prettier --write ./src"
   },
   "lint-staged": {
     "**/*.{js,ts,tsx}": [
