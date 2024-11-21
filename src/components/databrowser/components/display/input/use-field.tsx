@@ -9,11 +9,13 @@ export const useField = ({
   form,
   height,
   showCopyButton,
+  readOnly,
 }: {
   name: string
   form: UseFormReturn<any>
   height?: number
   showCopyButton?: boolean
+  readOnly?: boolean
 }) => {
   const { field, fieldState } = useController<Record<string, string>>({
     name,
@@ -60,6 +62,7 @@ export const useField = ({
           onChange={field.onChange}
           height={height}
           showCopyButton={showCopyButton}
+          readOnly={readOnly}
         />
       </>
     ),

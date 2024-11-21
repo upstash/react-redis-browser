@@ -65,14 +65,24 @@ const ListEditForm = ({
       <form onSubmit={onSubmit} className="flex flex-col gap-2">
         <div className="flex grow flex-col gap-2">
           {type !== "list" && (
-            <FormItem name="key" height={type === "set" ? 250 : 100} label={keyLabel} />
+            <FormItem
+              readOnly={type === "stream"}
+              name="key"
+              height={type === "set" ? 250 : 100}
+              label={keyLabel}
+            />
           )}
 
           {type === "zset" ? (
             <NumberFormItem name="value" label={valueLabel} />
           ) : (
             type !== "set" && (
-              <FormItem name="value" height={type === "list" ? 250 : 100} label={valueLabel} />
+              <FormItem
+                readOnly={type === "stream"}
+                name="value"
+                height={type === "list" ? 250 : 100}
+                label={valueLabel}
+              />
             )
           )}
         </div>
@@ -131,11 +141,13 @@ const FormItem = ({
   name,
   label,
   height,
+  readOnly,
 }: {
   name: string
   label: string
   isNumber?: boolean
   height?: number
+  readOnly?: boolean
 }) => {
   const form = useFormContext()
   const { editor, selector } = useField({
@@ -143,6 +155,7 @@ const FormItem = ({
     form,
     height: height,
     showCopyButton: true,
+    readOnly,
   })
 
   return (

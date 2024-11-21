@@ -10,12 +10,14 @@ export const CustomEditor = ({
   onChange,
   height,
   showCopyButton,
+  readOnly,
 }: {
   language: string
   value: string
   onChange: (value: string) => void
   height?: number
   showCopyButton?: boolean
+  readOnly?: boolean
 }) => {
   const monaco = useMonaco()
   const editorRef = useRef()
@@ -48,6 +50,7 @@ export const CustomEditor = ({
         }}
         defaultLanguage={language}
         options={{
+          readOnly: readOnly,
           wordWrap: "on",
           overviewRulerBorder: false,
           overviewRulerLanes: 0,
