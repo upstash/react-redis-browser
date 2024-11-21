@@ -1,6 +1,6 @@
 import "@/globals.css"
 
-import { useMemo } from "react"
+import { useEffect, useMemo } from "react"
 import { DatabrowserProvider, type RedisCredentials } from "@/store"
 import { TooltipProvider } from "@radix-ui/react-tooltip"
 import { IconDotsVertical } from "@tabler/icons-react"
@@ -16,6 +16,10 @@ import { KeysProvider } from "./hooks/use-keys"
 
 export const RedisBrowser = ({ token, url }: RedisCredentials) => {
   const credentials = useMemo(() => ({ token, url }), [token, url])
+
+  useEffect(() => {
+    queryClient.resetQueries()
+  }, [credentials.url])
 
   return (
     <QueryClientProvider client={queryClient}>

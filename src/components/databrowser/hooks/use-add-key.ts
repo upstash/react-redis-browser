@@ -13,6 +13,8 @@ export const useAddKey = () => {
 
   const mutation = useMutation({
     mutationFn: async ({ key, type }: { key: string; type: DataType }) => {
+      if (await redis.exists(key)) throw new Error(`Key "${key}" already exists`)
+
       switch (type) {
         case "set": {
           await redis.sadd(key, "value")
