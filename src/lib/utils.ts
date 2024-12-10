@@ -24,15 +24,26 @@ const units = {
   second: 1000,
 } as const
 
-// 130 -> 2 minutes
-// 7800 -> 2 hours
-/** 130 is "2 minutes", 5 is "5 seconds" */
+// 2h 10m, 1d 2h, 1 year 2 months, 3 years 4 months etc.
 export function formatTime(seconds: number) {
+  let milliseconds = seconds * 1000
+  const parts = []
+
   for (const [unit, value] of Object.entries(units)) {
-    const interval = (seconds * 1000) / value
-    if (interval >= 1) {
-      return `${Math.floor(interval)} ${unit}${interval > 1 && unit !== "min" ? "s" : ""}`
+    if (milliseconds >= value) {
+      const amount = Math.floor(milliseconds / value)
+      const plural = amount > 1 ? "s" : ""
+      const label =
+        unit === "month" ? ` month${plural}` : unit === "year" ? ` year${plural}` : unit[0]
+      parts.push(`${amount}${label}`)
+      milliseconds %= value
     }
   }
-  return "just now"
+
+  // If no parts (e.g., 0ms), default to "0s"
+  if (parts.length === 0) {
+    parts.push("0s")
+  }
+
+  return parts.slice(0, 2).join(" ")
 }
