@@ -1,8 +1,10 @@
 import { IconRefresh } from "@tabler/icons-react"
 
+import { queryClient } from "@/lib/clients"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 
+import { FETCH_LIST_ITEMS_QUERY_KEY } from "../../hooks"
 import { useKeys } from "../../hooks/use-keys"
 import { AddKeyModal } from "../add-key-modal"
 import { DisplayDbSize } from "./db-size"
@@ -23,7 +25,15 @@ export function Sidebar() {
         <div className="flex h-10 items-center justify-between pl-1">
           <DisplayDbSize />
           <div className="flex gap-1">
-            <Button className="h-7 w-7 px-0" onClick={refetch}>
+            <Button
+              className="h-7 w-7 px-0"
+              onClick={() => {
+                refetch()
+                queryClient.invalidateQueries({
+                  queryKey: [FETCH_LIST_ITEMS_QUERY_KEY],
+                })
+              }}
+            >
               <Spinner isLoading={query.isFetching}>
                 <IconRefresh size={16} />
               </Spinner>
