@@ -23,15 +23,7 @@ const KeysContext = createContext<
 export const FETCH_KEYS_QUERY_KEY = "use-fetch-keys"
 
 export const KeysProvider = ({ children }: PropsWithChildren) => {
-  const { search: searchState } = useDatabrowserStore()
-
-  const search = useMemo(
-    () => ({
-      key: searchState.key.includes("*") ? searchState.key : `*${searchState.key}*`,
-      type: searchState.type,
-    }),
-    [searchState]
-  )
+  const { search } = useDatabrowserStore()
 
   const { fetchKeys, resetCache } = useFetchKeys(search)
   const pageRef = useRef(0)

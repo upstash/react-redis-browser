@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { useDatabrowserStore } from "@/store"
 import { IconX } from "@tabler/icons-react"
 
@@ -6,14 +7,27 @@ import { Input } from "@/components/ui/input"
 
 export const SearchInput = () => {
   const { setSearchKey, search } = useDatabrowserStore()
+  const [state, setState] = useState(search.key)
+
+  const submit = (value: string) => {
+    if (value.trim() !== "" && !value.includes("*")) value = `${value}*`
+    setSearchKey(value)
+    setState(value)
+  }
 
   return (
     <div className="relative grow">
       <Input
         placeholder="Search"
         className={"rounded-l-none border-zinc-300 font-normal"}
-        onChange={(e) => setSearchKey(e.target.value)}
-        value={search.key}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") submit(e.currentTarget.value)
+        }}
+        onChange={(e) => {
+          setState(e.currentTarget.value)
+          if (e.currentTarget.value.trim() === "") submit("")
+        }}
+        value={state}
       />
       {search.key && (
         <Button
