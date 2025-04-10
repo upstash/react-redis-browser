@@ -54,7 +54,7 @@ const EditorDisplayForm = ({
     form.reset(
       { value: data },
       {
-        keepValues: true,
+        keepValues: false,
       }
     )
   }, [data])
