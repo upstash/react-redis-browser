@@ -10,12 +10,14 @@ export const useField = ({
   height,
   showCopyButton,
   readOnly,
+  data,
 }: {
   name: string
   form: UseFormReturn<any>
   height?: number
   showCopyButton?: boolean
   readOnly?: boolean
+  data?: string
 }) => {
   const { field, fieldState } = useController<Record<string, string>>({
     name,
@@ -26,7 +28,7 @@ export const useField = ({
     checkIsValidJSON(field.value) ? "JSON" : "Text"
   )
 
-  // Attempt to format JSON on initial load
+  // Attempt to format JSON everytime the underlying data changes
   useEffect(() => {
     if (!checkIsValidJSON(field.value)) {
       return
@@ -35,7 +37,7 @@ export const useField = ({
     form.setValue(name, formatJSON(field.value), {
       shouldDirty: false,
     })
-  }, [])
+  }, [data])
 
   const handleTypeChange = (type: ContentType) => {
     setContentType(type)

@@ -45,9 +45,6 @@ const EditorDisplayForm = ({
   const form = useForm({
     defaultValues: { value: data },
   })
-  const { editor, selector } = useField({ name: "value", form })
-
-  const { mutateAsync: setKey, isPending: isSettingKey } = useSetSimpleKey(dataKey, type)
 
   // Updates default values after submit
   useEffect(() => {
@@ -58,6 +55,10 @@ const EditorDisplayForm = ({
       }
     )
   }, [data])
+
+  const { editor, selector } = useField({ name: "value", form, data })
+
+  const { mutateAsync: setKey, isPending: isSettingKey } = useSetSimpleKey(dataKey, type)
 
   const handleCancel = () => {
     form.reset()
