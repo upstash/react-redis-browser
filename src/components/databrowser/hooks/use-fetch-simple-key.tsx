@@ -19,9 +19,26 @@ export const useFetchSimpleKey = (dataKey: string, type: DataType) => {
       else if (type === "json") result = (await redis.json.get(dataKey)) as string | null
       else throw new Error(`Invalid type when fetching simple key: ${type}`)
 
+      if (type === "json" && result !== null)
+        result = JSON.stringify(sortObject(JSON.parse(result)))
+
       if (result === null) deleteKeyCache(dataKey)
 
       return result
     },
   })
+}
+
+// Add recursive key sorting to a JSON object
+const sortObject = (obj: unknown): unknown => {
+  if (typeof obj !== "object" || obj === null) return obj
+  return Object.fromEntries(
+    Object.entries(obj)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([key, value]) =>
+        typeof value === "object" && !Array.isArray(value) && value !== null
+          ? [key, sortObject(value)]
+          : [key, value]
+      )
+  )
 }
