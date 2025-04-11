@@ -17,7 +17,7 @@ export const useField = ({
   height?: number
   showCopyButton?: boolean
   readOnly?: boolean
-  data?: string
+  data: string
 }) => {
   const { field, fieldState } = useController<Record<string, string>>({
     name,
@@ -30,11 +30,11 @@ export const useField = ({
 
   // Attempt to format JSON everytime the underlying data changes
   useEffect(() => {
-    if (!checkIsValidJSON(field.value)) {
+    if (!checkIsValidJSON(data)) {
       return
     }
 
-    form.setValue(name, formatJSON(field.value), {
+    form.setValue(name, formatJSON(data), {
       shouldDirty: false,
     })
   }, [data])

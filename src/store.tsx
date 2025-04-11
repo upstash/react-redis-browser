@@ -59,7 +59,6 @@ export type SearchFilter = {
 
 export type SelectedItem = {
   key: string
-  value?: string
   isNew?: boolean
 }
 
@@ -68,7 +67,7 @@ type DatabrowserStore = {
   setSelectedKey: (key: string | undefined) => void
 
   selectedListItem?: SelectedItem
-  setSelectedListItem: (item?: { key: string; value?: string; isNew?: boolean }) => void
+  setSelectedListItem: (item?: { key: string; isNew?: boolean }) => void
 
   search: SearchFilter
   setSearch: (search: SearchFilter) => void
