@@ -4,7 +4,7 @@ import { queryClient } from "@/lib/clients"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 
-import { FETCH_LIST_ITEMS_QUERY_KEY } from "../../hooks"
+import { FETCH_LIST_ITEMS_QUERY_KEY, FETCH_SIMPLE_KEY_QUERY_KEY } from "../../hooks"
 import { useKeys } from "../../hooks/use-keys"
 import { AddKeyModal } from "../add-key-modal"
 import { DisplayDbSize, FETCH_DB_SIZE_QUERY_KEY } from "./db-size"
@@ -31,6 +31,9 @@ export function Sidebar() {
                 refetch()
                 queryClient.invalidateQueries({
                   queryKey: [FETCH_LIST_ITEMS_QUERY_KEY],
+                })
+                queryClient.invalidateQueries({
+                  queryKey: [FETCH_SIMPLE_KEY_QUERY_KEY],
                 })
                 queryClient.invalidateQueries({
                   queryKey: [FETCH_DB_SIZE_QUERY_KEY],

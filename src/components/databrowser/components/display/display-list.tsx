@@ -82,7 +82,7 @@ export const ListItems = ({
           data-item-key={key}
           data-item-value={value}
           onClick={() => {
-            setSelectedListItem({ key, value })
+            setSelectedListItem({ key })
           }}
           className="h-10 border-b border-b-zinc-100 hover:bg-zinc-50"
         >

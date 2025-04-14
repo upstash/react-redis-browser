@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import type { SelectedItem } from "@/store"
 import { useDatabrowserStore } from "@/store"
 import type { ListDataType } from "@/types"
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { SimpleTooltip } from "@/components/ui/tooltip"
 
+import { useFetchListItems } from "../../hooks"
 import { useEditListItem } from "../../hooks/use-edit-list-item"
 import { headerLabels } from "./display-list"
 import { useField } from "./input/use-field"
@@ -30,18 +32,40 @@ export const ListEditDisplay = ({
 const ListEditForm = ({
   type,
   dataKey,
-  item: { key: itemKey, value: itemValue, isNew },
+  item: { key: itemKey, isNew },
 }: {
   type: ListDataType
   dataKey: string
   item: SelectedItem
 }) => {
+  const query = useFetchListItems({
+    type,
+    dataKey,
+  })
+  // Search in pages for item value
+  const findValue = () => {
+    for (const page of query.data?.pages ?? []) {
+      const item = page.keys.find((item) => item.key === itemKey)
+      // Check if item has a value property before returning it
+      if (item && "value" in item) return item.value as string
+    }
+    return
+  }
+  const itemValue = findValue()
+
   const form = useForm({
     defaultValues: {
       key: itemKey,
       value: itemValue,
     },
   })
+
+  useEffect(() => {
+    form.reset({
+      key: itemKey,
+      value: itemValue,
+    })
+  }, [itemKey, itemValue])
 
   const { mutateAsync: editItem, isPending } = useEditListItem()
   const { setSelectedListItem } = useDatabrowserStore()
@@ -70,6 +94,7 @@ const ListEditForm = ({
               name="key"
               height={type === "set" ? 250 : 100}
               label={keyLabel}
+              data={itemKey}
             />
           )}
 
@@ -82,6 +107,7 @@ const ListEditForm = ({
                 name="value"
                 height={type === "list" ? 250 : 100}
                 label={valueLabel}
+                data={itemValue ?? ""}
               />
             )
           )}
@@ -142,12 +168,14 @@ const FormItem = ({
   label,
   height,
   readOnly,
+  data,
 }: {
   name: string
   label: string
   isNumber?: boolean
   height?: number
   readOnly?: boolean
+  data: string
 }) => {
   const form = useFormContext()
   const { editor, selector } = useField({
@@ -156,6 +184,7 @@ const FormItem = ({
     height: height,
     showCopyButton: true,
     readOnly,
+    data,
   })
 
   return (
