@@ -12,6 +12,7 @@ export type RedisCredentials = {
 
 type DatabrowserContextProps = {
   redis: Redis
+  redisNoPipeline: Redis
   store: ReturnType<typeof createDatabrowserStore>
 }
 
@@ -25,14 +26,15 @@ export const DatabrowserProvider = ({
   children,
   redisCredentials,
 }: PropsWithChildren<DatabrowserProviderProps>) => {
-  const redisInstance = useMemo(() => redisClient(redisCredentials), [redisCredentials])
+  const redisInstance = useMemo(() => redisClient({credentials: redisCredentials, pipelining: true}), [redisCredentials])
+  const redisInstanceNoPipeline = useMemo(() => redisClient({credentials: redisCredentials, pipelining: false}), [redisCredentials])
 
   const [store] = useState(() => {
     return createDatabrowserStore()
   })
 
   return (
-    <DatabrowserContext.Provider value={{ redis: redisInstance, store }}>
+    <DatabrowserContext.Provider value={{ redis: redisInstance, redisNoPipeline: redisInstanceNoPipeline, store }}>
       {children}
     </DatabrowserContext.Provider>
   )
