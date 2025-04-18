@@ -5,7 +5,7 @@ import type { Redis } from "@upstash/redis"
 
 const PAGE_SIZE = 30
 
-const FETCH_COUNTS = [100, 200, 400, 800]
+const FETCH_COUNTS = [10, 100, 200, 400, 800]
 
 export type RedisKey = [string, DataType]
 
