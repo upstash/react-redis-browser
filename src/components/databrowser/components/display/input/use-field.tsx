@@ -30,13 +30,15 @@ export const useField = ({
 
   // Attempt to format JSON everytime the underlying data changes
   useEffect(() => {
-    if (!checkIsValidJSON(data)) {
-      return
+    if (contentType === "JSON" && checkIsValidJSON(data)) {
+      form.setValue(name, formatJSON(data), {
+        shouldDirty: false,
+      })
+    } else {
+      form.setValue(name, data, {
+        shouldDirty: false,
+      })
     }
-
-    form.setValue(name, formatJSON(data), {
-      shouldDirty: false,
-    })
   }, [data])
 
   const handleTypeChange = (type: ContentType) => {
