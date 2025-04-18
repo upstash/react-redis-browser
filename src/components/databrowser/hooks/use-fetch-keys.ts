@@ -10,7 +10,7 @@ const FETCH_COUNTS = [100, 200, 400, 800]
 export type RedisKey = [string, DataType]
 
 export const useFetchKeys = (search: SearchFilter) => {
-  const { redis } = useDatabrowser()
+  const { redisNoPipeline: redis } = useDatabrowser()
 
   const cache = useRef<PaginationCache | undefined>()
   const lastKey = useRef<string | undefined>()

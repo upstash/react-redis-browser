@@ -8,7 +8,7 @@ export const FETCH_SIMPLE_KEY_QUERY_KEY = "fetch-simple-key"
 
 /** Simple key standing for string or json */
 export const useFetchSimpleKey = (dataKey: string, type: DataType) => {
-  const { redis } = useDatabrowser()
+  const { redisNoPipeline: redis } = useDatabrowser()
   const { deleteKeyCache } = useDeleteKeyCache()
 
   return useQuery({

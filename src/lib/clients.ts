@@ -4,9 +4,15 @@ import { Redis } from "@upstash/redis"
 
 import { toast } from "@/components/ui/use-toast"
 
-export const redisClient = (databrowser?: RedisCredentials) => {
-  const token = databrowser?.token || process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_TOKEN
-  const url = databrowser?.url || process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_URL
+export const redisClient = ({
+  credentials,
+  pipelining,
+}: {
+  credentials?: RedisCredentials
+  pipelining: boolean
+}) => {
+  const token = credentials?.token || process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_TOKEN
+  const url = credentials?.url || process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_URL
 
   if (!url) {
     throw new Error("Redis URL is missing!")
@@ -18,7 +24,7 @@ export const redisClient = (databrowser?: RedisCredentials) => {
   const redis = new Redis({
     url,
     token,
-    enableAutoPipelining: true,
+    enableAutoPipelining: pipelining,
     automaticDeserialization: false,
     keepAlive: false,
   })
