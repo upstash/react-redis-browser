@@ -1,4 +1,3 @@
-import { useEffect } from "react"
 import type { SelectedItem } from "@/store"
 import { useDatabrowserStore } from "@/store"
 import type { ListDataType } from "@/types"
@@ -59,13 +58,6 @@ const ListEditForm = ({
       value: itemValue,
     },
   })
-
-  useEffect(() => {
-    form.reset({
-      key: itemKey,
-      value: itemValue,
-    })
-  }, [itemKey, itemValue])
 
   const { mutateAsync: editItem, isPending } = useEditListItem()
   const { setSelectedListItem } = useDatabrowserStore()
