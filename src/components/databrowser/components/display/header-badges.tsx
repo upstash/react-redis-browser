@@ -1,17 +1,12 @@
-import { useEffect } from "react"
 import { type DataType } from "@/types"
-import { IconChevronDown } from "@tabler/icons-react"
 import bytes from "bytes"
 
-import { queryClient } from "@/lib/clients"
-import { formatTime } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { FETCH_TTL_QUERY_KEY, useFetchTTL } from "../../hooks"
-import { useDeleteKeyCache } from "../../hooks/use-delete-key-cache"
+import { useFetchKeyExpire, useSetTTL } from "../../hooks"
 import { useFetchKeyLength } from "../../hooks/use-fetch-key-length"
 import { useFetchKeySize } from "../../hooks/use-fetch-key-size"
-import { TTLPopover } from "./ttl-popover"
+import { TTLBadge } from "./ttl-badge"
 
 export const LengthBadge = ({
   dataKey,
@@ -50,43 +45,16 @@ export const SizeBadge = ({ dataKey }: { dataKey: string }) => {
   )
 }
 
-const TTL_INFINITE = -1
-const TTL_NOT_FOUND = -2
-
-export const TTLBadge = ({ dataKey }: { dataKey: string }) => {
-  const { data: ttl } = useFetchTTL(dataKey)
-  const { deleteKeyCache } = useDeleteKeyCache()
-
-  // Tick the ttl query every second
-  useEffect(() => {
-    const interval = setInterval(() => {
-      queryClient.setQueryData([FETCH_TTL_QUERY_KEY, dataKey], (ttl?: number) => {
-        if (ttl === undefined || ttl === TTL_INFINITE) return ttl
-
-        if (ttl <= 1) {
-          deleteKeyCache(dataKey)
-          return TTL_NOT_FOUND
-        }
-        return ttl - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [])
+export const HeaderTTLBadge = ({ dataKey }: { dataKey: string }) => {
+  const { data: expireAt } = useFetchKeyExpire(dataKey)
+  const { mutate: setTTL, isPending } = useSetTTL()
 
   return (
-    <Badge label="TTL:">
-      {ttl === undefined ? (
-        <Skeleton className="ml-1 h-3 w-10 rounded-md opacity-50" />
-      ) : (
-        <TTLPopover dataKey={dataKey} ttl={ttl}>
-          <div className="flex gap-[2px]">
-            {ttl === TTL_INFINITE ? "Forever" : formatTime(ttl)}
-            <IconChevronDown className="mt-[1px] text-zinc-400" size={12} />
-          </div>
-        </TTLPopover>
-      )}
-    </Badge>
+    <TTLBadge
+      expireAt={expireAt}
+      setTTL={(ttl) => setTTL({ dataKey, ttl })}
+      isPending={isPending}
+    />
   )
 }
 

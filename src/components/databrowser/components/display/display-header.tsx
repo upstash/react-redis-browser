@@ -5,7 +5,7 @@ import { IconPlus } from "@tabler/icons-react"
 import { Button } from "@/components/ui/button"
 
 import { TypeTag } from "../type-tag"
-import { LengthBadge, SizeBadge, TTLBadge } from "./header-badges"
+import { HeaderTTLBadge, LengthBadge, SizeBadge } from "./header-badges"
 import { KeyActions } from "./key-actions"
 
 export const DisplayHeader = ({
@@ -49,7 +49,7 @@ export const DisplayHeader = ({
         <TypeTag variant={type} type="badge" />
         <SizeBadge dataKey={dataKey} />
         <LengthBadge dataKey={dataKey} type={type} content={content} />
-        <TTLBadge dataKey={dataKey} />
+        <HeaderTTLBadge dataKey={dataKey} />
       </div>
     </div>
   )

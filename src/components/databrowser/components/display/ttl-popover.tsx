@@ -12,9 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
-import { useSetTTL } from "@/components/databrowser/hooks/use-set-ttl"
 
-const PERSISTED_KEY = -1
+import { TTL_INFINITE } from "./ttl-badge"
 
 const timeUnits = [
   { label: "Seconds", value: 1 },
@@ -26,10 +25,10 @@ const timeUnits = [
 export function TTLPopover({
   children,
   ttl,
-  dataKey,
-}: PropsWithChildren<{ ttl: number; dataKey: string }>) {
+  setTTL,
+  isPending,
+}: PropsWithChildren<{ ttl: number; setTTL: (ttl: number) => void; isPending: boolean }>) {
   const [open, setOpen] = useState(false)
-  const { mutateAsync: setTTL, isPending } = useSetTTL()
 
   const defaultValues = useMemo(() => {
     return { type: "Seconds", value: ttl } as const
@@ -49,18 +48,12 @@ export function TTLPopover({
   }, [defaultValues])
 
   const onSubmit = handleSubmit(async ({ value, type }) => {
-    await setTTL({
-      dataKey: dataKey,
-      ttl: value * timeUnits.find((unit) => unit.label === type)!.value,
-    })
+    await setTTL(value * timeUnits.find((unit) => unit.label === type)!.value)
     setOpen(false)
   })
 
   const handlePersist = async () => {
-    await setTTL({
-      dataKey: dataKey,
-      ttl: undefined,
-    })
+    await setTTL(TTL_INFINITE)
     setOpen(false)
   }
 
@@ -77,7 +70,13 @@ export function TTLPopover({
       </PopoverTrigger>
 
       <PopoverContent className="w-[300px]" align="end">
-        <form className="space-y-4" onSubmit={onSubmit}>
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            onSubmit(e)
+            e.stopPropagation()
+          }}
+        >
           <h4 className="font-medium leading-none">Expiration</h4>
 
           <div>
@@ -128,7 +127,7 @@ export function TTLPopover({
             <Button
               type="button"
               variant="outline"
-              disabled={ttl === PERSISTED_KEY}
+              disabled={ttl === TTL_INFINITE}
               onClick={handlePersist}
             >
               Persist

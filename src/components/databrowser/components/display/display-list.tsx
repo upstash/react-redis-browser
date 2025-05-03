@@ -14,6 +14,7 @@ import { InfiniteScroll } from "../sidebar/infinite-scroll"
 import { DeleteAlertDialog } from "./delete-alert-dialog"
 import { DisplayHeader } from "./display-header"
 import { ListEditDisplay } from "./display-list-edit"
+import { HashFieldTTLInfo } from "./hash/hash-field-ttl-info"
 
 export const headerLabels = {
   list: ["Index", "Content"],
@@ -72,6 +73,7 @@ export const ListItems = ({
 }) => {
   const { setSelectedListItem } = useDatabrowserStore()
   const keys = useMemo(() => query.data?.pages.flatMap((page) => page.keys) ?? [], [query.data])
+  const fields = useMemo(() => keys.map((key) => key.key), [keys])
   const { mutate: editItem } = useEditListItem()
 
   return (
@@ -84,7 +86,7 @@ export const ListItems = ({
           onClick={() => {
             setSelectedListItem({ key })
           }}
-          className="h-10 border-b border-b-zinc-100 hover:bg-zinc-50"
+          className={cn("h-10 border-b border-b-zinc-100 hover:bg-zinc-100 ")}
         >
           <td
             className={cn(
@@ -103,29 +105,38 @@ export const ListItems = ({
           )}
           {type !== "stream" && (
             <td
-              width={20}
-              className="px-3"
+              className="w-0 min-w-0 p-0"
               onClick={(e) => {
                 e.stopPropagation()
               }}
             >
-              <DeleteAlertDialog
-                deletionType="item"
-                onDeleteConfirm={(e) => {
-                  e.stopPropagation()
-                  editItem({
-                    type,
-                    dataKey,
-                    itemKey: key,
-                    // For deletion
-                    newKey: undefined,
-                  })
-                }}
-              >
-                <Button size="icon-sm" variant="secondary" onClick={(e) => e.stopPropagation()}>
-                  <IconTrash className="size-4 text-zinc-500" />
-                </Button>
-              </DeleteAlertDialog>
+              <div className="flex items-center justify-end gap-2">
+                {type === "hash" && (
+                  <HashFieldTTLInfo dataKey={dataKey} field={key} fields={fields} />
+                )}
+                <DeleteAlertDialog
+                  deletionType="item"
+                  onDeleteConfirm={(e) => {
+                    e.stopPropagation()
+                    editItem({
+                      type,
+                      dataKey,
+                      itemKey: key,
+                      // For deletion
+                      newKey: undefined,
+                    })
+                  }}
+                >
+                  <Button
+                    className=""
+                    size="icon-sm"
+                    variant="secondary"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <IconTrash className="size-4 text-zinc-500" />
+                  </Button>
+                </DeleteAlertDialog>
+              </div>
             </td>
           )}
         </tr>

@@ -4,27 +4,31 @@ import { useQuery } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
 
+import { TTL_INFINITE, TTL_NOT_FOUND } from "../components/display/ttl-badge"
 import { FETCH_SIMPLE_KEY_QUERY_KEY } from "./use-fetch-simple-key"
 
 export const FETCH_TTL_QUERY_KEY = "fetch-ttl"
 
-export const useFetchTTL = (dataKey: string) => {
+// Returns the expireAt instead of ttl seconds, its more useful for the UI
+export const useFetchKeyExpire = (dataKey: string) => {
   const { redis } = useDatabrowser()
 
   const { isLoading, error, data } = useQuery({
     queryKey: [FETCH_TTL_QUERY_KEY, dataKey],
     queryFn: async () => {
-      return await redis.ttl(dataKey)
+      const ttl = await redis.ttl(dataKey)
+
+      return ttl === TTL_INFINITE || ttl === TTL_NOT_FOUND ? ttl : Date.now() + ttl * 1000
     },
   })
 
   useEffect(() => {
-    if (data === -2) {
+    if (data === TTL_NOT_FOUND) {
       queryClient.invalidateQueries({
         queryKey: [FETCH_SIMPLE_KEY_QUERY_KEY, dataKey],
       })
     }
-  }, [data === -2])
+  }, [data === TTL_NOT_FOUND])
 
   return { isLoading, error, data }
 }
