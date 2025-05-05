@@ -31,15 +31,17 @@ export const useFetchListItems = ({ dataKey, type }: { dataKey: string; type: Li
     enabled: type === "zset",
     queryKey: [FETCH_LIST_ITEMS_QUERY_KEY, dataKey, "zset"],
     initialPageParam: 0,
-    queryFn: async ({ pageParam: lastIndex }) => {
-      const res = await redis.zrange(dataKey, lastIndex, lastIndex + LIST_DISPLAY_PAGE_SIZE - 1, {
+    queryFn: async ({ pageParam: page }) => {
+      const start = page * LIST_DISPLAY_PAGE_SIZE
+      const end = start + LIST_DISPLAY_PAGE_SIZE - 1
+
+      const res = await redis.zrange(dataKey, start, end, {
         withScores: true,
         rev: true,
       })
 
       return {
-        cursor:
-          res.length < LIST_DISPLAY_PAGE_SIZE ? undefined : lastIndex + LIST_DISPLAY_PAGE_SIZE,
+        cursor: res.length < LIST_DISPLAY_PAGE_SIZE ? undefined : page + 1,
         keys: transformArray(res as any),
       }
     },
@@ -69,15 +71,16 @@ export const useFetchListItems = ({ dataKey, type }: { dataKey: string; type: Li
     enabled: type === "list",
     queryKey: [FETCH_LIST_ITEMS_QUERY_KEY, dataKey, "list"],
     initialPageParam: 0,
-    queryFn: async ({ pageParam }) => {
-      const lastIndex = Number(pageParam)
-      const values = await redis.lrange(dataKey, lastIndex, lastIndex + LIST_DISPLAY_PAGE_SIZE)
+    queryFn: async ({ pageParam: page }) => {
+      const start = page * LIST_DISPLAY_PAGE_SIZE
+      const end = start + LIST_DISPLAY_PAGE_SIZE - 1
+
+      const values = await redis.lrange(dataKey, start, end)
 
       return {
-        cursor:
-          values.length < LIST_DISPLAY_PAGE_SIZE ? undefined : lastIndex + LIST_DISPLAY_PAGE_SIZE,
+        cursor: values.length < LIST_DISPLAY_PAGE_SIZE ? undefined : page + 1,
         keys: values.map((value, i) => ({
-          key: (lastIndex + i).toString(),
+          key: (start + i).toString(),
           value,
         })),
       }
