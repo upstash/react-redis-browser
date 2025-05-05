@@ -62,9 +62,10 @@ export function Sidebar() {
         </div>
       </div>
 
-      {query.isLoading ? (
+      {query.isLoading && keys.length === 0 ? (
         <LoadingSkeleton />
       ) : keys.length > 0 ? (
+        // Infinite scroll already has a loader at the bottom
         <InfiniteScroll query={query}>
           <KeysList />
         </InfiniteScroll>
