@@ -9,6 +9,7 @@ import {
 import { useDatabrowserStore } from "@/store"
 import { useInfiniteQuery, type UseInfiniteQueryResult } from "@tanstack/react-query"
 
+import { useFetchKeyType } from "./use-fetch-key-type"
 import { useFetchKeys, type RedisKey } from "./use-fetch-keys"
 
 const KeysContext = createContext<
@@ -24,6 +25,9 @@ export const FETCH_KEYS_QUERY_KEY = "use-fetch-keys"
 
 export const KeysProvider = ({ children }: PropsWithChildren) => {
   const { search } = useDatabrowserStore()
+  const cleanSearchKey = search.key.replace("*", "")
+
+  const { data: exactMatchType } = useFetchKeyType(cleanSearchKey)
 
   const { fetchKeys, resetCache } = useFetchKeys(search)
   const pageRef = useRef(0)
@@ -54,6 +58,15 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
   const keys = useMemo(() => {
     const keys = query.data?.pages.flatMap((page) => page.keys) ?? []
 
+    // Include the exact match if it exists before SCAN returns
+    if (
+      exactMatchType &&
+      exactMatchType !== "none" &&
+      (search.type === undefined || search.type === exactMatchType)
+    ) {
+      keys.push([cleanSearchKey, exactMatchType])
+    }
+
     // deduplication
     const keysSet = new Set<string>()
     const dedupedKeys: RedisKey[] = []
@@ -65,7 +78,7 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
       dedupedKeys.push(key)
     }
     return dedupedKeys
-  }, [query.data])
+  }, [query.data, cleanSearchKey, exactMatchType])
 
   return (
     <KeysContext.Provider

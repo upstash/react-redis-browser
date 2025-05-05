@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 
 import { FETCH_LIST_ITEMS_QUERY_KEY, FETCH_SIMPLE_KEY_QUERY_KEY } from "../../hooks"
+import { FETCH_KEY_TYPE_QUERY_KEY } from "../../hooks/use-fetch-key-type"
 import { useKeys } from "../../hooks/use-keys"
 import { AddKeyModal } from "../add-key-modal"
 import { DisplayDbSize, FETCH_DB_SIZE_QUERY_KEY } from "./db-size"
@@ -38,6 +39,9 @@ export function Sidebar() {
                 queryClient.invalidateQueries({
                   queryKey: [FETCH_DB_SIZE_QUERY_KEY],
                 })
+                queryClient.invalidateQueries({
+                  queryKey: [FETCH_KEY_TYPE_QUERY_KEY],
+                })
               }}
             >
               <Spinner isLoading={query.isFetching}>
@@ -58,9 +62,10 @@ export function Sidebar() {
         </div>
       </div>
 
-      {query.isLoading ? (
+      {query.isLoading && keys.length === 0 ? (
         <LoadingSkeleton />
       ) : keys.length > 0 ? (
+        // Infinite scroll already has a loader at the bottom
         <InfiniteScroll query={query}>
           <KeysList />
         </InfiniteScroll>
