@@ -31,7 +31,7 @@ export const HashFieldTTLInfo = ({
   if (!expireAt || expireAt === TTL_NOT_FOUND || expireAt === TTL_INFINITE) return
 
   return (
-    <span className="block min-w-[30px] whitespace-nowrap text-red-600">
+    <span className="block min-w-[30px] whitespace-nowrap text-right text-red-600">
       {formatTime(ttl ?? 0)}
     </span>
   )
