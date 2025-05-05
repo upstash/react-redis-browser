@@ -45,5 +45,6 @@ export function formatTime(seconds: number) {
     parts.push("0s")
   }
 
-  return parts.slice(0, 2).join(" ")
+  // Just get the first part because of design change
+  return parts.slice(0, 1).join(" ")
 }
