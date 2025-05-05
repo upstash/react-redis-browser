@@ -3,6 +3,7 @@ import { useDatabrowserStore } from "@/store"
 import type { ListDataType } from "@/types"
 import { Controller, FormProvider, useForm, useFormContext } from "react-hook-form"
 
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { SimpleTooltip } from "@/components/ui/tooltip"
@@ -10,6 +11,7 @@ import { SimpleTooltip } from "@/components/ui/tooltip"
 import { useFetchListItems } from "../../hooks"
 import { useEditListItem } from "../../hooks/use-edit-list-item"
 import { headerLabels } from "./display-list"
+import { HashFieldTTLBadge } from "./hash/hash-field-ttl-badge"
 import { useField } from "./input/use-field"
 
 export const ListEditDisplay = ({
@@ -105,30 +107,43 @@ const ListEditForm = ({
           )}
         </div>
 
-        <div className="flex justify-end gap-2">
-          <Button
-            type="button"
-            onClick={() => {
-              setSelectedListItem(undefined)
-            }}
-          >
-            Cancel
-          </Button>
-          <SimpleTooltip
-            content={type === "stream" && !isNew ? "Streams are not mutable" : undefined}
-          >
+        <div
+          className={cn(
+            "flex items-center",
+            type === "hash" && itemKey !== "" ? "justify-between" : "justify-end"
+          )}
+        >
+          {type === "hash" && itemKey !== "" && (
+            <HashFieldTTLBadge dataKey={dataKey} field={itemKey} />
+          )}
+
+          <div className="flex gap-2">
             <Button
-              variant="primary"
-              type="submit"
-              disabled={
-                !form.formState.isValid || !form.formState.isDirty || (type === "stream" && !isNew)
-              }
+              type="button"
+              onClick={() => {
+                setSelectedListItem(undefined)
+              }}
             >
-              <Spinner isLoading={isPending} isLoadingText={"Saving"}>
-                Save
-              </Spinner>
+              Cancel
             </Button>
-          </SimpleTooltip>
+            <SimpleTooltip
+              content={type === "stream" && !isNew ? "Streams are not mutable" : undefined}
+            >
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={
+                  !form.formState.isValid ||
+                  !form.formState.isDirty ||
+                  (type === "stream" && !isNew)
+                }
+              >
+                <Spinner isLoading={isPending} isLoadingText={"Saving"}>
+                  Save
+                </Spinner>
+              </Button>
+            </SimpleTooltip>
+          </div>
         </div>
       </form>
     </FormProvider>
