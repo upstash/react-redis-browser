@@ -25,6 +25,9 @@ export const FETCH_KEYS_QUERY_KEY = "use-fetch-keys"
 
 export const KeysProvider = ({ children }: PropsWithChildren) => {
   const { search } = useDatabrowserStore()
+  const cleanSearchKey = search.key.replace("*", "")
+
+  const { data: exactMatchType } = useFetchKeyType(cleanSearchKey)
 
   const { fetchKeys, resetCache } = useFetchKeys(search)
   const pageRef = useRef(0)
@@ -51,10 +54,6 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     resetCache()
     query.refetch()
   }, [query, resetCache])
-
-  const cleanSearchKey = search.key.replace("*", "")
-
-  const { data: exactMatchType } = useFetchKeyType(cleanSearchKey)
 
   const keys = useMemo(() => {
     const keys = query.data?.pages.flatMap((page) => page.keys) ?? []
