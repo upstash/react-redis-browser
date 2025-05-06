@@ -27,7 +27,7 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
   const { search } = useDatabrowserStore()
   const cleanSearchKey = search.key.replace("*", "")
 
-  const { data: exactMatchType, isFetching } = useFetchKeyType(cleanSearchKey)
+  const { data: exactMatchType, isFetching, isLoading } = useFetchKeyType(cleanSearchKey)
 
   const { fetchKeys, resetCache } = useFetchKeys(search)
   const pageRef = useRef(0)
@@ -85,7 +85,12 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     <KeysContext.Provider
       value={{
         keys,
-        query,
+        // @ts-expect-error Ignore the error with spread syntax
+        query: {
+          ...query,
+          isLoading: isLoading || query.isLoading,
+          isFetching: isFetching || query.isFetching,
+        },
         refetch,
       }}
     >
