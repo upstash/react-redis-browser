@@ -27,7 +27,7 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
   const { search } = useDatabrowserStore()
   const cleanSearchKey = search.key.replace("*", "")
 
-  const { data: exactMatchType } = useFetchKeyType(cleanSearchKey)
+  const { data: exactMatchType, isFetching } = useFetchKeyType(cleanSearchKey)
 
   const { fetchKeys, resetCache } = useFetchKeys(search)
   const pageRef = useRef(0)
@@ -47,6 +47,7 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     getNextPageParam: (lastPage, __, lastPageIndex) => {
       return lastPage.hasNextPage ? lastPageIndex + 1 : undefined
     },
+    enabled: !isFetching,
     refetchOnMount: false,
   })
 
