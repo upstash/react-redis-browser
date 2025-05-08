@@ -89,7 +89,7 @@ const createDatabrowserStore = () =>
       set((old) => ({ ...old, selectedListItem: item }))
     },
 
-    search: { key: "", type: undefined },
+    search: { key: "", type: "string" },
     setSearch: (search) => set({ search }),
     setSearchKey: (key) => set((state) => ({ search: { ...state.search, key } })),
     setSearchType: (type) => set((state) => ({ search: { ...state.search, type } })),
