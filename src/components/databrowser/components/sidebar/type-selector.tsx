@@ -10,15 +10,21 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
+const ALL_TYPES_KEY = "all"
+
 export function DataTypeSelector() {
   const { search, setSearchType } = useDatabrowserStore()
 
   return (
     <Select
-      onValueChange={(type: DataType) => {
-        setSearchType(type)
+      onValueChange={(type: DataType | typeof ALL_TYPES_KEY) => {
+        if (type === ALL_TYPES_KEY) {
+          setSearchType(undefined)
+        } else {
+          setSearchType(type)
+        }
       }}
-      value={search.type}
+      value={search.type === undefined ? ALL_TYPES_KEY : search.type}
     >
       <SelectTrigger className="!w-auto select-none whitespace-nowrap rounded-r-none border-r-0 border-zinc-300 pr-8">
         <SelectValue />
