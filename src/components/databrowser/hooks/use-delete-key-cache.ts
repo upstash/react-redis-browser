@@ -6,11 +6,10 @@ import { queryClient } from "@/lib/clients"
 import { FETCH_KEY_TYPE_QUERY_KEY } from "./use-fetch-key-type"
 import { FETCH_LIST_ITEMS_QUERY_KEY } from "./use-fetch-list-items"
 import { FETCH_SIMPLE_KEY_QUERY_KEY } from "./use-fetch-simple-key"
-import { FETCH_KEYS_QUERY_KEY, useKeys } from "./use-keys"
+import { FETCH_KEYS_QUERY_KEY } from "./use-keys"
 
 export const useDeleteKeyCache = () => {
   const { setSelectedKey } = useDatabrowserStore()
-  const { refetch } = useKeys()
 
   const deleteKeyCache = useCallback(
     (key: string) => {
@@ -27,9 +26,8 @@ export const useDeleteKeyCache = () => {
       queryClient.invalidateQueries({
         queryKey: [FETCH_KEY_TYPE_QUERY_KEY, key],
       })
-      refetch()
     },
-    [setSelectedKey, refetch]
+    [setSelectedKey]
   )
 
   return { deleteKeyCache }
