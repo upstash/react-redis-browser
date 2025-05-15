@@ -9,7 +9,6 @@ const KeysContext = createContext<
   | {
       keys: RedisKey[]
       query: UseInfiniteQueryResult
-      refetch: () => void
     }
   | undefined
 >(undefined)
@@ -101,7 +100,7 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     <KeysContext.Provider
       value={{
         keys,
-        // @ts-expect-error Ignore the error with spread syntax
+        // @ts-expect-error Ignore the error with spread syntax 
         query: {
           ...query,
           isLoading: isLoading || query.isLoading,
