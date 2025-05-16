@@ -3,8 +3,6 @@ import { useDatabrowser, useDatabrowserStore } from "@/store"
 import type { DataType, RedisKey } from "@/types"
 import { useInfiniteQuery, type UseInfiniteQueryResult } from "@tanstack/react-query"
 
-import { useFetchKeyType } from "./use-fetch-key-type"
-
 const KeysContext = createContext<
   | {
       keys: RedisKey[]
@@ -19,9 +17,7 @@ const SCAN_COUNT = 100
 
 export const KeysProvider = ({ children }: PropsWithChildren) => {
   const { search } = useDatabrowserStore()
-  const cleanSearchKey = search.key.replace("*", "")
 
-  const { data: exactMatchType, isFetching, isLoading } = useFetchKeyType(cleanSearchKey)
   const { redisNoPipeline: redis } = useDatabrowser()
 
   const query = useInfiniteQuery({
@@ -33,8 +29,8 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
 
       const args = [lastCursor]
 
-      if (cleanSearchKey) {
-        args.push("MATCH", cleanSearchKey)
+      if (search.key) {
+        args.push("MATCH", search.key)
       }
 
       if (search.type) {
@@ -67,21 +63,11 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     },
     select: (data) => data,
     getNextPageParam: ({ cursor }) => cursor,
-    enabled: !isFetching,
     refetchOnMount: false,
   })
 
   const keys = useMemo(() => {
     const keys = query.data?.pages.flatMap((page) => page.keys) ?? []
-
-    // Include the exact match if it exists before SCAN returns
-    if (
-      exactMatchType &&
-      exactMatchType !== "none" &&
-      (search.type === undefined || search.type === exactMatchType)
-    ) {
-      keys.push([cleanSearchKey, exactMatchType])
-    }
 
     // deduplication
     const keysSet = new Set<string>()
@@ -94,18 +80,13 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
       dedupedKeys.push(key)
     }
     return dedupedKeys
-  }, [query.data, cleanSearchKey, exactMatchType])
+  }, [query.data])
 
   return (
     <KeysContext.Provider
       value={{
         keys,
-        // @ts-expect-error Ignore the error with spread syntax 
-        query: {
-          ...query,
-          isLoading: isLoading || query.isLoading,
-          isFetching: isFetching || query.isFetching,
-        },
+        query,
       }}
     >
       {children}
