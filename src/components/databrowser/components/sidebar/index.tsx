@@ -6,7 +6,7 @@ import { Spinner } from "@/components/ui/spinner"
 
 import { FETCH_LIST_ITEMS_QUERY_KEY, FETCH_SIMPLE_KEY_QUERY_KEY } from "../../hooks"
 import { FETCH_KEY_TYPE_QUERY_KEY } from "../../hooks/use-fetch-key-type"
-import { useKeys } from "../../hooks/use-keys"
+import { FETCH_KEYS_QUERY_KEY, useKeys } from "../../hooks/use-keys"
 import { AddKeyModal } from "../add-key-modal"
 import { DisplayDbSize, FETCH_DB_SIZE_QUERY_KEY } from "./db-size"
 import { Empty } from "./empty"
@@ -17,7 +17,7 @@ import { LoadingSkeleton } from "./skeleton-buttons"
 import { DataTypeSelector } from "./type-selector"
 
 export function Sidebar() {
-  const { keys, query, refetch } = useKeys()
+  const { keys, query } = useKeys()
 
   return (
     <div className="flex h-full flex-col gap-2 rounded-xl border bg-white p-1">
@@ -29,7 +29,9 @@ export function Sidebar() {
             <Button
               className="h-7 w-7 px-0"
               onClick={() => {
-                refetch()
+                queryClient.invalidateQueries({
+                  queryKey: [FETCH_KEYS_QUERY_KEY],
+                })
                 queryClient.invalidateQueries({
                   queryKey: [FETCH_LIST_ITEMS_QUERY_KEY],
                 })
