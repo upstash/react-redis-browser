@@ -45,11 +45,13 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
       const keys: RedisKey[] = []
 
       let index = 0
-      while (index + 1 < values.length) {
+      while (true) {
         if (search.type) {
+          if (index >= values.length) break
           keys.push([values[index], search.type as DataType])
           index += 1
         } else {
+          if (index + 1 >= values.length) break
           keys.push([values[index], values[index + 1] as DataType])
           index += 2
         }
