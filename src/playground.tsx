@@ -7,7 +7,7 @@ ReactDOM.createRoot(document.querySelector("#root")!).render(
     style={{
       position: "fixed",
       inset: 0,
-      backgroundColor: "#eee",
+      backgroundColor: "white",
       padding: "20px",
     }}
   >

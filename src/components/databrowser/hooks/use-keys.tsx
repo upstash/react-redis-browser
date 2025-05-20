@@ -1,7 +1,11 @@
 import { createContext, useContext, useMemo, type PropsWithChildren } from "react"
-import { useDatabrowser, useDatabrowserStore } from "@/store"
+import { useRedis } from "@/redis-context"
+import { useDatabrowserStore } from "@/store"
 import type { DataType, RedisKey } from "@/types"
 import { useInfiniteQuery, type UseInfiniteQueryResult } from "@tanstack/react-query"
+import { useTab } from "@/tab-provider"
+import { queryClient } from "@/lib/clients"
+import { FETCH_KEY_TYPE_QUERY_KEY } from "./use-fetch-key-type"
 
 const KeysContext = createContext<
   | {
@@ -16,9 +20,9 @@ export const FETCH_KEYS_QUERY_KEY = "use-fetch-keys"
 const SCAN_COUNT = 100
 
 export const KeysProvider = ({ children }: PropsWithChildren) => {
-  const { search } = useDatabrowserStore()
+  const { search } = useTab()
 
-  const { redisNoPipeline: redis } = useDatabrowser()
+  const { redisNoPipeline: redis } = useRedis()
 
   const query = useInfiniteQuery({
     queryKey: [FETCH_KEYS_QUERY_KEY, search],
@@ -55,6 +59,10 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
           keys.push([values[index], values[index + 1] as DataType])
           index += 2
         }
+      }
+
+      for (const [key, type] of keys) {
+        queryClient.setQueryData([FETCH_KEY_TYPE_QUERY_KEY, key], type)
       }
 
       return {

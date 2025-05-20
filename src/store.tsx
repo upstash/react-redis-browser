@@ -1,46 +1,24 @@
-import { createContext, useContext, useMemo, useState, type PropsWithChildren } from "react"
-import type { Redis } from "@upstash/redis"
+import { createContext, useContext, useMemo, type PropsWithChildren } from "react"
 import { create, useStore } from "zustand"
 
-import { redisClient } from "./lib/clients"
 import type { DataType } from "./types"
 
-export type RedisCredentials = {
-  url?: string
-  token?: string
-}
+// Re-export for backward compatibility
+export type { RedisCredentials } from "./redis-context"
 
 type DatabrowserContextProps = {
-  redis: Redis
-  redisNoPipeline: Redis
-  store: ReturnType<typeof createDatabrowserStore>
+  store: DatabrowserStoreObject
 }
 
 const DatabrowserContext = createContext<DatabrowserContextProps | undefined>(undefined)
 
-interface DatabrowserProviderProps {
-  redisCredentials: RedisCredentials
+export const DatabrowserProvider = ({ children }: PropsWithChildren) => {
+  const store = useMemo(() => createDatabrowserStore(), [])
+
+  return <DatabrowserContext.Provider value={{ store }}>{children}</DatabrowserContext.Provider>
 }
 
-export const DatabrowserProvider = ({
-  children,
-  redisCredentials,
-}: PropsWithChildren<DatabrowserProviderProps>) => {
-  const redisInstance = useMemo(() => redisClient({credentials: redisCredentials, pipelining: true}), [redisCredentials])
-  const redisInstanceNoPipeline = useMemo(() => redisClient({credentials: redisCredentials, pipelining: false}), [redisCredentials])
-
-  const [store] = useState(() => {
-    return createDatabrowserStore()
-  })
-
-  return (
-    <DatabrowserContext.Provider value={{ redis: redisInstance, redisNoPipeline: redisInstanceNoPipeline, store }}>
-      {children}
-    </DatabrowserContext.Provider>
-  )
-}
-
-export const useDatabrowser = (): DatabrowserContextProps => {
+const useDatabrowser = (): DatabrowserContextProps => {
   const context = useContext(DatabrowserContext)
   if (!context) {
     throw new Error("useDatabrowser must be used within a DatabrowserProvider")
@@ -64,33 +42,110 @@ export type SelectedItem = {
   isNew?: boolean
 }
 
-type DatabrowserStore = {
+type TabData = {
   selectedKey: string | undefined
-  setSelectedKey: (key: string | undefined) => void
-
   selectedListItem?: SelectedItem
-  setSelectedListItem: (item?: { key: string; isNew?: boolean }) => void
 
   search: SearchFilter
-  setSearch: (search: SearchFilter) => void
-  setSearchKey: (key: string) => void
-  setSearchType: (type: DataType | undefined) => void
 }
 
-const createDatabrowserStore = () =>
-  create<DatabrowserStore>((set) => ({
-    selectedKey: undefined,
-    setSelectedKey: (key) => {
-      set((old) => ({ ...old, selectedKey: key, selectedListItem: undefined }))
+export type TabId = string & { __tabId: true }
+
+type DatabrowserStore = {
+  selectedTab: TabId | undefined
+  tabs: Record<TabId, TabData>
+
+  addTab: () => void
+  removeTab: (id: TabId) => void
+  selectTab: (id: TabId) => void
+
+  // Tab actions
+  getSelectedKey: (tabId: TabId) => string | undefined
+  setSelectedKey: (tabId: TabId, key: string | undefined) => void
+  setSelectedListItem: (tabId: TabId, item?: { key: string; isNew?: boolean }) => void
+  setSearch: (tabId: TabId, search: SearchFilter) => void
+  setSearchKey: (tabId: TabId, key: string) => void
+  setSearchType: (tabId: TabId, type: DataType | undefined) => void
+}
+
+export type DatabrowserStoreObject = ReturnType<typeof createDatabrowserStore>
+
+export const createDatabrowserStore = () =>
+  create<DatabrowserStore>((set, get) => ({
+    selectedTab: undefined,
+    tabs: {},
+
+    addTab: () => {
+      const id = crypto.randomUUID() as TabId
+
+      const newTabData: TabData = {
+        selectedKey: undefined,
+        search: { key: "", type: undefined },
+      }
+
+      set((old) => ({
+        tabs: { ...old.tabs, [id]: newTabData },
+        selectedTab: old.selectedTab === undefined ? id : old.selectedTab,
+      }))
     },
 
-    selectedListItem: undefined,
-    setSelectedListItem: (item) => {
-      set((old) => ({ ...old, selectedListItem: item }))
+    removeTab: (id) => {
+      set((old) => {
+        const newTabs = { ...old.tabs }
+        delete newTabs[id]
+
+        // If we're removing the selected tab, select another tab if available
+        let selectedTab = old.selectedTab
+        if (selectedTab === id) {
+          const tabIds = Object.keys(newTabs) as TabId[]
+          selectedTab = tabIds.length > 0 ? tabIds[0] : undefined
+        }
+
+        return { tabs: newTabs, selectedTab }
+      })
     },
 
-    search: { key: "", type: undefined },
-    setSearch: (search) => set({ search }),
-    setSearchKey: (key) => set((state) => ({ search: { ...state.search, key } })),
-    setSearchType: (type) => set((state) => ({ search: { ...state.search, type } })),
+    selectTab: (id) => {
+      set({ selectedTab: id })
+    },
+
+    getSelectedKey: (tabId) => {
+      return get().tabs[tabId]?.selectedKey
+    },
+
+    setSelectedKey: (tabId, key) => {
+      set((old) => ({
+        ...old,
+        tabs: {
+          ...old.tabs,
+          [tabId]: { ...old.tabs[tabId], selectedKey: key, selectedListItem: undefined },
+        },
+      }))
+    },
+
+    setSelectedListItem: (tabId, item) => {
+      set((old) => ({
+        ...old,
+        tabs: { ...old.tabs, [tabId]: { ...old.tabs[tabId], selectedListItem: item } },
+      }))
+    },
+
+    setSearch: (tabId, search) =>
+      set((old) => ({ ...old, tabs: { ...old.tabs, [tabId]: { ...old.tabs[tabId], search } } })),
+    setSearchKey: (tabId, key) =>
+      set((old) => ({
+        ...old,
+        tabs: {
+          ...old.tabs,
+          [tabId]: { ...old.tabs[tabId], search: { ...old.tabs[tabId].search, key } },
+        },
+      })),
+    setSearchType: (tabId, type) =>
+      set((old) => ({
+        ...old,
+        tabs: {
+          ...old.tabs,
+          [tabId]: { ...old.tabs[tabId], search: { ...old.tabs[tabId].search, type } },
+        },
+      })),
   }))

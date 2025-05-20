@@ -1,4 +1,3 @@
-import { useDatabrowserStore } from "@/store"
 import type { DataType, RedisKey } from "@/types"
 
 import { cn } from "@/lib/utils"
@@ -7,20 +6,19 @@ import { TypeTag } from "@/components/databrowser/components/type-tag"
 
 import { useKeys } from "../../hooks/use-keys"
 import { SidebarContextMenu } from "../sidebar-context-menu"
+import { useTab } from "@/tab-provider"
 
 export const KeysList = () => {
   const { keys } = useKeys()
 
   return (
-    <div className="pr-3">
-      <SidebarContextMenu>
-        <>
-          {keys.map((data, i) => (
-            <KeyItem key={data[0]} nextKey={keys.at(i + 1)?.[0] ?? ""} data={data} />
-          ))}
-        </>
-      </SidebarContextMenu>
-    </div>
+    <SidebarContextMenu>
+      <>
+        {keys.map((data, i) => (
+          <KeyItem key={data[0]} nextKey={keys.at(i + 1)?.[0] ?? ""} data={data} />
+        ))}
+      </>
+    </SidebarContextMenu>
   )
 }
 
@@ -35,7 +33,7 @@ const keyStyles = {
 } as Record<DataType, string>
 
 const KeyItem = ({ data, nextKey }: { data: RedisKey; nextKey: string }) => {
-  const { selectedKey, setSelectedKey } = useDatabrowserStore()
+  const { selectedKey, setSelectedKey } = useTab()
 
   const [dataKey, dataType] = data
   const isKeySelected = selectedKey === dataKey
@@ -46,7 +44,7 @@ const KeyItem = ({ data, nextKey }: { data: RedisKey; nextKey: string }) => {
       data-key={dataKey}
       variant={isKeySelected ? "default" : "ghost"}
       className={cn(
-        "relative flex h-10 w-full items-center justify-start gap-2 px-3 py-0 ",
+        "relative flex h-10 w-full items-center justify-start gap-2 px-3 py-0",
         "select-none border border-transparent text-left",
         isKeySelected && "shadow-sm",
         isKeySelected && keyStyles[dataType]

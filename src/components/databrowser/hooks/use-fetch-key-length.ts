@@ -1,11 +1,11 @@
-import { useDatabrowser } from "@/store"
+import { useRedis } from "@/redis-context"
 import type { DataType } from "@/types"
 import { useQuery } from "@tanstack/react-query"
 
 export const FETCH_KEY_LENGTH_QUERY_KEY = "fetch-key-length"
 
 export const useFetchKeyLength = ({ dataKey, type }: { dataKey: string; type: DataType }) => {
-  const { redis } = useDatabrowser()
+  const { redis } = useRedis()
 
   return useQuery({
     queryKey: [FETCH_KEY_LENGTH_QUERY_KEY, dataKey],

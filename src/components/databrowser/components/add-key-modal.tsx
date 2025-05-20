@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { useDatabrowserStore } from "@/store"
 import { DATA_TYPES, type DataType } from "@/types"
 import { DialogDescription } from "@radix-ui/react-dialog"
 import { PlusIcon } from "@radix-ui/react-icons"
@@ -25,9 +24,10 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { TypeTag } from "@/components/databrowser/components/type-tag"
 import { useAddKey } from "@/components/databrowser/hooks/use-add-key"
+import { useTab } from "@/tab-provider"
 
 export function AddKeyModal() {
-  const { setSelectedKey } = useDatabrowserStore()
+  const { setSelectedKey } = useTab()
   const [open, setOpen] = useState(false)
 
   const { mutateAsync: addKey, isPending } = useAddKey()

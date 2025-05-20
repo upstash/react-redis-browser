@@ -1,12 +1,12 @@
 import { useState } from "react"
-import { useDatabrowserStore } from "@/store"
 import { IconX } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useTab } from "@/tab-provider"
 
 export const SearchInput = () => {
-  const { setSearchKey, search } = useDatabrowserStore()
+  const { setSearchKey, search } = useTab()
   const [state, setState] = useState(search.key)
 
   const submit = (value: string) => {

@@ -1,18 +1,17 @@
 import "@/globals.css"
 
 import { useEffect, useMemo } from "react"
-import { DatabrowserProvider, type RedisCredentials } from "@/store"
+import type { TabId } from "@/store"
+import { DatabrowserProvider, useDatabrowserStore } from "@/store"
 import { TooltipProvider } from "@radix-ui/react-tooltip"
-import { IconDotsVertical } from "@tabler/icons-react"
 import { QueryClientProvider } from "@tanstack/react-query"
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 
 import { queryClient } from "@/lib/clients"
+import { RedisProvider, type RedisCredentials } from "@/redis-context"
 
-import { Toaster } from "../ui/toaster"
-import { DataDisplay } from "./components/display"
-import { Sidebar } from "./components/sidebar"
-import { KeysProvider } from "./hooks/use-keys"
+import { DatabrowserInstance } from "./components/databrowser-instance"
+import { DatabrowserTabs } from "./components/databrowser-tabs"
+import { TabIdProvider } from "@/tab-provider"
 
 export const RedisBrowser = ({ token, url }: RedisCredentials) => {
   const credentials = useMemo(() => ({ token, url }), [token, url])
@@ -23,35 +22,31 @@ export const RedisBrowser = ({ token, url }: RedisCredentials) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <DatabrowserProvider redisCredentials={credentials}>
-          <KeysProvider>
+      <RedisProvider redisCredentials={credentials}>
+        <DatabrowserProvider>
+          <TooltipProvider>
             {/* ups-db is the custom class used to prefix every style in the css bundle */}
             <div className="ups-db" style={{ height: "100%" }}>
-              <PanelGroup
-                autoSaveId="persistence"
-                direction="horizontal"
-                className="h-full w-full gap-0.5 text-sm antialiased"
-              >
-                <Panel defaultSize={30} minSize={30}>
-                  <Sidebar />
-                </Panel>
-                <PanelResizeHandle className="h-fullm flex w-1.5 items-center justify-center rounded-full hover:bg-zinc-300/20">
-                  <IconDotsVertical
-                    size={16}
-                    stroke={1}
-                    className="pointer-events-none shrink-0 opacity-20"
-                  />
-                </PanelResizeHandle>
-                <Panel minSize={40}>
-                  <DataDisplay />
-                </Panel>
-              </PanelGroup>
-              <Toaster />
+              <DatabrowserTabs />
+              <DatabrowserInstances />
             </div>
-          </KeysProvider>
+          </TooltipProvider>
         </DatabrowserProvider>
-      </TooltipProvider>
+      </RedisProvider>
     </QueryClientProvider>
   )
+}
+
+const DatabrowserInstances = () => {
+  const { tabs, selectedTab, addTab } = useDatabrowserStore()
+
+  useEffect(() => {
+    if (Object.keys(tabs).length === 0) addTab()
+  }, [tabs])
+
+  return Object.entries(tabs).map(([id]) => (
+    <TabIdProvider key={id} value={id as TabId}>
+      <DatabrowserInstance hidden={id !== selectedTab} />
+    </TabIdProvider>
+  ))
 }

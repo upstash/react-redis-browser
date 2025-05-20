@@ -1,5 +1,4 @@
 import { useMemo } from "react"
-import { useDatabrowserStore } from "@/store"
 import type { ListDataType } from "@/types"
 import { IconTrash } from "@tabler/icons-react"
 import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query"
@@ -15,6 +14,7 @@ import { DeleteAlertDialog } from "./delete-alert-dialog"
 import { DisplayHeader } from "./display-header"
 import { ListEditDisplay } from "./display-list-edit"
 import { HashFieldTTLInfo } from "./hash/hash-field-ttl-info"
+import { useTab } from "@/tab-provider"
 
 export const headerLabels = {
   list: ["Index", "Content"],
@@ -25,7 +25,7 @@ export const headerLabels = {
 } as const
 
 export const ListDisplay = ({ dataKey, type }: { dataKey: string; type: ListDataType }) => {
-  const { selectedListItem } = useDatabrowserStore()
+  const { selectedListItem } = useTab()
   const query = useFetchListItems({ dataKey, type })
 
   return (
@@ -38,15 +38,13 @@ export const ListDisplay = ({ dataKey, type }: { dataKey: string; type: ListData
 
       <div className={cn("min-h-0 grow", selectedListItem && "hidden")}>
         <InfiniteScroll query={query}>
-          <div className="pr-3">
-            <table className="w-full">
-              <ItemContextMenu dataKey={dataKey} type={type}>
-                <tbody>
-                  <ListItems dataKey={dataKey} type={type} query={query} />
-                </tbody>
-              </ItemContextMenu>
-            </table>
-          </div>
+          <table className="w-full">
+            <ItemContextMenu dataKey={dataKey} type={type}>
+              <tbody>
+                <ListItems dataKey={dataKey} type={type} query={query} />
+              </tbody>
+            </ItemContextMenu>
+          </table>
         </InfiniteScroll>
       </div>
     </div>
@@ -71,7 +69,7 @@ export const ListItems = ({
   type: ListDataType
   dataKey: string
 }) => {
-  const { setSelectedListItem } = useDatabrowserStore()
+  const { setSelectedListItem } = useTab()
   const keys = useMemo(() => query.data?.pages.flatMap((page) => page.keys) ?? [], [query.data])
   const fields = useMemo(() => keys.map((key) => key.key), [keys])
   const { mutate: editItem } = useEditListItem()
@@ -86,7 +84,7 @@ export const ListItems = ({
           onClick={() => {
             setSelectedListItem({ key })
           }}
-          className={cn("h-10 border-b border-b-zinc-100 hover:bg-zinc-100 ")}
+          className={cn("h-10 border-b border-b-zinc-100 transition-colors hover:bg-zinc-100")}
         >
           <td
             className={cn(

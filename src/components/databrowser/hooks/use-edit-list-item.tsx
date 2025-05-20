@@ -1,4 +1,4 @@
-import { useDatabrowser } from "@/store"
+import { useRedis } from "@/redis-context"
 import type { ListDataType } from "@/types"
 import { useMutation } from "@tanstack/react-query"
 
@@ -7,7 +7,7 @@ import { queryClient } from "@/lib/clients"
 import { FETCH_LIST_ITEMS_QUERY_KEY, transformArray } from "./use-fetch-list-items"
 
 export const useEditListItem = () => {
-  const { redis } = useDatabrowser()
+  const { redis } = useRedis()
 
   return useMutation({
     mutationFn: async ({
