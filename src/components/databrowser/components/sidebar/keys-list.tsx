@@ -1,10 +1,9 @@
 import { useDatabrowserStore } from "@/store"
-import type { DataType } from "@/types"
+import type { DataType, RedisKey } from "@/types"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { TypeTag } from "@/components/databrowser/components/type-tag"
-import type { RedisKey } from "@/components/databrowser/hooks"
 
 import { useKeys } from "../../hooks/use-keys"
 import { SidebarContextMenu } from "../sidebar-context-menu"

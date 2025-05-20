@@ -32,7 +32,7 @@ export function DataTypeSelector() {
 
       <SelectContent>
         <SelectGroup>
-          {Object.entries(DATA_TYPE_NAMES).map(
+          {[[ALL_TYPES_KEY, "All Types"], ...Object.entries(DATA_TYPE_NAMES)].map(
             ([key, value]) => (
               <SelectItem value={key} key={key}>
                 {value}
