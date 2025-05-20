@@ -15,6 +15,11 @@ import { KeysList } from "./keys-list"
 import { SearchInput } from "./search-input"
 import { LoadingSkeleton } from "./skeleton-buttons"
 import { DataTypeSelector } from "./type-selector"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export function Sidebar() {
   const { keys, query } = useKeys()

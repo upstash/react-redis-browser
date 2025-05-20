@@ -66,6 +66,9 @@ type DatabrowserStore = {
   setSearch: (tabId: TabId, search: SearchFilter) => void
   setSearchKey: (tabId: TabId, key: string) => void
   setSearchType: (tabId: TabId, type: DataType | undefined) => void
+
+  searchHistory: string[]
+  addSearchHistory: (key: string) => void
 }
 
 export type DatabrowserStoreObject = ReturnType<typeof createDatabrowserStore>
@@ -148,4 +151,9 @@ export const createDatabrowserStore = () =>
           [tabId]: { ...old.tabs[tabId], search: { ...old.tabs[tabId].search, type } },
         },
       })),
+
+    searchHistory: [],
+    addSearchHistory: (key) => {
+      set((old) => ({ ...old, searchHistory: [key, ...old.searchHistory] }))
+    },
   }))
