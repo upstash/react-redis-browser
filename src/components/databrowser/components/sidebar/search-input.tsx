@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useRef, useEffect, type KeyboardEvent } from "react"
 import { IconX } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
@@ -20,7 +20,12 @@ export const SearchInput = () => {
   const { setSearchKey, search } = useTab()
   const { searchHistory, addSearchHistory } = useDatabrowserStore()
   const [state, setState] = useState(search.key)
+
   const [isFocus, setIsFocus] = useState(false)
+  const [focusedIndex, setFocusedIndex] = useState(-1)
+
+  const inputRef = useRef<HTMLInputElement>(null)
+  const historyItemRefs = useRef<(HTMLButtonElement | null)[]>([])
 
   const handleSubmit = (value: string) => {
     if (value.trim() !== "" && !value.includes("*")) value = `${value}*`
@@ -29,15 +34,48 @@ export const SearchInput = () => {
     setState(value)
   }
 
-  const handleItemSelect = (value: string) => {
-    addSearchHistory(value)
-    setSearchKey(value)
-    setState(value)
-  }
-
   const filteredHistory = dedupeSearchHistory(
     searchHistory.filter((item) => item.includes(state) && item !== state)
-  ).slice(0, 5)
+  )
+    .slice(0, 5)
+    // If it has a * in the end, remove it
+    .map((item) => (item.endsWith("*") ? item.slice(0, -1) : item))
+
+  // Reset focused index when filtered history changes
+  useEffect(() => {
+    setFocusedIndex(-1)
+  }, [filteredHistory.length])
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      const text =
+        focusedIndex >= 0 && focusedIndex < filteredHistory.length
+          ? filteredHistory[focusedIndex]
+          : e.currentTarget.value
+      handleSubmit(text)
+    } else if (e.key === "Escape") {
+      setState("")
+      setFocusedIndex(-1)
+      inputRef.current?.blur()
+    } else if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
+      e.preventDefault()
+      if (focusedIndex < filteredHistory.length - 1) {
+        setFocusedIndex(focusedIndex + 1)
+      } else if (filteredHistory.length > 0) {
+        setFocusedIndex(0)
+      }
+    } else if (e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
+      e.preventDefault()
+      if (focusedIndex > 0) {
+        setFocusedIndex(focusedIndex - 1)
+      } else if (filteredHistory.length > 0 && focusedIndex === 0) {
+        setFocusedIndex(-1)
+        inputRef.current?.focus()
+      } else if (filteredHistory.length > 0) {
+        setFocusedIndex(filteredHistory.length - 1)
+      }
+    }
+  }
 
   return (
     <div className="relative grow">
@@ -45,36 +83,43 @@ export const SearchInput = () => {
         <PopoverTrigger asChild>
           <div>
             <Input
+              ref={inputRef}
               placeholder="Search"
               className={"rounded-l-none border-zinc-300 font-normal"}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSubmit(e.currentTarget.value)
-                else if (e.key === "Escape") setState("")
-              }}
+              onKeyDown={handleKeyDown}
               onChange={(e) => {
                 setState(e.currentTarget.value)
                 if (e.currentTarget.value.trim() === "") handleSubmit("")
               }}
               value={state}
-              onFocus={() => setIsFocus(true)}
+              onFocus={() => {
+                setIsFocus(true)
+                setFocusedIndex(-1)
+              }}
               onBlur={() => setIsFocus(false)}
             />
           </div>
         </PopoverTrigger>
 
         <PopoverContent
-          className="w-[200px] divide-y px-3 py-2 text-[13px] text-zinc-900"
+          className="w-[--radix-popover-trigger-width] divide-y px-3 py-2 text-[13px] text-zinc-900"
           autoFocus={false}
           onOpenAutoFocus={(e) => {
             e.preventDefault()
             e.stopPropagation()
           }}
         >
-          {filteredHistory.map((item) => (
-            <div key={item} className="w-full py-[2px]">
+          {filteredHistory.map((item, index) => (
+            <div key={item} className="w-full py-[3px]">
               <button
-                onClick={() => handleItemSelect(item)}
-                className="block w-full rounded-sm p-1 text-left transition-colors hover:bg-zinc-100"
+                ref={(el) => {
+                  historyItemRefs.current[index] = el
+                }}
+                onClick={() => handleSubmit(item)}
+                onMouseEnter={() => setFocusedIndex(index)}
+                className={`block w-full rounded-sm p-1 text-left transition-colors ${
+                  focusedIndex === index ? "bg-zinc-100" : "hover:bg-zinc-100"
+                }`}
               >
                 {item}
               </button>
