@@ -1,6 +1,5 @@
 import { createContext, useContext, useMemo, type PropsWithChildren } from "react"
 import { useRedis } from "@/redis-context"
-import { useDatabrowserStore } from "@/store"
 import type { DataType, RedisKey } from "@/types"
 import { useInfiniteQuery, type UseInfiniteQueryResult } from "@tanstack/react-query"
 import { useTab } from "@/tab-provider"
