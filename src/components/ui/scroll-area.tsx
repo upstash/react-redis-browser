@@ -4,13 +4,13 @@ import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
 import { cn } from "@/lib/utils"
 
 type ScrollAreaProps = React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> & {
-  roundedInherit?: boolean
+  disableRoundedInherit?: boolean
 }
 
 const ScrollArea = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.Root>,
   ScrollAreaProps
->(({ className, children, onScroll, roundedInherit = true, ...props }, ref) => (
+>(({ className, children, onScroll, disableRoundedInherit = false, ...props }, ref) => (
   <ScrollAreaPrimitive.Root
     ref={ref}
     className={cn("relative overflow-hidden", className)}
@@ -18,7 +18,7 @@ const ScrollArea = React.forwardRef<
   >
     <ScrollAreaPrimitive.Viewport
       onScroll={onScroll}
-      className={cn("h-full w-full [&>div]:!block", roundedInherit && "rounded-[inherit]")}
+      className={cn("h-full w-full [&>div]:!block", !disableRoundedInherit && "rounded-[inherit]")}
     >
       {children}
     </ScrollAreaPrimitive.Viewport>
