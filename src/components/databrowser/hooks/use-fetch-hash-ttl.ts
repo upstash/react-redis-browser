@@ -1,4 +1,4 @@
-import { useDatabrowser } from "@/store"
+import { useRedis } from "@/redis-context"
 import { useQuery } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
@@ -15,7 +15,7 @@ export const useFetchHashFieldExpires = ({
   dataKey: string
   fields: string[]
 }) => {
-  const { redis } = useDatabrowser()
+  const { redis } = useRedis()
 
   return useQuery({
     queryKey: [FETCH_HASH_FIELD_TTLS_QUERY_KEY, dataKey, fields],

@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { useDatabrowser } from "@/store"
+import { useRedis } from "@/redis-context"
 import { useQuery } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
@@ -9,9 +9,8 @@ import { FETCH_SIMPLE_KEY_QUERY_KEY } from "./use-fetch-simple-key"
 
 export const FETCH_TTL_QUERY_KEY = "fetch-ttl"
 
-// Returns the expireAt instead of ttl seconds, its more useful for the UI
-export const useFetchKeyExpire = (dataKey: string) => {
-  const { redis } = useDatabrowser()
+export const useFetchTTL = (dataKey: string) => {
+  const { redis } = useRedis()
 
   const { isLoading, error, data } = useQuery({
     queryKey: [FETCH_TTL_QUERY_KEY, dataKey],

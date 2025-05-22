@@ -7,9 +7,11 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 export const InfiniteScroll = ({
   query,
   children,
+  ...props
 }: PropsWithChildren<{
   query: UseInfiniteQueryResult
-}>) => {
+}> &
+  React.ComponentProps<typeof ScrollArea>) => {
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, clientHeight, scrollHeight } = e.currentTarget
     if (scrollTop + clientHeight > scrollHeight - 100) {
@@ -23,8 +25,9 @@ export const InfiniteScroll = ({
   return (
     <ScrollArea
       type="always"
-      className="block h-full w-full transition-all"
+      className="block h-full w-full overflow-visible rounded-lg border border-zinc-200 bg-white p-1 pr-3 transition-all"
       onScroll={handleScroll}
+      {...props}
     >
       {children}
 
