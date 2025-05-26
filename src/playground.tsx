@@ -17,6 +17,8 @@ ReactDOM.createRoot(document.querySelector("#root")!).render(
         width: "100%",
         maxWidth: "900px",
         margin: "0 auto",
+        border: "1px solid red",
+        boxSizing: "border-box",
       }}
     >
       <RedisBrowser
