@@ -13,7 +13,11 @@ import { DatabrowserInstance } from "./components/databrowser-instance"
 import { DatabrowserTabs } from "./components/databrowser-tabs"
 import { TabIdProvider } from "@/tab-provider"
 
-export const RedisBrowser = ({ token, url }: RedisCredentials) => {
+export const RedisBrowser = ({
+  token,
+  url,
+  hideTabs,
+}: RedisCredentials & { hideTabs?: boolean }) => {
   const credentials = useMemo(() => ({ token, url }), [token, url])
 
   useEffect(() => {
@@ -26,8 +30,11 @@ export const RedisBrowser = ({ token, url }: RedisCredentials) => {
         <DatabrowserProvider>
           <TooltipProvider>
             {/* ups-db is the custom class used to prefix every style in the css bundle */}
-            <div className="ups-db" style={{ height: "100%" }}>
-              <DatabrowserTabs />
+            <div
+              className="ups-db"
+              style={{ height: "100%", display: "flex", flexDirection: "column" }}
+            >
+              {!hideTabs && <DatabrowserTabs />}
               <DatabrowserInstances />
             </div>
           </TooltipProvider>

@@ -68,7 +68,7 @@ export function Sidebar() {
         <LoadingSkeleton />
       ) : keys.length > 0 ? (
         // Infinite scroll already has a loader at the bottom
-        <InfiniteScroll query={query} disableRoundedInherit>
+        <InfiniteScroll query={query} disableRoundedInherit className="min-h-0">
           <KeysList />
         </InfiniteScroll>
       ) : (

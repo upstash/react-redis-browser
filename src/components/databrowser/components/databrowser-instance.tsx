@@ -9,7 +9,7 @@ import { KeysProvider } from "../hooks/use-keys"
 export const DatabrowserInstance = ({ hidden }: { hidden?: boolean }) => {
   return (
     <KeysProvider>
-      <div className={cn("h-full rounded-md bg-zinc-100", hidden && "hidden")}>
+      <div className={cn("min-h-0 grow rounded-md bg-zinc-100", hidden && "hidden")}>
         <PanelGroup
           autoSaveId="persistence"
           direction="horizontal"

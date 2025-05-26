@@ -3,6 +3,7 @@ import { IconLoader2 } from "@tabler/icons-react"
 import type { UseInfiniteQueryResult } from "@tanstack/react-query"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { cn } from "@/lib/utils"
 
 export const InfiniteScroll = ({
   query,
@@ -25,9 +26,12 @@ export const InfiniteScroll = ({
   return (
     <ScrollArea
       type="always"
-      className="block h-full w-full overflow-visible rounded-lg border border-zinc-200 bg-white p-1 pr-3 transition-all"
       onScroll={handleScroll}
       {...props}
+      className={cn(
+        "block h-full w-full overflow-visible rounded-lg border border-zinc-200 bg-white p-1 pr-3 transition-all",
+        props.className
+      )}
     >
       {children}
 
