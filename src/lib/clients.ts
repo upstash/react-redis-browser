@@ -11,8 +11,10 @@ export const redisClient = ({
   credentials?: RedisCredentials
   pipelining: boolean
 }) => {
-  const token = credentials?.token || process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_TOKEN
-  const url = credentials?.url || process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_URL
+  const safeProcess =
+    typeof process === "undefined" ? { env: {} as Record<string, string> } : process
+  const token = credentials?.token || safeProcess.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_TOKEN
+  const url = credentials?.url || safeProcess.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_URL
 
   if (!url) {
     throw new Error("Redis URL is missing!")
