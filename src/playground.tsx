@@ -7,7 +7,7 @@ ReactDOM.createRoot(document.querySelector("#root")!).render(
     style={{
       position: "fixed",
       inset: 0,
-      backgroundColor: "#eee",
+      backgroundColor: "white",
       padding: "20px",
     }}
   >
@@ -17,6 +17,8 @@ ReactDOM.createRoot(document.querySelector("#root")!).render(
         width: "100%",
         maxWidth: "900px",
         margin: "0 auto",
+        border: "1px solid red",
+        boxSizing: "border-box",
       }}
     >
       <RedisBrowser

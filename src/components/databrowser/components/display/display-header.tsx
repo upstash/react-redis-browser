@@ -1,4 +1,3 @@
-import { useDatabrowserStore } from "@/store"
 import { type DataType } from "@/types"
 import { IconPlus } from "@tabler/icons-react"
 
@@ -7,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { TypeTag } from "../type-tag"
 import { HeaderTTLBadge, LengthBadge, SizeBadge } from "./header-badges"
 import { KeyActions } from "./key-actions"
+import { useTab } from "@/tab-provider"
 
 export const DisplayHeader = ({
   dataKey,
@@ -17,14 +17,14 @@ export const DisplayHeader = ({
   dataKey: string
   type: DataType
 }) => {
-  const { setSelectedListItem } = useDatabrowserStore()
+  const { setSelectedListItem } = useTab()
 
   const handleAddItem = () => {
     setSelectedListItem({ key: type === "stream" ? "*" : "", isNew: true })
   }
 
   return (
-    <div className="rounded-lg bg-zinc-100 px-3 py-2">
+    <div className="rounded-lg bg-zinc-100">
       <div className="flex min-h-10 items-center justify-between gap-4">
         <h2 className="grow truncate text-base">
           {dataKey.trim() === "" ? (

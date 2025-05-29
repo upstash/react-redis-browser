@@ -1,4 +1,4 @@
-import { useDatabrowser } from "@/store"
+import { useRedis } from "@/redis-context"
 import type { ListDataType } from "@/types"
 import { useInfiniteQuery } from "@tanstack/react-query"
 
@@ -7,7 +7,7 @@ export const LIST_DISPLAY_PAGE_SIZE = 50
 export const FETCH_LIST_ITEMS_QUERY_KEY = "use-fetch-list-items"
 
 export const useFetchListItems = ({ dataKey, type }: { dataKey: string; type: ListDataType }) => {
-  const { redisNoPipeline: redis } = useDatabrowser()
+  const { redisNoPipeline: redis } = useRedis()
 
   const setQuery = useInfiniteQuery({
     enabled: type === "set",

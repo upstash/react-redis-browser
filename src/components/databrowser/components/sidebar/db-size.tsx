@@ -1,4 +1,4 @@
-import { useDatabrowser } from "@/store"
+import { useRedis } from "@/redis-context"
 import { useQuery } from "@tanstack/react-query"
 
 import { formatNumber } from "@/lib/utils"
@@ -7,7 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 export const FETCH_DB_SIZE_QUERY_KEY = "fetch-db-size"
 
 export const DisplayDbSize = () => {
-  const { redis } = useDatabrowser()
+  const { redis } = useRedis()
+
   const { data: keyCount } = useQuery({
     queryKey: [FETCH_DB_SIZE_QUERY_KEY],
     queryFn: async () => {

@@ -1,4 +1,4 @@
-import { useDatabrowser } from "@/store"
+import { useRedis } from "@/redis-context"
 import { useMutation } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
@@ -7,7 +7,7 @@ import { TTL_INFINITE } from "../components/display/ttl-badge"
 import { FETCH_HASH_FIELD_TTLS_QUERY_KEY } from "./use-fetch-hash-ttl"
 
 export const useSetHashTTL = () => {
-  const { redis } = useDatabrowser()
+  const { redis } = useRedis()
 
   return useMutation({
     mutationFn: async ({

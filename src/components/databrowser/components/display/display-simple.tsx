@@ -17,10 +17,7 @@ export const EditorDisplay = ({ dataKey, type }: { dataKey: string; type: Simple
     <div className="flex h-full w-full flex-col gap-2">
       <DisplayHeader dataKey={dataKey} type={type} content={data ?? undefined} />
 
-      <div
-        className="flex h-full grow flex-col gap-2
-      rounded-md bg-zinc-100 p-3"
-      >
+      <div className="flex h-full grow flex-col gap-2 rounded-md bg-zinc-100">
         {data === undefined ? (
           <Spinner isLoadingText={""} isLoading={true} />
         ) : data === null ? (
