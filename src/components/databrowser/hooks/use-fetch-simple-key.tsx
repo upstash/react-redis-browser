@@ -1,4 +1,4 @@
-import { useDatabrowser } from "@/store"
+import { useRedis } from "@/redis-context"
 import type { DataType } from "@/types"
 import { useQuery } from "@tanstack/react-query"
 
@@ -8,7 +8,7 @@ export const FETCH_SIMPLE_KEY_QUERY_KEY = "fetch-simple-key"
 
 /** Simple key standing for string or json */
 export const useFetchSimpleKey = (dataKey: string, type: DataType) => {
-  const { redisNoPipeline: redis } = useDatabrowser()
+  const { redisNoPipeline: redis } = useRedis()
   const { deleteKeyCache } = useDeleteKeyCache()
 
   return useQuery({
