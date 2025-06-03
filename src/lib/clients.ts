@@ -1,6 +1,6 @@
 import type { RedisCredentials } from "@/store"
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query"
-import { Redis } from "@upstash/redis"
+import { Redis } from "@upstash/redis/cloudflare"
 
 import { toast } from "@/components/ui/use-toast"
 
