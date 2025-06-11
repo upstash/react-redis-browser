@@ -1,7 +1,10 @@
 import { createContext, useContext, useMemo, type PropsWithChildren } from "react"
-import { create, useStore } from "zustand"
+import type { StoreApi, UseBoundStore } from "zustand"
+import { create, useStore, type StateCreator } from "zustand"
 
 import type { DataType } from "./types"
+import { persist } from "zustand/middleware"
+import type { RedisBrowserStorage } from "./components/databrowser"
 
 // Re-export for backward compatibility
 export type { RedisCredentials } from "./redis-context"
@@ -12,8 +15,36 @@ type DatabrowserContextProps = {
 
 const DatabrowserContext = createContext<DatabrowserContextProps | undefined>(undefined)
 
-export const DatabrowserProvider = ({ children }: PropsWithChildren) => {
-  const store = useMemo(() => createDatabrowserStore(), [])
+export const DatabrowserProvider = ({
+  children,
+  storage,
+}: PropsWithChildren<{
+  storage?: RedisBrowserStorage
+}>) => {
+  const store = useMemo(() => {
+    if (!storage) return create<DatabrowserStore>(storeCreator)
+
+    return create<DatabrowserStore>()(
+      persist(storeCreator, {
+        name: "redis-browser-data",
+        storage: {
+          getItem: () => {
+            const data = storage.get()
+            if (!data) return null
+
+            try {
+              return JSON.parse(data)
+            } catch {
+              console.error("Error while parsing stored data.")
+              return null
+            }
+          },
+          setItem: (_name, value) => storage.set(JSON.stringify(value)),
+          removeItem: () => {},
+        },
+      })
+    )
+  }, [])
 
   return <DatabrowserContext.Provider value={{ store }}>{children}</DatabrowserContext.Provider>
 }
@@ -71,89 +102,88 @@ type DatabrowserStore = {
   addSearchHistory: (key: string) => void
 }
 
-export type DatabrowserStoreObject = ReturnType<typeof createDatabrowserStore>
+export type DatabrowserStoreObject = UseBoundStore<StoreApi<DatabrowserStore>>
 
-export const createDatabrowserStore = () =>
-  create<DatabrowserStore>((set, get) => ({
-    selectedTab: undefined,
-    tabs: {},
+const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
+  selectedTab: undefined,
+  tabs: {},
 
-    addTab: () => {
-      const id = crypto.randomUUID() as TabId
+  addTab: () => {
+    const id = crypto.randomUUID() as TabId
 
-      const newTabData: TabData = {
-        selectedKey: undefined,
-        search: { key: "", type: undefined },
+    const newTabData: TabData = {
+      selectedKey: undefined,
+      search: { key: "", type: undefined },
+    }
+
+    set((old) => ({
+      tabs: { ...old.tabs, [id]: newTabData },
+      selectedTab: id,
+    }))
+  },
+
+  removeTab: (id) => {
+    set((old) => {
+      const newTabs = { ...old.tabs }
+      delete newTabs[id]
+
+      // If we're removing the selected tab, select another tab if available
+      let selectedTab = old.selectedTab
+      if (selectedTab === id) {
+        const tabIds = Object.keys(newTabs) as TabId[]
+        selectedTab = tabIds.length > 0 ? tabIds[0] : undefined
       }
 
-      set((old) => ({
-        tabs: { ...old.tabs, [id]: newTabData },
-        selectedTab: old.selectedTab === undefined ? id : old.selectedTab,
-      }))
-    },
+      return { tabs: newTabs, selectedTab }
+    })
+  },
 
-    removeTab: (id) => {
-      set((old) => {
-        const newTabs = { ...old.tabs }
-        delete newTabs[id]
+  selectTab: (id) => {
+    set({ selectedTab: id })
+  },
 
-        // If we're removing the selected tab, select another tab if available
-        let selectedTab = old.selectedTab
-        if (selectedTab === id) {
-          const tabIds = Object.keys(newTabs) as TabId[]
-          selectedTab = tabIds.length > 0 ? tabIds[0] : undefined
-        }
+  getSelectedKey: (tabId) => {
+    return get().tabs[tabId]?.selectedKey
+  },
 
-        return { tabs: newTabs, selectedTab }
-      })
-    },
+  setSelectedKey: (tabId, key) => {
+    set((old) => ({
+      ...old,
+      tabs: {
+        ...old.tabs,
+        [tabId]: { ...old.tabs[tabId], selectedKey: key, selectedListItem: undefined },
+      },
+    }))
+  },
 
-    selectTab: (id) => {
-      set({ selectedTab: id })
-    },
+  setSelectedListItem: (tabId, item) => {
+    set((old) => ({
+      ...old,
+      tabs: { ...old.tabs, [tabId]: { ...old.tabs[tabId], selectedListItem: item } },
+    }))
+  },
 
-    getSelectedKey: (tabId) => {
-      return get().tabs[tabId]?.selectedKey
-    },
+  setSearch: (tabId, search) =>
+    set((old) => ({ ...old, tabs: { ...old.tabs, [tabId]: { ...old.tabs[tabId], search } } })),
+  setSearchKey: (tabId, key) =>
+    set((old) => ({
+      ...old,
+      tabs: {
+        ...old.tabs,
+        [tabId]: { ...old.tabs[tabId], search: { ...old.tabs[tabId].search, key } },
+      },
+    })),
+  setSearchType: (tabId, type) =>
+    set((old) => ({
+      ...old,
+      tabs: {
+        ...old.tabs,
+        [tabId]: { ...old.tabs[tabId], search: { ...old.tabs[tabId].search, type } },
+      },
+    })),
 
-    setSelectedKey: (tabId, key) => {
-      set((old) => ({
-        ...old,
-        tabs: {
-          ...old.tabs,
-          [tabId]: { ...old.tabs[tabId], selectedKey: key, selectedListItem: undefined },
-        },
-      }))
-    },
-
-    setSelectedListItem: (tabId, item) => {
-      set((old) => ({
-        ...old,
-        tabs: { ...old.tabs, [tabId]: { ...old.tabs[tabId], selectedListItem: item } },
-      }))
-    },
-
-    setSearch: (tabId, search) =>
-      set((old) => ({ ...old, tabs: { ...old.tabs, [tabId]: { ...old.tabs[tabId], search } } })),
-    setSearchKey: (tabId, key) =>
-      set((old) => ({
-        ...old,
-        tabs: {
-          ...old.tabs,
-          [tabId]: { ...old.tabs[tabId], search: { ...old.tabs[tabId].search, key } },
-        },
-      })),
-    setSearchType: (tabId, type) =>
-      set((old) => ({
-        ...old,
-        tabs: {
-          ...old.tabs,
-          [tabId]: { ...old.tabs[tabId], search: { ...old.tabs[tabId].search, type } },
-        },
-      })),
-
-    searchHistory: [],
-    addSearchHistory: (key) => {
-      set((old) => ({ ...old, searchHistory: [key, ...old.searchHistory] }))
-    },
-  }))
+  searchHistory: [],
+  addSearchHistory: (key) => {
+    set((old) => ({ ...old, searchHistory: [key, ...old.searchHistory] }))
+  },
+})

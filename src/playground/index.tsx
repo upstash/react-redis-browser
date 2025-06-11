@@ -40,7 +40,14 @@ const App = () => {
         className="ups-db"
       >
         {credentials ? (
-          <RedisBrowser token={credentials.token} url={credentials.url} />
+          <RedisBrowser
+            storage={{
+              get: () => localStorage.getItem("redis-browser-data") || "",
+              set: (value) => localStorage.setItem("redis-browser-data", value),
+            }}
+            token={credentials.token}
+            url={credentials.url}
+          />
         ) : (
           <CredentialsForm />
         )}

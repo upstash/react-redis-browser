@@ -1,4 +1,4 @@
-import { IconPlus, IconX } from "@tabler/icons-react"
+import { IconPlus, IconSearch, IconX } from "@tabler/icons-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -19,7 +19,12 @@ const Tab = ({ id }: { id: TabId }) => {
           : "bg-zinc-100 hover:bg-zinc-50"
       )}
     >
-      {tabs[id].selectedKey ? (
+      {tabs[id].search.key ? (
+        <>
+          <IconSearch size={16} />
+          <span className="max-w-32 truncate whitespace-nowrap">{tabs[id].search.key}</span>
+        </>
+      ) : tabs[id].selectedKey ? (
         <>
           <TabTypeIcon selectedKey={tabs[id].selectedKey} />
           <span className="max-w-32 truncate whitespace-nowrap">{tabs[id].selectedKey}</span>

@@ -13,11 +13,35 @@ import { DatabrowserInstance } from "./components/databrowser-instance"
 import { DatabrowserTabs } from "./components/databrowser-tabs"
 import { TabIdProvider } from "@/tab-provider"
 
+/**
+ * Persistence storage interface for the Databrowser.
+ */
+export type RedisBrowserStorage = {
+  set: (value: string) => void
+  get: () => string | null
+}
+
 export const RedisBrowser = ({
   token,
   url,
   hideTabs,
-}: RedisCredentials & { hideTabs?: boolean }) => {
+  storage,
+}: RedisCredentials & {
+  hideTabs?: boolean
+
+  /**
+   * Persistence storage for the Databrowser.
+   *
+   * @example
+   * ```tsx
+   * <RedisBrowser storage={{
+   *   set: (value: string) => localStorage.setItem("redis-browser-data", value),
+   *   get: () => localStorage.getItem("redis-browser-data") || "",
+   * }} />
+   * ```
+   */
+  storage?: RedisBrowserStorage
+}) => {
   const credentials = useMemo(() => ({ token, url }), [token, url])
 
   useEffect(() => {
@@ -27,7 +51,7 @@ export const RedisBrowser = ({
   return (
     <QueryClientProvider client={queryClient}>
       <RedisProvider redisCredentials={credentials}>
-        <DatabrowserProvider>
+        <DatabrowserProvider storage={storage}>
           <TooltipProvider>
             {/* ups-db is the custom class used to prefix every style in the css bundle */}
             <div
