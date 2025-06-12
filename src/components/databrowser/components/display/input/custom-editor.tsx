@@ -3,6 +3,7 @@ import { Editor, useMonaco } from "@monaco-editor/react"
 
 import { cn } from "@/lib/utils"
 import { CopyButton } from "@/components/databrowser/copy-button"
+import { useTab } from "@/tab-provider"
 
 export const CustomEditor = ({
   language,
@@ -19,17 +20,18 @@ export const CustomEditor = ({
   showCopyButton?: boolean
   readOnly?: boolean
 }) => {
+  const { active } = useTab()
   const monaco = useMonaco()
   const editorRef = useRef()
 
   useEffect(() => {
-    if (!monaco || !editorRef.current) {
+    if (!active || !monaco || !editorRef.current) {
       return
     }
 
     // @ts-expect-error not typing the editor type
     monaco?.editor.setModelLanguage(editorRef.current.getModel(), language)
-  }, [monaco, language])
+  }, [monaco, language, active])
 
   return (
     <div

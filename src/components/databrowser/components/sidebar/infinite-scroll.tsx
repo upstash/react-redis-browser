@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
+import { useTab } from "@/tab-provider"
 
 export const InfiniteScroll = ({
   query,
@@ -14,6 +15,7 @@ export const InfiniteScroll = ({
   query: UseInfiniteQueryResult
 }> &
   React.ComponentProps<typeof ScrollArea>) => {
+  const { active } = useTab()
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
@@ -44,10 +46,11 @@ export const InfiniteScroll = ({
   }
 
   useEffect(() => {
+    if (!active) return
     // Timeout for dom update
     const timer = setTimeout(checkAndFetchMore, 100)
     return () => clearTimeout(timer)
-  }, [query.data])
+  }, [active, query.data])
 
   return (
     <ScrollArea
