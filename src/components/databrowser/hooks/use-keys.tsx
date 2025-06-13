@@ -19,7 +19,7 @@ export const FETCH_KEYS_QUERY_KEY = "use-fetch-keys"
 const SCAN_COUNTS = [100, 300, 500]
 
 export const KeysProvider = ({ children }: PropsWithChildren) => {
-  const { search } = useTab()
+  const { active, search } = useTab()
 
   const { redisNoPipeline: redis } = useRedis()
 
@@ -64,6 +64,8 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
 
   const query = useInfiniteQuery({
     queryKey: [FETCH_KEYS_QUERY_KEY, search],
+    // Only fetch when tab is active
+    enabled: active,
 
     initialPageParam: "0",
     queryFn: async ({ pageParam: lastCursor }) => {
