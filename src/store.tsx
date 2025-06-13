@@ -73,7 +73,7 @@ export type SelectedItem = {
   isNew?: boolean
 }
 
-type TabData = {
+export type TabData = {
   selectedKey: string | undefined
   selectedListItem?: SelectedItem
 
@@ -84,7 +84,7 @@ export type TabId = string & { __tabId: true }
 
 type DatabrowserStore = {
   selectedTab: TabId | undefined
-  tabs: Record<TabId, TabData>
+  tabs: [TabId, TabData][]
 
   addTab: () => void
   removeTab: (id: TabId) => void
@@ -106,7 +106,7 @@ export type DatabrowserStoreObject = UseBoundStore<StoreApi<DatabrowserStore>>
 
 const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
   selectedTab: undefined,
-  tabs: {},
+  tabs: [],
 
   addTab: () => {
     const id = crypto.randomUUID() as TabId
@@ -117,21 +117,25 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
     }
 
     set((old) => ({
-      tabs: { ...old.tabs, [id]: newTabData },
+      tabs: [...old.tabs, [id, newTabData]],
       selectedTab: id,
     }))
   },
 
   removeTab: (id) => {
     set((old) => {
-      const newTabs = { ...old.tabs }
-      delete newTabs[id]
+      const tabIndex = old.tabs.findIndex(([tabId]) => tabId === id)
+      if (tabIndex === -1) return old
 
-      // If we're removing the selected tab, select another tab if available
+      const newTabs = [...old.tabs]
+      newTabs.splice(tabIndex, 1)
+
+      // If we're removing the selected tab, select the tab to the left
       let selectedTab = old.selectedTab
       if (selectedTab === id) {
-        const tabIds = Object.keys(newTabs) as TabId[]
-        selectedTab = tabIds.length > 0 ? tabIds[0] : undefined
+        const [newId] = newTabs[tabIndex - 1] ?? newTabs[tabIndex]
+
+        selectedTab = newTabs.length > 0 ? newId : undefined
       }
 
       return { tabs: newTabs, selectedTab }
@@ -143,44 +147,85 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
   },
 
   getSelectedKey: (tabId) => {
-    return get().tabs[tabId]?.selectedKey
+    return get().tabs.find(([id]) => id === tabId)?.[1]?.selectedKey
   },
 
   setSelectedKey: (tabId, key) => {
-    set((old) => ({
-      ...old,
-      tabs: {
-        ...old.tabs,
-        [tabId]: { ...old.tabs[tabId], selectedKey: key, selectedListItem: undefined },
-      },
-    }))
+    set((old) => {
+      const tabIndex = old.tabs.findIndex(([id]) => id === tabId)
+      if (tabIndex === -1) return old
+
+      const newTabs = [...old.tabs]
+      const [, tabData] = newTabs[tabIndex]
+      newTabs[tabIndex] = [tabId, { ...tabData, selectedKey: key, selectedListItem: undefined }]
+
+      return { ...old, tabs: newTabs }
+    })
   },
 
   setSelectedListItem: (tabId, item) => {
-    set((old) => ({
-      ...old,
-      tabs: { ...old.tabs, [tabId]: { ...old.tabs[tabId], selectedListItem: item } },
-    }))
+    set((old) => {
+      const tabIndex = old.tabs.findIndex(([id]) => id === tabId)
+      if (tabIndex === -1) return old
+
+      const newTabs = [...old.tabs]
+      const [, tabData] = newTabs[tabIndex]
+      newTabs[tabIndex] = [tabId, { ...tabData, selectedListItem: item }]
+
+      return { ...old, tabs: newTabs }
+    })
   },
 
-  setSearch: (tabId, search) =>
-    set((old) => ({ ...old, tabs: { ...old.tabs, [tabId]: { ...old.tabs[tabId], search } } })),
-  setSearchKey: (tabId, key) =>
-    set((old) => ({
-      ...old,
-      tabs: {
-        ...old.tabs,
-        [tabId]: { ...old.tabs[tabId], search: { ...old.tabs[tabId].search, key } },
-      },
-    })),
-  setSearchType: (tabId, type) =>
-    set((old) => ({
-      ...old,
-      tabs: {
-        ...old.tabs,
-        [tabId]: { ...old.tabs[tabId], search: { ...old.tabs[tabId].search, type } },
-      },
-    })),
+  setSearch: (tabId, search) => {
+    set((old) => {
+      const tabIndex = old.tabs.findIndex(([id]) => id === tabId)
+      if (tabIndex === -1) return old
+
+      const newTabs = [...old.tabs]
+      const [, tabData] = newTabs[tabIndex]
+      newTabs[tabIndex] = [tabId, { ...tabData, search }]
+
+      return { ...old, tabs: newTabs }
+    })
+  },
+
+  setSearchKey: (tabId, key) => {
+    set((old) => {
+      const tabIndex = old.tabs.findIndex(([id]) => id === tabId)
+      if (tabIndex === -1) return old
+
+      const newTabs = [...old.tabs]
+      const [, tabData] = newTabs[tabIndex]
+      newTabs[tabIndex] = [
+        tabId,
+        {
+          ...tabData,
+          search: { ...tabData.search, key },
+        },
+      ]
+
+      return { ...old, tabs: newTabs }
+    })
+  },
+
+  setSearchType: (tabId, type) => {
+    set((old) => {
+      const tabIndex = old.tabs.findIndex(([id]) => id === tabId)
+      if (tabIndex === -1) return old
+
+      const newTabs = [...old.tabs]
+      const [, tabData] = newTabs[tabIndex]
+      newTabs[tabIndex] = [
+        tabId,
+        {
+          ...tabData,
+          search: { ...tabData.search, type },
+        },
+      ]
+
+      return { ...old, tabs: newTabs }
+    })
+  },
 
   searchHistory: [],
   addSearchHistory: (key) => {

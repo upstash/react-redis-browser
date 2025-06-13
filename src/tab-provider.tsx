@@ -28,15 +28,16 @@ export const useTab = () => {
     setSearchType,
   } = useDatabrowserStore()
   const tabId = useTabId()
+  const tabData = useMemo(() => tabs.find(([id]) => id === tabId)?.[1], [tabs, tabId])
 
-  if (!selectedTab) throw new Error("selectedTab is undefined when using useTab()")
+  if (!selectedTab || !tabData) throw new Error("selectedTab is undefined when using useTab()")
 
   return useMemo(
     () => ({
       active: selectedTab === tabId,
-      selectedKey: tabs[tabId]?.selectedKey,
-      selectedListItem: tabs[tabId]?.selectedListItem,
-      search: tabs[tabId]?.search,
+      selectedKey: tabData.selectedKey,
+      selectedListItem: tabData.selectedListItem,
+      search: tabData.search,
 
       setSelectedKey: (key: string | undefined) => setSelectedKey(tabId, key),
       setSelectedListItem: (item: SelectedItem | undefined) => setSelectedListItem(tabId, item),
@@ -44,6 +45,6 @@ export const useTab = () => {
       setSearchKey: (key: string) => setSearchKey(tabId, key),
       setSearchType: (type: DataType | undefined) => setSearchType(tabId, type),
     }),
-    [selectedTab, tabs]
+    [selectedTab, tabs, tabId]
   )
 }

@@ -72,10 +72,10 @@ const DatabrowserInstances = () => {
   const { tabs, selectedTab, addTab } = useDatabrowserStore()
 
   useEffect(() => {
-    if (Object.keys(tabs).length === 0) addTab()
+    if (tabs.length === 0) addTab()
   }, [tabs])
 
-  return Object.entries(tabs).map(([id]) => (
+  return tabs.map(([id]) => (
     <TabIdProvider key={id} value={id as TabId}>
       <DatabrowserInstance hidden={id !== selectedTab} />
     </TabIdProvider>
