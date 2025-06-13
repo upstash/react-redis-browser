@@ -18,8 +18,8 @@ export const DatabrowserInstance = ({ hidden }: { hidden?: boolean }) => {
           <Panel defaultSize={30} minSize={30}>
             <Sidebar />
           </Panel>
-          <PanelResizeHandle className="group flex h-full w-1.5 justify-center">
-            <div className="h-full border-r border-dashed border-zinc-200 transition-colors group-hover:border-zinc-300" />
+          <PanelResizeHandle className="group flex h-full w-3 justify-center">
+            <div className="h-full border-r border-dashed border-zinc-200 transition-colors group-hover:border-zinc-500" />
           </PanelResizeHandle>
           <Panel minSize={40}>
             <DataDisplay />
