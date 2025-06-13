@@ -1,5 +1,4 @@
 import { useCallback } from "react"
-import { useDatabrowserStore } from "@/store"
 
 import { queryClient } from "@/lib/clients"
 
@@ -7,9 +6,10 @@ import { FETCH_KEY_TYPE_QUERY_KEY } from "./use-fetch-key-type"
 import { FETCH_LIST_ITEMS_QUERY_KEY } from "./use-fetch-list-items"
 import { FETCH_SIMPLE_KEY_QUERY_KEY } from "./use-fetch-simple-key"
 import { FETCH_KEYS_QUERY_KEY } from "./use-keys"
+import { useTab } from "@/tab-provider"
 
 export const useDeleteKeyCache = () => {
-  const { setSelectedKey } = useDatabrowserStore()
+  const { setSelectedKey } = useTab()
 
   const deleteKeyCache = useCallback(
     (key: string) => {

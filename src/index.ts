@@ -1,1 +1,1 @@
-export { RedisBrowser } from "@/components/databrowser"
+export { RedisBrowser, RedisBrowserStorage } from "@/components/databrowser"

@@ -4,13 +4,18 @@ import type { UseInfiniteQueryResult } from "@tanstack/react-query"
 import { useEffect, useRef } from "react"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { cn } from "@/lib/utils"
+import { useTab } from "@/tab-provider"
 
 export const InfiniteScroll = ({
   query,
   children,
+  ...props
 }: PropsWithChildren<{
   query: UseInfiniteQueryResult
-}>) => {
+}> &
+  React.ComponentProps<typeof ScrollArea>) => {
+  const { active } = useTab()
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
@@ -41,16 +46,21 @@ export const InfiniteScroll = ({
   }
 
   useEffect(() => {
+    if (!active) return
     // Timeout for dom update
     const timer = setTimeout(checkAndFetchMore, 100)
     return () => clearTimeout(timer)
-  }, [query.data])
+  }, [active, query.data])
 
   return (
     <ScrollArea
       type="always"
-      className="block h-full w-full transition-all"
       onScroll={handleScroll}
+      {...props}
+      className={cn(
+        "block h-full w-full overflow-visible rounded-lg border border-zinc-200 bg-white p-1 pr-3 transition-all",
+        props.className
+      )}
       ref={scrollRef}
     >
       <div ref={contentRef}>
