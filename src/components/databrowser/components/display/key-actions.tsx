@@ -47,7 +47,12 @@ export function KeyActions({ dataKey, content }: { dataKey: string; content?: st
           deletionType="key"
           onDeleteConfirm={async () => await deleteKey(dataKey)}
         >
-          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Delete key</DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-red-500 focus:bg-red-500 focus:text-white"
+            onSelect={(e) => e.preventDefault()}
+          >
+            Delete key
+          </DropdownMenuItem>
         </DeleteAlertDialog>
       </DropdownMenuContent>
     </DropdownMenu>
