@@ -16,7 +16,7 @@ export function KeyActions({ dataKey, content }: { dataKey: string; content?: st
   const { mutateAsync: deleteKey } = useDeleteKey()
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button size="icon-sm">
           <IconDotsVertical className="size-4 text-zinc-500" />
