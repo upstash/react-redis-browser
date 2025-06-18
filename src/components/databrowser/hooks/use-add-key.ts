@@ -72,7 +72,7 @@ export const useAddKey = () => {
           queryKey: [FETCH_KEYS_QUERY_KEY],
         },
         (data) => {
-          if (!data) throw new Error("Data is undefined")
+          if (!data) return
           return {
             ...data,
             pages: data.pages.map((page, i) =>
