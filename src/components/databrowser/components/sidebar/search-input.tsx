@@ -117,7 +117,7 @@ export const SearchInput = () => {
                 }}
                 onClick={() => handleSubmit(item)}
                 onMouseEnter={() => setFocusedIndex(index)}
-                className={`block w-full rounded-sm p-1 text-left transition-colors ${
+                className={`block w-full truncate rounded-sm p-1 text-left transition-colors ${
                   focusedIndex === index ? "bg-zinc-100" : "hover:bg-zinc-100"
                 }`}
               >
