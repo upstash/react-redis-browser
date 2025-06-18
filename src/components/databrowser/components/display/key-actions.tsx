@@ -36,6 +36,13 @@ export function KeyActions({ dataKey, content }: { dataKey: string; content?: st
             Copy content
           </DropdownMenuItem>
         )}
+        <DropdownMenuItem
+          onClick={() => {
+            navigator.clipboard.writeText(dataKey)
+          }}
+        >
+          Copy key
+        </DropdownMenuItem>
         <DeleteAlertDialog
           deletionType="key"
           onDeleteConfirm={async () => await deleteKey(dataKey)}
