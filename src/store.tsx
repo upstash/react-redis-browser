@@ -42,6 +42,15 @@ export const DatabrowserProvider = ({
           setItem: (_name, value) => storage.set(JSON.stringify(value)),
           removeItem: () => {},
         },
+        version: 1,
+        // @ts-expect-error Reset the store for < v1
+        migrate: (state, version) => {
+          if (version === 0) {
+            return
+          }
+
+          return state
+        },
       })
     )
   }, [])
