@@ -1,4 +1,4 @@
-import { useDatabrowser } from "@/store"
+import { useRedis } from "@/redis-context"
 import type { DataType, RedisKey } from "@/types"
 import { useMutation, type InfiniteData } from "@tanstack/react-query"
 
@@ -8,7 +8,7 @@ import { FETCH_DB_SIZE_QUERY_KEY } from "../components/sidebar/db-size"
 import { FETCH_KEYS_QUERY_KEY } from "./use-keys"
 
 export const useAddKey = () => {
-  const { redis } = useDatabrowser()
+  const { redis } = useRedis()
 
   const mutation = useMutation({
     mutationFn: async ({ key, type }: { key: string; type: DataType }) => {
@@ -72,7 +72,7 @@ export const useAddKey = () => {
           queryKey: [FETCH_KEYS_QUERY_KEY],
         },
         (data) => {
-          if (!data) throw new Error("Data is undefined")
+          if (!data) return
           return {
             ...data,
             pages: data.pages.map((page, i) =>
