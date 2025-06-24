@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useTab } from "@/tab-provider"
 import { DATA_TYPES, type DataType } from "@/types"
 import { DialogDescription } from "@radix-ui/react-dialog"
 import { PlusIcon } from "@radix-ui/react-icons"
@@ -24,7 +25,6 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { TypeTag } from "@/components/databrowser/components/type-tag"
 import { useAddKey } from "@/components/databrowser/hooks/use-add-key"
-import { useTab } from "@/tab-provider"
 
 export function AddKeyModal() {
   const { setSelectedKey } = useTab()
@@ -63,7 +63,7 @@ export function AddKeyModal() {
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="primary" size="icon-sm">
+        <Button variant="primary" size="icon-sm" aria-label="Add key">
           <PlusIcon className="size-4" />
         </Button>
       </DialogTrigger>

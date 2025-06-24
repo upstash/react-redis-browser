@@ -53,7 +53,7 @@
     "zustand": "5.0.0"
   },
   "devDependencies": {
-    "postcss-prefix-selector": "^2.1.0",
+    "@playwright/test": "^1.53.1",
     "@types/node": "^22.8.4",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
@@ -63,9 +63,11 @@
     "autoprefixer": "^10.4.14",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
+    "dotenv": "^16.5.0",
     "eslint": "9.10.0",
     "eslint-plugin-unicorn": "55.0.0",
     "postcss": "^8.4.31",
+    "postcss-prefix-selector": "^2.1.0",
     "prettier": "^3.0.3",
     "prettier-plugin-tailwindcss": "^0.5.5",
     "react": "^18.3.1",
