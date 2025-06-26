@@ -1,5 +1,4 @@
 import type { SelectedItem } from "@/store"
-import { useDatabrowserStore } from "@/store"
 import type { ListDataType } from "@/types"
 import { Controller, FormProvider, useForm, useFormContext } from "react-hook-form"
 
@@ -13,6 +12,7 @@ import { useEditListItem } from "../../hooks/use-edit-list-item"
 import { headerLabels } from "./display-list"
 import { HashFieldTTLBadge } from "./hash/hash-field-ttl-badge"
 import { useField } from "./input/use-field"
+import { useTab } from "@/tab-provider"
 
 export const ListEditDisplay = ({
   dataKey,
@@ -24,7 +24,7 @@ export const ListEditDisplay = ({
   item: SelectedItem
 }) => {
   return (
-    <div className="grow rounded-md bg-zinc-100 p-3">
+    <div className="grow rounded-md bg-zinc-100">
       <ListEditForm key={item.key} item={item} type={type} dataKey={dataKey} />
     </div>
   )
@@ -62,7 +62,7 @@ const ListEditForm = ({
   })
 
   const { mutateAsync: editItem, isPending } = useEditListItem()
-  const { setSelectedListItem } = useDatabrowserStore()
+  const { setSelectedListItem } = useTab()
 
   const [keyLabel, valueLabel] = headerLabels[type]
 

@@ -16,7 +16,7 @@ export function KeyActions({ dataKey, content }: { dataKey: string; content?: st
   const { mutateAsync: deleteKey } = useDeleteKey()
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button size="icon-sm">
           <IconDotsVertical className="size-4 text-zinc-500" />
@@ -36,11 +36,23 @@ export function KeyActions({ dataKey, content }: { dataKey: string; content?: st
             Copy content
           </DropdownMenuItem>
         )}
+        <DropdownMenuItem
+          onClick={() => {
+            navigator.clipboard.writeText(dataKey)
+          }}
+        >
+          Copy key
+        </DropdownMenuItem>
         <DeleteAlertDialog
           deletionType="key"
           onDeleteConfirm={async () => await deleteKey(dataKey)}
         >
-          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Delete key</DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-red-500 focus:bg-red-500 focus:text-white"
+            onSelect={(e) => e.preventDefault()}
+          >
+            Delete key
+          </DropdownMenuItem>
         </DeleteAlertDialog>
       </DropdownMenuContent>
     </DropdownMenu>

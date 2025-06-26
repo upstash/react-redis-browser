@@ -1,10 +1,10 @@
-import { useDatabrowser } from "@/store"
+import { useRedis } from "@/redis-context"
 import { useQuery } from "@tanstack/react-query"
 
 export const FETCH_KEY_TYPE_QUERY_KEY = "fetch-key-type"
 
 export const useFetchKeyType = (key: string | undefined) => {
-  const { redisNoPipeline: redis } = useDatabrowser()
+  const { redis } = useRedis()
 
   return useQuery({
     queryKey: [FETCH_KEY_TYPE_QUERY_KEY, key],

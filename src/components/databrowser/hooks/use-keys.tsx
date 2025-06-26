@@ -1,7 +1,10 @@
 import { createContext, useContext, useMemo, type PropsWithChildren } from "react"
-import { useDatabrowser, useDatabrowserStore } from "@/store"
+import { useRedis } from "@/redis-context"
 import type { DataType, RedisKey } from "@/types"
 import { useInfiniteQuery, type UseInfiniteQueryResult } from "@tanstack/react-query"
+import { useTab } from "@/tab-provider"
+import { queryClient } from "@/lib/clients"
+import { FETCH_KEY_TYPE_QUERY_KEY } from "./use-fetch-key-type"
 
 const KeysContext = createContext<
   | {
@@ -13,37 +16,64 @@ const KeysContext = createContext<
 
 export const FETCH_KEYS_QUERY_KEY = "use-fetch-keys"
 
-const SCAN_COUNT = 100
+const SCAN_COUNTS = [100, 300, 500]
 
 export const KeysProvider = ({ children }: PropsWithChildren) => {
-  const { search } = useDatabrowserStore()
+  const { active, search } = useTab()
 
-  const { redisNoPipeline: redis } = useDatabrowser()
+  const { redisNoPipeline: redis } = useRedis()
+
+  const performScan = async (count: number, cursor: string) => {
+    const args = [cursor]
+
+    if (search.key) {
+      args.push("MATCH", search.key)
+    }
+
+    if (search.type) {
+      args.push("TYPE", search.type)
+    }
+
+    args.push("COUNT", count.toString())
+
+    if (!search.type) args.push("WITHTYPE")
+
+    return await redis.exec<[string, string[]]>(["SCAN", ...args])
+  }
+
+  /**
+   * Keeps scanning until a result shows up.
+   *
+   * When a db is sparse and the type argument is used, it could take a lot of
+   * requests to find those sparse keys. Best method is to increase the count
+   * argument when no result is being returned to decrease the number of
+   * requests.
+   */
+  const scanUntilAvailable = async (cursor: string) => {
+    let i = 0
+    while (true) {
+      const [newCursor, values] = await performScan(SCAN_COUNTS[i] ?? SCAN_COUNTS.at(-1), cursor)
+      cursor = newCursor
+      i++
+
+      if (values.length > 0 || cursor === "0") {
+        return [cursor, values] as const
+      }
+    }
+  }
 
   const query = useInfiniteQuery({
     queryKey: [FETCH_KEYS_QUERY_KEY, search],
+    // Only fetch when tab is active
+    enabled: active,
 
     initialPageParam: "0",
     queryFn: async ({ pageParam: lastCursor }) => {
-      // We should reset the cache when the pagination is reset
+      const [cursor, values] = await scanUntilAvailable(lastCursor)
 
-      const args = [lastCursor]
-
-      if (search.key) {
-        args.push("MATCH", search.key)
-      }
-
-      if (search.type) {
-        args.push("TYPE", search.type)
-      }
-
-      args.push("COUNT", SCAN_COUNT.toString())
-
-      if (!search.type) args.push("WITHTYPE")
-
-      const [cursor, values] = await redis.exec<[string, string[]]>(["SCAN", ...args])
       const keys: RedisKey[] = []
 
+      // Deserialize keys
       let index = 0
       while (true) {
         if (search.type) {
@@ -55,6 +85,11 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
           keys.push([values[index], values[index + 1] as DataType])
           index += 2
         }
+      }
+
+      // Save in cache to not send additional requests with useFetchKeyType
+      for (const [key, type] of keys) {
+        queryClient.setQueryData([FETCH_KEY_TYPE_QUERY_KEY, key], type)
       }
 
       return {

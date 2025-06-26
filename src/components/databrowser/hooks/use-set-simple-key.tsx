@@ -1,4 +1,4 @@
-import { useDatabrowser } from "@/store"
+import { useRedis } from "@/redis-context"
 import type { SimpleDataType } from "@/types"
 import { useMutation } from "@tanstack/react-query"
 
@@ -7,7 +7,7 @@ import { queryClient } from "@/lib/clients"
 import { FETCH_SIMPLE_KEY_QUERY_KEY } from "./use-fetch-simple-key"
 
 export const useSetSimpleKey = (dataKey: string, type: SimpleDataType) => {
-  const { redis } = useDatabrowser()
+  const { redis } = useRedis()
   return useMutation({
     mutationFn: async (value: string) => {
       if (type === "string") {

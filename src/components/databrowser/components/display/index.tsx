@@ -1,17 +1,18 @@
 /* eslint-disable unicorn/no-negated-condition */
-import { useDatabrowserStore } from "@/store"
 
 import { useKeys, useKeyType } from "../../hooks/use-keys"
 import { ListDisplay } from "./display-list"
 import { EditorDisplay } from "./display-simple"
+import { useTab } from "@/tab-provider"
 
 export const DataDisplay = () => {
-  const { selectedKey } = useDatabrowserStore()
+  const { selectedKey } = useTab()
+
   const { query } = useKeys()
   const type = useKeyType(selectedKey)
 
   return (
-    <div className="h-full rounded-xl border bg-white p-1">
+    <div className="h-full p-4">
       {!selectedKey ? (
         <div />
       ) : !type ? (

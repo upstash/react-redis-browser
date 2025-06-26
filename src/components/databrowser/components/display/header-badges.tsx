@@ -3,7 +3,7 @@ import bytes from "bytes"
 
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { useFetchKeyExpire, useSetTTL } from "../../hooks"
+import { useFetchTTL, useSetTTL } from "../../hooks"
 import { useFetchKeyLength } from "../../hooks/use-fetch-key-length"
 import { useFetchKeySize } from "../../hooks/use-fetch-key-size"
 import { TTLBadge } from "./ttl-badge"
@@ -46,7 +46,7 @@ export const SizeBadge = ({ dataKey }: { dataKey: string }) => {
 }
 
 export const HeaderTTLBadge = ({ dataKey }: { dataKey: string }) => {
-  const { data: expireAt } = useFetchKeyExpire(dataKey)
+  const { data: expireAt } = useFetchTTL(dataKey)
   const { mutate: setTTL, isPending } = useSetTTL()
 
   return (
