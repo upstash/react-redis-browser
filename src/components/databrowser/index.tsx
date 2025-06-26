@@ -1,17 +1,17 @@
 import "@/globals.css"
 
 import { useEffect, useMemo } from "react"
+import { RedisProvider, type RedisCredentials } from "@/redis-context"
 import type { TabId } from "@/store"
 import { DatabrowserProvider, useDatabrowserStore } from "@/store"
+import { TabIdProvider } from "@/tab-provider"
 import { TooltipProvider } from "@radix-ui/react-tooltip"
 import { QueryClientProvider } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
-import { RedisProvider, type RedisCredentials } from "@/redis-context"
 
 import { DatabrowserInstance } from "./components/databrowser-instance"
 import { DatabrowserTabs } from "./components/databrowser-tabs"
-import { TabIdProvider } from "@/tab-provider"
 
 /**
  * Persistence storage interface for the Databrowser.

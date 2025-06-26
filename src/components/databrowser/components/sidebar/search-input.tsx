@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect, type KeyboardEvent } from "react"
+import { useEffect, useRef, useState, type KeyboardEvent } from "react"
+import { useDatabrowserStore } from "@/store"
+import { useTab } from "@/tab-provider"
 import { IconX } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useTab } from "@/tab-provider"
-import { useDatabrowserStore } from "@/store"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 const dedupeSearchHistory = (history: string[]) => {
