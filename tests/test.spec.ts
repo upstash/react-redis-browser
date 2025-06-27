@@ -52,14 +52,11 @@ describe("keys", () => {
 
     await page.getByRole("button", { name: "mykey-13" }).click()
 
-    await page.getByRole("button").filter({ hasText: /^$/ }).nth(3).click()
-    await page.getByRole("menuitem", { name: "Delete key" }).click()
-
-    await page.getByRole("button", { name: "Cancel" }).press("Escape")
-
+    await page.getByRole("button", { name: "Key actions" }).click()
     await page.getByRole("menuitem", { name: "Delete key" }).click()
     await page.getByRole("button", { name: "Cancel" }).press("Escape")
-    await page.getByRole("button", { name: "Clear" }).click()
+
+    await page.getByRole("button", { name: "mykey-13" }).click()
   })
 
   test("can delete a key", async ({ page }) => {
@@ -69,7 +66,7 @@ describe("keys", () => {
 
     await page.getByRole("button", { name: "mykey-13" }).click()
 
-    await page.getByRole("button").filter({ hasText: /^$/ }).nth(3).click()
+    await page.getByRole("button", { name: "Key actions" }).click()
     await page.getByRole("menuitem", { name: "Delete key" }).click()
 
     await page.getByRole("button", { name: "Yes, Delete" }).click()
