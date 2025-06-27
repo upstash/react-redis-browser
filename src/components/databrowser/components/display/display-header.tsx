@@ -1,3 +1,4 @@
+import { useTab } from "@/tab-provider"
 import { type DataType } from "@/types"
 import { IconPlus } from "@tabler/icons-react"
 
@@ -6,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { TypeTag } from "../type-tag"
 import { HeaderTTLBadge, LengthBadge, SizeBadge } from "./header-badges"
 import { KeyActions } from "./key-actions"
-import { useTab } from "@/tab-provider"
 
 export const DisplayHeader = ({
   dataKey,
@@ -36,7 +36,7 @@ export const DisplayHeader = ({
 
         <div className="flex items-center gap-1">
           {type !== "string" && type !== "json" && (
-            <Button onClick={handleAddItem} size="icon-sm">
+            <Button onClick={handleAddItem} size="icon-sm" aria-label="Add item">
               <IconPlus className="size-4 text-zinc-500" />
             </Button>
           )}

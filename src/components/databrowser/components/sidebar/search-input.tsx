@@ -25,6 +25,7 @@ export const SearchInput = () => {
   const [focusedIndex, setFocusedIndex] = useState(-1)
 
   const inputRef = useRef<HTMLInputElement>(null)
+  const historyItemRefs = useRef<(HTMLButtonElement | null)[]>([])
 
   const handleSubmit = (value: string) => {
     if (value.trim() !== "" && !value.includes("*")) value = `${value}*`
@@ -111,6 +112,9 @@ export const SearchInput = () => {
           {filteredHistory.map((item, index) => (
             <div key={item} className="w-full py-[3px]">
               <button
+                ref={(el) => {
+                  historyItemRefs.current[index] = el
+                }}
                 onClick={() => handleSubmit(item)}
                 onMouseEnter={() => setFocusedIndex(index)}
                 className={`block w-full truncate rounded-sm p-1 text-left transition-colors ${
@@ -137,7 +141,7 @@ export const SearchInput = () => {
           <IconX size={16} />
           <span className="sr-only">Clear</span>
         </Button>
-      )}
+      )}{" "}
     </div>
   )
 }
