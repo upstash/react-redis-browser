@@ -1,7 +1,7 @@
-# RedisBrowser for Upstash Redis
+# Redis Browser for Upstash Redis - [Preview](https://react-redis-browser.vercel.app/)
 `@upstash/react-redis-browser` is a React component that provides a UI for browsing and editing data in your Upstash Redis instances.
 
-<img src="public%2Fredis-browser.png" width="640px" />
+<img src="https://github.com/user-attachments/assets/1b714616-310b-4250-9f92-cc28ed9881cd" width="640px" />
 
 ### Install
 
@@ -19,19 +19,34 @@ Here's a basic example of how to use the component:
 import { RedisBrowser } from "@upstash/react-redis-browser"
 import "@upstash/react-redis-browser/dist/index.css"
 
-export default function RedisBrowserDemo() {
+export default function Page() {
   return (
-    <main style={mainStyle}>
-      <RedisBrowser 
-        url={UPSTASH_REDIS_REST_URL} 
-        token={UPSTASH_REDIS_REST_TOKEN} />
-    </main>
+    <RedisBrowser
+      url={UPSTASH_REDIS_REST_URL}
+      token={UPSTASH_REDIS_REST_TOKEN}
+    />
   )
 }
+```
 
-const mainStyle = {
-  width: "100vw",
-  maxWidth: "900px",
-  height: "500px",
-  margin: "0 auto",
+### Persistance
+
+The state of the databrowser can be persisted using the `storage` property.
+
+```tsx
+import { RedisBrowser } from "@upstash/react-redis-browser"
+import "@upstash/react-redis-browser/dist/index.css"
+
+export default function Page() {
+  return (
+    <RedisBrowser
+      url={UPSTASH_REDIS_REST_URL}
+      token={UPSTASH_REDIS_REST_TOKEN}
+      storage={{
+        get: () => localStorage.getItem("databrowser") || "",
+        set: (value) => localStorage.setItem("databrowser", value),
+      }}
+    />
+  )
 }
+```
