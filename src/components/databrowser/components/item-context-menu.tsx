@@ -46,7 +46,7 @@ export const ItemContextMenu = ({
           setAlertOpen(false)
         }}
       />
-      <ContextMenu>
+      <ContextMenu modal={false}>
         <ContextMenuTrigger
           asChild
           // NOTE: We did not put the ContextMenu on every key because of performance reasons
