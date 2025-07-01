@@ -29,7 +29,7 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
           setAlertOpen(false)
         }}
       />
-      <ContextMenu>
+      <ContextMenu modal={false}>
         <ContextMenuTrigger
           // NOTE: We did not put the ContextMenu on every key because of performance reasons
           onContextMenu={(e) => {
