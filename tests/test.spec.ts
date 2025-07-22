@@ -50,13 +50,13 @@ describe("keys", () => {
     await page.getByRole("textbox", { name: "Search" }).fill("mykey-13")
     await page.getByRole("textbox", { name: "Search" }).press("Enter")
 
-    await page.getByRole("button", { name: "mykey-13" }).click()
+    await page.getByRole("button", { name: "mykey-13", exact: true }).click()
 
     await page.getByRole("button", { name: "Key actions" }).click()
     await page.getByRole("menuitem", { name: "Delete key" }).click()
     await page.getByRole("button", { name: "Cancel" }).press("Escape")
 
-    await page.getByRole("button", { name: "mykey-13" }).click()
+    await page.getByRole("button", { name: "mykey-13", exact: true }).click()
   })
 
   test("can delete a key", async ({ page }) => {
@@ -64,7 +64,7 @@ describe("keys", () => {
     await page.getByRole("textbox", { name: "Search" }).fill("mykey-13")
     await page.getByRole("textbox", { name: "Search" }).press("Enter")
 
-    await page.getByRole("button", { name: "mykey-13" }).click()
+    await page.getByRole("button", { name: "mykey-13", exact: true }).click()
 
     await page.getByRole("button", { name: "Key actions" }).click()
     await page.getByRole("menuitem", { name: "Delete key" }).click()
@@ -73,7 +73,7 @@ describe("keys", () => {
 
     await markDatabaseAsModified()
 
-    await expect(page.getByRole("button", { name: "mykey-13" })).not.toBeVisible()
+    await expect(page.getByRole("button", { name: "mykey-13", exact: true })).not.toBeVisible()
   })
 
   test("can add a string key", async ({ page }) => {
@@ -127,7 +127,7 @@ describe("hash", () => {
     await page.getByRole("textbox", { name: "Search" }).click()
     await page.getByRole("textbox", { name: "Search" }).fill("myhash")
     await page.getByRole("textbox", { name: "Search" }).press("Enter")
-    await page.getByRole("button", { name: "myhash" }).click()
+    await page.getByRole("button", { name: "myhash", exact: true }).click()
 
     await page.getByRole("cell", { name: "field-10" }).click()
 
@@ -146,7 +146,7 @@ describe("hash", () => {
     await page.getByRole("textbox", { name: "Search" }).click()
     await page.getByRole("textbox", { name: "Search" }).fill("myhash")
     await page.getByRole("textbox", { name: "Search" }).press("Enter")
-    await page.getByRole("button", { name: "myhash" }).click()
+    await page.getByRole("button", { name: "myhash", exact: true }).click()
 
     await page.getByRole("cell", { name: "field-10" }).click()
 
@@ -179,7 +179,7 @@ describe("hash", () => {
     await page.getByRole("textbox", { name: "Search" }).click()
     await page.getByRole("textbox", { name: "Search" }).fill("myhash")
     await page.getByRole("textbox", { name: "Search" }).press("Enter")
-    await page.getByRole("button", { name: "myhash" }).click()
+    await page.getByRole("button", { name: "myhash", exact: true }).click()
 
     await page.getByRole("row", { name: "field-10 value-10" }).getByRole("button").click()
     await page.getByRole("button", { name: "Yes, Delete" }).click()
@@ -195,14 +195,14 @@ describe("tabs", () => {
     await page.getByRole("textbox", { name: "Search" }).click()
     await page.getByRole("textbox", { name: "Search" }).fill("mykey-42")
     await page.getByRole("textbox", { name: "Search" }).press("Enter")
-    await page.getByRole("button", { name: "mykey-42" }).click()
+    await page.getByRole("button", { name: "mykey-42", exact: true }).click()
 
     await page.getByRole("button", { name: "Add new tab" }).click()
 
     await page.getByRole("textbox", { name: "Search" }).click()
     await page.getByRole("textbox", { name: "Search" }).fill("mykey-13")
     await page.getByRole("textbox", { name: "Search" }).press("Enter")
-    await page.getByRole("button", { name: "mykey-13" }).click()
+    await page.getByRole("button", { name: "mykey-13", exact: true }).click()
 
     // Changes to the first tab
     await page.getByText("mykey-42*").click()
