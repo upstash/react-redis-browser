@@ -26,7 +26,7 @@ export const ItemContextMenu = ({
   const { mutate: editItem } = useEditListItem()
   const [isAlertOpen, setAlertOpen] = useState(false)
   const [data, setData] = useState<ItemData | undefined>()
-  const { addTab, setSelectedKey, selectTab } = useDatabrowserStore()
+  const { addTab, setSelectedKey, selectTab, setSelectedListItem } = useDatabrowserStore()
 
   return (
     <>
@@ -96,8 +96,11 @@ export const ItemContextMenu = ({
             onClick={() => {
               if (!data) return
               const newTabId = addTab()
-              setSelectedKey(newTabId, data.key)
               selectTab(newTabId)
+              setSelectedKey(newTabId, dataKey)
+              setSelectedListItem(newTabId, {
+                key: data.key,
+              })
             }}
           >
             Open in new tab
