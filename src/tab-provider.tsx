@@ -1,4 +1,5 @@
 import { createContext, useContext, useMemo } from "react"
+
 import type { SearchFilter, SelectedItem } from "./store"
 import { useDatabrowserStore, type TabId } from "./store"
 import type { DataType } from "./types"
@@ -30,7 +31,8 @@ export const useTab = () => {
   const tabId = useTabId()
   const tabData = useMemo(() => tabs.find(([id]) => id === tabId)?.[1], [tabs, tabId])
 
-  if (!selectedTab || !tabData) throw new Error("selectedTab is undefined when using useTab()")
+  if (!selectedTab) throw new Error("selectedTab is undefined when using useTab()")
+  if (!tabData) throw new Error("tabData is undefined when using useTab()")
 
   return useMemo(
     () => ({

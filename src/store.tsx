@@ -95,7 +95,7 @@ type DatabrowserStore = {
   selectedTab: TabId | undefined
   tabs: [TabId, TabData][]
 
-  addTab: () => void
+  addTab: () => TabId
   removeTab: (id: TabId) => void
   selectTab: (id: TabId) => void
   reorderTabs: (oldIndex: number, newIndex: number) => void
@@ -130,6 +130,8 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
       tabs: [...old.tabs, [id, newTabData]],
       selectedTab: id,
     }))
+
+    return id
   },
 
   reorderTabs: (oldIndex, newIndex) => {

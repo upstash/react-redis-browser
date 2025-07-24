@@ -1,104 +1,106 @@
-import { IconPlus } from "@tabler/icons-react"
-import { Button } from "@/components/ui/button"
+import { useEffect, useRef, useState } from "react"
 import type { TabId } from "@/store"
 import { useDatabrowserStore } from "@/store"
 import { TabIdProvider } from "@/tab-provider"
-import { Tab } from "./tab"
-import { useEffect, useState, useRef } from "react"
 import {
-  DndContext,
   closestCenter,
+  DndContext,
+  MeasuringStrategy,
   PointerSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
-  MeasuringStrategy,
 } from "@dnd-kit/core"
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers"
-import {
-  SortableContext,
-  horizontalListSortingStrategy,
-  useSortable,
-} from "@dnd-kit/sortable"
+import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
+import { IconPlus } from "@tabler/icons-react"
+
+import { Button } from "@/components/ui/button"
+
+import { Tab } from "./tab"
 
 const SortableTab = ({ id }: { id: TabId }) => {
-  const [originalWidth, setOriginalWidth] = useState<number | null>(null);
-  const textRef = useRef<HTMLElement | null>(null);
-  
+  const [originalWidth, setOriginalWidth] = useState<number | null>(null)
+  const textRef = useRef<HTMLElement | null>(null)
+
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
     resizeObserverConfig: {
-      disabled: true
-    }
+      disabled: true,
+    },
   })
-  
+
   const measureRef = (element: HTMLDivElement | null) => {
     if (element && !originalWidth) {
-      const width = element.getBoundingClientRect().width;
-      setOriginalWidth(width);
-      
+      const width = element.getBoundingClientRect().width
+      setOriginalWidth(width)
+
       if (element) {
-        const textSpan = element.querySelector('span');
+        const textSpan = element.querySelector("span")
         if (textSpan) {
-          textRef.current = textSpan as HTMLElement;
+          textRef.current = textSpan as HTMLElement
         }
       }
     }
-    setNodeRef(element);
-  };
+    setNodeRef(element)
+  }
   useEffect(() => {
     if (textRef.current && isDragging) {
-      const originalMaxWidth = textRef.current.style.maxWidth;
-      const originalWhiteSpace = textRef.current.style.whiteSpace;
-      const originalOverflow = textRef.current.style.overflow;
-      const originalTextOverflow = textRef.current.style.textOverflow;
-      
-      textRef.current.style.maxWidth = 'none';
-      textRef.current.style.whiteSpace = 'nowrap';
-      textRef.current.style.overflow = 'visible';
-      textRef.current.style.textOverflow = 'clip';
-      
+      const originalMaxWidth = textRef.current.style.maxWidth
+      const originalWhiteSpace = textRef.current.style.whiteSpace
+      const originalOverflow = textRef.current.style.overflow
+      const originalTextOverflow = textRef.current.style.textOverflow
+
+      textRef.current.style.maxWidth = "none"
+      textRef.current.style.whiteSpace = "nowrap"
+      textRef.current.style.overflow = "visible"
+      textRef.current.style.textOverflow = "clip"
+
       return () => {
         if (textRef.current) {
-          textRef.current.style.maxWidth = originalMaxWidth;
-          textRef.current.style.whiteSpace = originalWhiteSpace;
-          textRef.current.style.overflow = originalOverflow;
-          textRef.current.style.textOverflow = originalTextOverflow;
+          textRef.current.style.maxWidth = originalMaxWidth
+          textRef.current.style.whiteSpace = originalWhiteSpace
+          textRef.current.style.overflow = originalOverflow
+          textRef.current.style.textOverflow = originalTextOverflow
         }
-      };
-    }
-  }, [isDragging]);
-  useEffect(() => {
-    const resizeObserver = new ResizeObserver(entries => {
-      if (entries[0]) {
-        setOriginalWidth(entries[0].contentRect.width);
       }
-    });
-    
-    return () => resizeObserver.disconnect();
-  }, []);
-  
+    }
+  }, [isDragging])
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (entries[0]) {
+        setOriginalWidth(entries[0].contentRect.width)
+      }
+    })
+
+    return () => resizeObserver.disconnect()
+  }, [])
+
   const style = {
-    transform: transform ? CSS.Transform.toString({
-      ...transform,
-      y: 0,
-      scaleX: 1,
-      scaleY: 1,
-    }) : '',
+    transform: transform
+      ? CSS.Transform.toString({
+          ...transform,
+          y: 0,
+          scaleX: 1,
+          scaleY: 1,
+        })
+      : "",
     transition,
-    ...(isDragging ? { 
-      zIndex: 50,
-      minWidth: originalWidth ? `${originalWidth}px` : undefined,
-    } : {}),
+    ...(isDragging
+      ? {
+          zIndex: 50,
+          minWidth: originalWidth ? `${originalWidth}px` : undefined,
+        }
+      : {}),
   }
-  
+
   return (
-    <div 
-      ref={measureRef} 
-      style={style} 
-      className={isDragging ? 'cursor-grabbing' : 'cursor-grab'}
-      {...attributes} 
+    <div
+      ref={measureRef}
+      style={style}
+      className={isDragging ? "cursor-grabbing" : "cursor-grab"}
+      {...attributes}
       {...listeners}
     >
       <TabIdProvider value={id as TabId}>
@@ -109,8 +111,8 @@ const SortableTab = ({ id }: { id: TabId }) => {
 }
 
 export const DatabrowserTabs = () => {
-  const { tabs, addTab, reorderTabs } = useDatabrowserStore()
-  
+  const { tabs, addTab, reorderTabs, selectedTab } = useDatabrowserStore()
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -118,14 +120,14 @@ export const DatabrowserTabs = () => {
       },
     })
   )
-  
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
-    
+
     if (over && active.id !== over.id) {
       const oldIndex = tabs.findIndex(([id]) => id === active.id)
       const newIndex = tabs.findIndex(([id]) => id === over.id)
-      
+
       reorderTabs(oldIndex, newIndex)
     }
   }
@@ -146,13 +148,8 @@ export const DatabrowserTabs = () => {
             },
           }}
         >
-          <SortableContext 
-            items={tabs.map(([id]) => id)} 
-            strategy={horizontalListSortingStrategy}
-          >
-            {tabs.map(([id]) => (
-              <SortableTab key={id} id={id} />
-            ))}
+          <SortableContext items={tabs.map(([id]) => id)} strategy={horizontalListSortingStrategy}>
+            {selectedTab && tabs.map(([id]) => <SortableTab key={id} id={id} />)}
           </SortableContext>
         </DndContext>
         <Button
