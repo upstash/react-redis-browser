@@ -1,10 +1,10 @@
 import { createContext, useContext, useMemo, type PropsWithChildren } from "react"
 import type { StoreApi, UseBoundStore } from "zustand"
 import { create, useStore, type StateCreator } from "zustand"
-
-import type { DataType } from "./types"
 import { persist } from "zustand/middleware"
+
 import type { RedisBrowserStorage } from "./components/databrowser"
+import type { DataType } from "./types"
 
 // Re-export for backward compatibility
 export type { RedisCredentials } from "./redis-context"
@@ -95,7 +95,7 @@ type DatabrowserStore = {
   selectedTab: TabId | undefined
   tabs: [TabId, TabData][]
 
-  addTab: () => void
+  addTab: () => TabId
   removeTab: (id: TabId) => void
   selectTab: (id: TabId) => void
 
@@ -129,6 +129,8 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
       tabs: [...old.tabs, [id, newTabData]],
       selectedTab: id,
     }))
+
+    return id
   },
 
   removeTab: (id) => {
