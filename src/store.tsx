@@ -98,6 +98,7 @@ type DatabrowserStore = {
   addTab: () => TabId
   removeTab: (id: TabId) => void
   selectTab: (id: TabId) => void
+  reorderTabs: (oldIndex: number, newIndex: number) => void
 
   // Tab actions
   getSelectedKey: (tabId: TabId) => string | undefined
@@ -131,6 +132,15 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
     }))
 
     return id
+  },
+
+  reorderTabs: (oldIndex, newIndex) => {
+    set((old) => {
+      const newTabs = [...old.tabs]
+      const [movedTab] = newTabs.splice(oldIndex, 1)
+      newTabs.splice(newIndex, 0, movedTab)
+      return { ...old, tabs: newTabs }
+    })
   },
 
   removeTab: (id) => {
