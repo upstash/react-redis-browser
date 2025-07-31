@@ -69,11 +69,14 @@ export const RedisBrowser = ({
 }
 
 const DatabrowserInstances = () => {
-  const { tabs, selectedTab, addTab } = useDatabrowserStore()
+  const { tabs, selectedTab, selectTab, addTab } = useDatabrowserStore()
 
   useEffect(() => {
     if (tabs.length === 0) addTab()
-  }, [tabs])
+    else if (!selectedTab) selectTab(tabs[0][0])
+  }, [tabs, selectedTab, addTab, selectTab])
+
+  if (!selectedTab) return
 
   return tabs.map(([id]) => (
     <TabIdProvider key={id} value={id as TabId}>

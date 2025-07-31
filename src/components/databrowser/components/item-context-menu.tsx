@@ -1,4 +1,5 @@
 import { useState, type PropsWithChildren } from "react"
+import { useDatabrowserStore } from "@/store"
 import { type ListDataType } from "@/types"
 import { ContextMenuSeparator } from "@radix-ui/react-context-menu"
 
@@ -25,6 +26,7 @@ export const ItemContextMenu = ({
   const { mutate: editItem } = useEditListItem()
   const [isAlertOpen, setAlertOpen] = useState(false)
   const [data, setData] = useState<ItemData | undefined>()
+  const { addTab, setSelectedKey, selectTab, setSelectedListItem } = useDatabrowserStore()
 
   return (
     <>
@@ -46,7 +48,7 @@ export const ItemContextMenu = ({
           setAlertOpen(false)
         }}
       />
-      <ContextMenu>
+      <ContextMenu modal={false}>
         <ContextMenuTrigger
           asChild
           // NOTE: We did not put the ContextMenu on every key because of performance reasons
@@ -90,6 +92,19 @@ export const ItemContextMenu = ({
               Copy value
             </ContextMenuItem>
           )}
+          <ContextMenuItem
+            onClick={() => {
+              if (!data) return
+              const newTabId = addTab()
+              selectTab(newTabId)
+              setSelectedKey(newTabId, dataKey)
+              setSelectedListItem(newTabId, {
+                key: data.key,
+              })
+            }}
+          >
+            Open in new tab
+          </ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem disabled={type === "stream"} onClick={() => setAlertOpen(true)}>
             Delete item

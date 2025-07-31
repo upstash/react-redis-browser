@@ -1,4 +1,6 @@
 import { useState, type PropsWithChildren } from "react"
+import { useDatabrowserStore } from "@/store"
+import { useTab } from "@/tab-provider"
 import { ContextMenuSeparator } from "@radix-ui/react-context-menu"
 
 import {
@@ -16,6 +18,8 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
   const { mutate: deleteKey } = useDeleteKey()
   const [isAlertOpen, setAlertOpen] = useState(false)
   const [dataKey, setDataKey] = useState("")
+  const { addTab, setSelectedKey, selectTab, setSearch } = useDatabrowserStore()
+  const { search: currentSearch } = useTab()
 
   return (
     <>
@@ -29,7 +33,7 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
           setAlertOpen(false)
         }}
       />
-      <ContextMenu>
+      <ContextMenu modal={false}>
         <ContextMenuTrigger
           // NOTE: We did not put the ContextMenu on every key because of performance reasons
           onContextMenu={(e) => {
@@ -55,6 +59,16 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
             }}
           >
             Copy key
+          </ContextMenuItem>
+          <ContextMenuItem
+            onClick={() => {
+              const newTabId = addTab()
+              setSelectedKey(newTabId, dataKey)
+              setSearch(newTabId, currentSearch)
+              selectTab(newTabId)
+            }}
+          >
+            Open in new tab
           </ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem onClick={() => setAlertOpen(true)}>Delete key</ContextMenuItem>
