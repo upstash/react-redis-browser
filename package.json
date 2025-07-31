@@ -46,7 +46,7 @@
     "@tabler/icons-react": "^3.19.0",
     "@tanstack/react-query": "^5.32.0",
     "@types/bytes": "^3.1.4",
-    "@upstash/redis": "^1.34.8",
+    "@upstash/redis": "^1.35.3",
     "bytes": "^3.1.2",
     "react-hook-form": "^7.53.0",
     "react-resizable-panels": "^2.1.4",
