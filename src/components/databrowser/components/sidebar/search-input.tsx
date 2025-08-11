@@ -35,7 +35,9 @@ export const SearchInput = () => {
   }
 
   const filteredHistory = dedupeSearchHistory(
-    searchHistory.filter((item) => item.includes(state) && item !== state)
+    searchHistory
+      .filter((item) => item.trim() !== "" && item.trim() !== "*")
+      .filter((item) => item.includes(state) && item !== state)
   )
     .slice(0, 5)
     // If it has a * in the end, remove it
