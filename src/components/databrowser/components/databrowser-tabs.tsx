@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { TabData, TabId } from "@/store"
-import { useDatabrowserStore } from "@/store"
+import { useDatabrowserRootRef, useDatabrowserStore } from "@/store"
 import { TabIdProvider } from "@/tab-provider"
 import {
   closestCenter,
@@ -14,7 +14,7 @@ import {
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers"
 import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { IconPlus, IconSearch } from "@tabler/icons-react"
+import { IconChevronDown, IconPlus, IconSearch } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -34,9 +34,13 @@ import { TabTypeIcon } from "./tab-type-icon"
 const SortableTab = ({ id }: { id: TabId }) => {
   const [originalWidth, setOriginalWidth] = useState<number | null>(null)
   const textRef = useRef<HTMLElement | null>(null)
+  const { tabs } = useDatabrowserStore()
+  const tabData = tabs.find(([tabId]) => tabId === id)?.[1]
+  const isPinned = tabData?.pinned
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
+    disabled: isPinned,
     resizeObserverConfig: {
       disabled: true,
     },
@@ -110,9 +114,9 @@ const SortableTab = ({ id }: { id: TabId }) => {
     <div
       ref={measureRef}
       style={style}
-      className={isDragging ? "cursor-grabbing" : "cursor-grab"}
+      className={isDragging ? "cursor-grabbing" : isPinned ? "cursor-default" : "cursor-grab"}
       {...attributes}
-      {...listeners}
+      {...(isPinned ? {} : listeners)}
     >
       <TabIdProvider value={id as TabId}>
         <Tab id={id} />
@@ -122,7 +126,16 @@ const SortableTab = ({ id }: { id: TabId }) => {
 }
 
 export const DatabrowserTabs = () => {
-  const { tabs, addTab, reorderTabs, selectedTab, selectTab } = useDatabrowserStore()
+  const { tabs, reorderTabs, selectedTab, selectTab } = useDatabrowserStore()
+
+  // Sort tabs with pinned tabs first
+  const sortedTabs = useMemo(() => {
+    return [...tabs].sort(([, a], [, b]) => {
+      if (a.pinned && !b.pinned) return -1
+      if (!a.pinned && b.pinned) return 1
+      return 0
+    })
+  }, [tabs])
 
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const [hasLeftShadow, setHasLeftShadow] = useState(false)
@@ -234,50 +247,54 @@ export const DatabrowserTabs = () => {
               }}
             >
               <SortableContext
-                items={tabs.map(([id]) => id)}
+                items={sortedTabs.map(([id]) => id)}
                 strategy={horizontalListSortingStrategy}
               >
-                {selectedTab && tabs.map(([id]) => <SortableTab key={id} id={id} />)}
+                {selectedTab && sortedTabs.map(([id]) => <SortableTab key={id} id={id} />)}
               </SortableContext>
             </DndContext>
             {!isOverflow && (
               <div className="flex items-center gap-1 pl-1 pr-1">
-                {tabs.length > 4 && <TabSearch tabs={tabs} onSelectTab={selectTab} />}
-                <Button
-                  variant="secondary"
-                  size="icon-sm"
-                  onClick={addTab}
-                  className="flex-shrink-0"
-                  title="Add new tab"
-                >
-                  <IconPlus className="text-zinc-500" size={16} />
-                </Button>
+                <AddTabButton />
               </div>
             )}
           </div>
         </div>
 
-        {/* Always-visible controls */}
-        {isOverflow && (
-          <div className="flex items-center gap-1 pl-1">
-            {tabs.length > 4 && <TabSearch tabs={tabs} onSelectTab={selectTab} />}
-            <Button
-              variant="secondary"
-              size="icon-sm"
-              onClick={addTab}
-              className="mr-1 flex-shrink-0"
-              title="Add new tab"
-            >
-              <IconPlus className="text-zinc-500" size={16} />
-            </Button>
-          </div>
-        )}
+        {/* Fixed right controls: search + add */}
+        <div className="flex items-center gap-1 pl-1">
+          {isOverflow && <AddTabButton />}
+          {tabs.length > 1 && <SearchTabButton tabs={tabs} onSelectTab={selectTab} />}
+        </div>
       </div>
     </div>
   )
 }
 
-function TabSearch({
+function AddTabButton() {
+  const { addTab, selectTab } = useDatabrowserStore()
+  const rootRef = useDatabrowserRootRef()
+
+  const handleAddTab = () => {
+    const tabsId = addTab()
+    selectTab(tabsId)
+
+    setTimeout(() => {
+      const tab = rootRef?.current?.querySelector(`#tab-${tabsId}`)
+      if (!tab) return
+
+      tab.scrollIntoView({ behavior: "smooth" })
+    }, 20)
+  }
+
+  return (
+    <Button variant="secondary" size="icon-sm" onClick={handleAddTab} className="flex-shrink-0">
+      <IconPlus className="text-zinc-500" size={16} />
+    </Button>
+  )
+}
+
+function SearchTabButton({
   tabs,
   onSelectTab,
 }: {
@@ -325,8 +342,14 @@ function TabSearch({
       <Tooltip delayDuration={400}>
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
-            <Button variant="secondary" size="icon-sm" aria-label="Search in tabs">
-              <IconSearch className="text-zinc-500" size={16} />
+            <Button
+              variant="secondary"
+              size="sm"
+              className="h-7 gap-1 px-2"
+              aria-label="Search in tabs"
+            >
+              <span className="text-xs text-zinc-600">{tabs.length}</span>
+              <IconChevronDown className="text-zinc-500" size={16} />
             </Button>
           </PopoverTrigger>
         </TooltipTrigger>

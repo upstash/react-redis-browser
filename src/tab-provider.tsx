@@ -40,6 +40,7 @@ export const useTab = () => {
       selectedKey: tabData.selectedKey,
       selectedListItem: tabData.selectedListItem,
       search: tabData.search,
+      pinned: tabData.pinned,
 
       setSelectedKey: (key: string | undefined) => setSelectedKey(tabId, key),
       setSelectedListItem: (item: SelectedItem | undefined) => setSelectedListItem(tabId, item),
