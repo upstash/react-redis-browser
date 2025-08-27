@@ -11,6 +11,7 @@ export type { RedisCredentials } from "./redis-context"
 
 type DatabrowserContextProps = {
   store: DatabrowserStoreObject
+  rootRef: React.RefObject<HTMLDivElement>
 }
 
 const DatabrowserContext = createContext<DatabrowserContextProps | undefined>(undefined)
@@ -18,8 +19,10 @@ const DatabrowserContext = createContext<DatabrowserContextProps | undefined>(un
 export const DatabrowserProvider = ({
   children,
   storage,
+  rootRef,
 }: PropsWithChildren<{
   storage?: RedisBrowserStorage
+  rootRef: React.RefObject<HTMLDivElement>
 }>) => {
   const store = useMemo(() => {
     if (!storage) return create<DatabrowserStore>(storeCreator)
@@ -55,7 +58,14 @@ export const DatabrowserProvider = ({
     )
   }, [])
 
-  return <DatabrowserContext.Provider value={{ store }}>{children}</DatabrowserContext.Provider>
+  return (
+    <DatabrowserContext.Provider value={{ store, rootRef }}>{children}</DatabrowserContext.Provider>
+  )
+}
+
+export const useDatabrowserRootRef = () => {
+  const { rootRef } = useDatabrowser()
+  return rootRef
 }
 
 const useDatabrowser = (): DatabrowserContextProps => {
@@ -87,6 +97,7 @@ export type TabData = {
   selectedListItem?: SelectedItem
 
   search: SearchFilter
+  pinned?: boolean
 }
 
 export type TabId = string & { __tabId: true }
@@ -97,8 +108,15 @@ type DatabrowserStore = {
 
   addTab: () => TabId
   removeTab: (id: TabId) => void
+  forceRemoveTab: (id: TabId) => void
   selectTab: (id: TabId) => void
   reorderTabs: (oldIndex: number, newIndex: number) => void
+
+  // Tab context menu actions
+  togglePinTab: (id: TabId) => void
+  duplicateTab: (id: TabId) => TabId | undefined
+  closeOtherTabs: (id: TabId) => void
+  closeAllButPinned: () => void
 
   // Tab actions
   getSelectedKey: (tabId: TabId) => string | undefined
@@ -124,6 +142,7 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
     const newTabData: TabData = {
       selectedKey: undefined,
       search: { key: "", type: undefined },
+      pinned: false,
     }
 
     set((old) => ({
@@ -136,6 +155,11 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
 
   reorderTabs: (oldIndex, newIndex) => {
     set((old) => {
+      // Don't allow reordering pinned tabs
+      const [, oldTabData] = old.tabs[oldIndex]
+      const [, newTabData] = old.tabs[newIndex]
+      if (oldTabData.pinned || newTabData.pinned) return old
+
       const newTabs = [...old.tabs]
       const [movedTab] = newTabs.splice(oldIndex, 1)
       newTabs.splice(newIndex, 0, movedTab)
@@ -144,6 +168,30 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
   },
 
   removeTab: (id) => {
+    set((old) => {
+      const tabIndex = old.tabs.findIndex(([tabId]) => tabId === id)
+      if (tabIndex === -1) return old
+
+      // Don't remove pinned tabs via X button
+      const [, tabData] = old.tabs[tabIndex]
+      if (tabData.pinned) return old
+
+      const newTabs = [...old.tabs]
+      newTabs.splice(tabIndex, 1)
+
+      // If we're removing the selected tab, select the tab to the left
+      let selectedTab = old.selectedTab
+      if (selectedTab === id) {
+        const [newId] = newTabs[tabIndex - 1] ?? newTabs[tabIndex]
+
+        selectedTab = newTabs.length > 0 ? newId : undefined
+      }
+
+      return { tabs: newTabs, selectedTab }
+    })
+  },
+
+  forceRemoveTab: (id) => {
     set((old) => {
       const tabIndex = old.tabs.findIndex(([tabId]) => tabId === id)
       if (tabIndex === -1) return old
@@ -160,6 +208,56 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
       }
 
       return { tabs: newTabs, selectedTab }
+    })
+  },
+
+  togglePinTab: (id) => {
+    set((old) => {
+      const tabIndex = old.tabs.findIndex(([tabId]) => tabId === id)
+      if (tabIndex === -1) return old
+
+      const newTabs = [...old.tabs]
+      const [tabId, tabData] = newTabs[tabIndex]
+      newTabs[tabIndex] = [tabId, { ...tabData, pinned: !tabData.pinned }]
+
+      return { ...old, tabs: newTabs }
+    })
+  },
+
+  duplicateTab: (id) => {
+    let newId: TabId | undefined
+    set((old) => {
+      const tabIndex = old.tabs.findIndex(([tabId]) => tabId === id)
+      if (tabIndex === -1) return old
+
+      const newTabs = [...old.tabs]
+      const [, tabData] = newTabs[tabIndex]
+      newId = crypto.randomUUID() as TabId
+      const duplicated: [TabId, TabData] = [newId, { ...tabData }]
+
+      // Insert right after the original tab
+      newTabs.splice(tabIndex + 1, 0, duplicated)
+
+      return { ...old, tabs: newTabs, selectedTab: newId }
+    })
+    return newId
+  },
+
+  closeOtherTabs: (id) => {
+    set((old) => {
+      const exists = old.tabs.some(([tabId]) => tabId === id)
+      if (!exists) return old
+
+      const newTabs: [TabId, TabData][] = old.tabs.filter(([tabId]) => tabId === id)
+      return { ...old, tabs: newTabs, selectedTab: id }
+    })
+  },
+
+  closeAllButPinned: () => {
+    set((old) => {
+      const newTabs = old.tabs.filter(([, data]) => data.pinned)
+      const newSelected = newTabs.length > 0 ? newTabs[0][0] : undefined
+      return { ...old, tabs: newTabs, selectedTab: newSelected }
     })
   },
 

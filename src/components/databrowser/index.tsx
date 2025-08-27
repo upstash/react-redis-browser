@@ -1,6 +1,6 @@
 import "@/globals.css"
 
-import { useEffect, useMemo } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { RedisProvider, type RedisCredentials } from "@/redis-context"
 import type { TabId } from "@/store"
 import { DatabrowserProvider, useDatabrowserStore } from "@/store"
@@ -43,6 +43,7 @@ export const RedisBrowser = ({
   storage?: RedisBrowserStorage
 }) => {
   const credentials = useMemo(() => ({ token, url }), [token, url])
+  const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     queryClient.resetQueries()
@@ -51,12 +52,13 @@ export const RedisBrowser = ({
   return (
     <QueryClientProvider client={queryClient}>
       <RedisProvider redisCredentials={credentials}>
-        <DatabrowserProvider storage={storage}>
+        <DatabrowserProvider storage={storage} rootRef={rootRef}>
           <TooltipProvider>
             {/* ups-db is the custom class used to prefix every style in the css bundle */}
             <div
               className="ups-db"
               style={{ height: "100%", display: "flex", flexDirection: "column" }}
+              ref={rootRef}
             >
               {!hideTabs && <DatabrowserTabs />}
               <DatabrowserInstances />
