@@ -33,7 +33,6 @@ const App = () => {
         style={{
           height: "800px",
           maxWidth: "900px",
-          border: credentials ? "1px solid red" : "none",
           boxSizing: "border-box",
           margin: "0 auto",
         }}
