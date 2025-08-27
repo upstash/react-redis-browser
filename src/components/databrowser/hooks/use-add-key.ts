@@ -28,8 +28,7 @@ export const useAddKey = () => {
         }
         case "hash": {
           await redis.hset(key, {
-            field: "field",
-            value: "value",
+            field: "value",
           })
           break
         }
