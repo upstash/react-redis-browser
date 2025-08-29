@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test"
-import { Redis } from "@upstash/redis/cloudflare"
+import { Redis } from "@upstash/redis"
 
 export const redis = Redis.fromEnv()
 
