@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, type PropsWithChildren } from "react"
-import type { Redis } from "@upstash/redis"
+import type { Redis } from "@upstash/redis/cloudflare"
 
 import { redisClient } from "./lib/clients"
 

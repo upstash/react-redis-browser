@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react"
-import type { TabId } from "@/store"
+import { useCallback, useEffect, useRef, useState } from "react"
+import type { TabData, TabId } from "@/store"
 import { useDatabrowserStore } from "@/store"
 import { TabIdProvider } from "@/tab-provider"
 import {
@@ -14,11 +14,22 @@ import {
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers"
 import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { IconPlus } from "@tabler/icons-react"
+import { IconPlus, IconSearch } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { Tab } from "./tab"
+import { TabTypeIcon } from "./tab-type-icon"
 
 const SortableTab = ({ id }: { id: TabId }) => {
   const [originalWidth, setOriginalWidth] = useState<number | null>(null)
@@ -111,7 +122,63 @@ const SortableTab = ({ id }: { id: TabId }) => {
 }
 
 export const DatabrowserTabs = () => {
-  const { tabs, addTab, reorderTabs, selectedTab } = useDatabrowserStore()
+  const { tabs, addTab, reorderTabs, selectedTab, selectTab } = useDatabrowserStore()
+
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const [hasLeftShadow, setHasLeftShadow] = useState(false)
+  const [hasRightShadow, setHasRightShadow] = useState(false)
+  const [isOverflow, setIsOverflow] = useState(false)
+
+  // Attach a non-passive wheel listener so we can preventDefault when translating vertical wheel to horizontal scroll
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+
+    const onWheel = (event: WheelEvent) => {
+      if (el.scrollWidth <= el.clientWidth) return
+      const primaryDelta =
+        Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX
+      if (primaryDelta !== 0) {
+        el.scrollLeft += primaryDelta
+        event.preventDefault()
+        // Ensure shadow state updates after scrolling
+        requestAnimationFrame(() => {
+          const { scrollLeft, scrollWidth, clientWidth } = el
+          setHasLeftShadow(scrollLeft > 0)
+          setHasRightShadow(scrollLeft + clientWidth < scrollWidth - 1)
+          setIsOverflow(scrollWidth > clientWidth + 1)
+        })
+      }
+    }
+
+    el.addEventListener("wheel", onWheel, { passive: false })
+    return () => {
+      el.removeEventListener("wheel", onWheel as EventListener)
+    }
+  }, [])
+
+  const recomputeShadows = useCallback(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const { scrollLeft, scrollWidth, clientWidth } = el
+    setHasLeftShadow(scrollLeft > 0)
+    setHasRightShadow(scrollLeft + clientWidth < scrollWidth - 1)
+    setIsOverflow(scrollWidth > clientWidth + 1)
+  }, [])
+
+  useEffect(() => {
+    recomputeShadows()
+    const el = scrollRef.current
+    if (!el) return
+    const onResize = () => recomputeShadows()
+    window.addEventListener("resize", onResize)
+    const obs = new ResizeObserver(onResize)
+    obs.observe(el)
+    return () => {
+      window.removeEventListener("resize", onResize)
+      obs.disconnect()
+    }
+  }, [recomputeShadows])
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -136,32 +203,167 @@ export const DatabrowserTabs = () => {
     <div className="relative mb-2 shrink-0">
       <div className="absolute bottom-0 left-0 right-0 -z-10 h-[1px] w-full bg-zinc-200" />
 
-      <div className="scrollbar-hide flex translate-y-[1px] items-center gap-1 overflow-x-scroll pb-[1px] [&::-webkit-scrollbar]:hidden">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-          modifiers={[restrictToHorizontalAxis]}
-          measuring={{
-            droppable: {
-              strategy: MeasuringStrategy.Always,
-            },
-          }}
-        >
-          <SortableContext items={tabs.map(([id]) => id)} strategy={horizontalListSortingStrategy}>
-            {selectedTab && tabs.map(([id]) => <SortableTab key={id} id={id} />)}
-          </SortableContext>
-        </DndContext>
-        <Button
-          variant="secondary"
-          size="icon-sm"
-          onClick={addTab}
-          className="mr-1 flex-shrink-0"
-          title="Add new tab"
-        >
-          <IconPlus className="text-zinc-500" size={16} />
-        </Button>
+      <div className="flex translate-y-[1px] items-center gap-1">
+        {/* Scrollable tabs area */}
+        <div className="relative min-w-0 flex-1">
+          <div
+            className={`tabs-shadow-left pointer-events-none absolute left-0 top-0 z-10 h-full w-6 transition-opacity duration-200 ${
+              hasLeftShadow ? "opacity-100" : "opacity-0"
+            }`}
+          />
+          <div
+            className={`tabs-shadow-right pointer-events-none absolute right-0 top-0 z-10 h-full w-6 transition-opacity duration-200 ${
+              hasRightShadow ? "opacity-100" : "opacity-0"
+            }`}
+          />
+
+          <div
+            ref={scrollRef}
+            onScroll={recomputeShadows}
+            className="scrollbar-hide flex min-w-0 flex-1 items-center gap-1 overflow-x-auto pb-[1px] [&::-webkit-scrollbar]:hidden"
+          >
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+              modifiers={[restrictToHorizontalAxis]}
+              measuring={{
+                droppable: {
+                  strategy: MeasuringStrategy.Always,
+                },
+              }}
+            >
+              <SortableContext
+                items={tabs.map(([id]) => id)}
+                strategy={horizontalListSortingStrategy}
+              >
+                {selectedTab && tabs.map(([id]) => <SortableTab key={id} id={id} />)}
+              </SortableContext>
+            </DndContext>
+            {!isOverflow && (
+              <div className="flex items-center gap-1 pl-1 pr-1">
+                {tabs.length > 4 && <TabSearch tabs={tabs} onSelectTab={selectTab} />}
+                <Button
+                  variant="secondary"
+                  size="icon-sm"
+                  onClick={addTab}
+                  className="flex-shrink-0"
+                  title="Add new tab"
+                >
+                  <IconPlus className="text-zinc-500" size={16} />
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Always-visible controls */}
+        {isOverflow && (
+          <div className="flex items-center gap-1 pl-1">
+            {tabs.length > 4 && <TabSearch tabs={tabs} onSelectTab={selectTab} />}
+            <Button
+              variant="secondary"
+              size="icon-sm"
+              onClick={addTab}
+              className="mr-1 flex-shrink-0"
+              title="Add new tab"
+            >
+              <IconPlus className="text-zinc-500" size={16} />
+            </Button>
+          </div>
+        )}
       </div>
     </div>
+  )
+}
+
+function TabSearch({
+  tabs,
+  onSelectTab,
+}: {
+  tabs: [TabId, TabData][]
+  onSelectTab: (id: TabId) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState("")
+
+  const items = tabs.map(([id, data]) => ({
+    id,
+    label: data.search.key || data.selectedKey || "New Tab",
+    searchKey: data.search.key,
+    selectedKey: data.selectedKey,
+    selectedItemKey: data.selectedListItem?.key,
+  }))
+
+  // Build final label and de-duplicate by that label (case-insensitive)
+  const buildDisplayLabel = (it: (typeof items)[number]) =>
+    it.selectedItemKey ? `${it.label} > ${it.selectedItemKey}` : it.label
+
+  const dedupedMap = new Map<string, (typeof items)[number]>()
+  for (const it of items) {
+    const display = buildDisplayLabel(it)
+    const key = display.toLowerCase()
+    if (!dedupedMap.has(key)) dedupedMap.set(key, it)
+  }
+
+  const deduped = [...dedupedMap.values()]
+
+  const filtered = (
+    query
+      ? deduped.filter((i) => buildDisplayLabel(i).toLowerCase().includes(query.toLowerCase()))
+      : deduped
+  ).sort((a, b) => buildDisplayLabel(a).localeCompare(buildDisplayLabel(b)))
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v)
+        if (!v) setQuery("")
+      }}
+    >
+      <Tooltip delayDuration={400}>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button variant="secondary" size="icon-sm" aria-label="Search in tabs">
+              <IconSearch className="text-zinc-500" size={16} />
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="top">Search in tabs</TooltipContent>
+      </Tooltip>
+      <PopoverContent className="w-72 p-0" align="end">
+        <Command>
+          <CommandInput
+            placeholder="Search tabs..."
+            value={query}
+            onValueChange={(v) => setQuery(v)}
+            className="h-9"
+          />
+          <CommandList>
+            <CommandEmpty>No tabs</CommandEmpty>
+            <CommandGroup>
+              {filtered.map((item) => (
+                <CommandItem
+                  key={item.id}
+                  value={buildDisplayLabel(item)}
+                  onSelect={() => {
+                    onSelectTab(item.id)
+                    setOpen(false)
+                  }}
+                >
+                  {item.searchKey ? (
+                    <IconSearch size={15} />
+                  ) : (
+                    <TabTypeIcon selectedKey={item.selectedKey} />
+                  )}
+                  <span className="truncate">{buildDisplayLabel(item)}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   )
 }
