@@ -45,11 +45,19 @@ export const DatabrowserProvider = ({
           setItem: (_name, value) => storage.set(JSON.stringify(value)),
           removeItem: () => {},
         },
-        version: 1,
+        version: 2,
         // @ts-expect-error Reset the store for < v1
-        migrate: (state, version) => {
+        migrate: (originalState, version) => {
+          const state = originalState as DatabrowserStore
           if (version === 0) {
             return
+          }
+
+          if (version === 1) {
+            return {
+              ...state,
+              tabs: state.tabs.map(([id, data]) => [id, { ...data, id }]),
+            }
           }
 
           return state
@@ -93,6 +101,7 @@ export type SelectedItem = {
 }
 
 export type TabData = {
+  id: TabId
   selectedKey: string | undefined
   selectedListItem?: SelectedItem
 
@@ -140,6 +149,7 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
     const id = crypto.randomUUID() as TabId
 
     const newTabData: TabData = {
+      id,
       selectedKey: undefined,
       search: { key: "", type: undefined },
       pinned: false,
@@ -233,7 +243,7 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
       const newTabs = [...old.tabs]
       const [, tabData] = newTabs[tabIndex]
       newId = crypto.randomUUID() as TabId
-      const duplicated: [TabId, TabData] = [newId, { ...tabData }]
+      const duplicated: [TabId, TabData] = [newId, { ...tabData, id: newId }]
 
       // Insert right after the original tab
       newTabs.splice(tabIndex + 1, 0, duplicated)
