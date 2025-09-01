@@ -21,7 +21,7 @@ import { TabTypeIcon } from "./tab-type-icon"
 import { useTab } from "@/tab-provider"
 import { useOverflow } from "@/hooks/use-overflow"
 
-export const Tab = ({ id }: { id: TabId }) => {
+export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
   const { active, search, selectedKey, pinned } = useTab()
   const {
     selectTab,
@@ -47,15 +47,21 @@ export const Tab = ({ id }: { id: TabId }) => {
 
   const tabNode = (
     <div
-      id={`tab-${id}`}
+      id={isList ? `list-tab-${id}` : `tab-${id}`}
       onClick={() => selectTab(id)}
       className={cn(
-        "flex h-9 cursor-pointer items-center gap-2 rounded-t-lg border border-zinc-200 px-3 text-[13px] transition-colors",
-        active ? "border-b-white bg-white text-zinc-900" : "bg-zinc-100 hover:bg-zinc-50"
+        "flex h-9 w-full cursor-pointer items-center gap-2 px-3 text-[13px] transition-colors",
+        isList && "max-w-[370px]",
+        !isList && "rounded-t-lg border border-zinc-200",
+        !isList &&
+          (active ? "border-b-white bg-white text-zinc-900" : "bg-zinc-100 hover:bg-zinc-50")
       )}
     >
       {iconNode}
-      <span ref={ref} className="max-w-32 truncate whitespace-nowrap">
+      <span
+        ref={ref}
+        className={cn("min-w-0 grow truncate whitespace-nowrap", !isList && "max-w-32")}
+      >
         {label || "New Tab"}
       </span>
 
@@ -82,7 +88,11 @@ export const Tab = ({ id }: { id: TabId }) => {
       <SimpleTooltip content={isOverflow ? label : undefined}>
         <ContextMenuTrigger asChild>{tabNode}</ContextMenuTrigger>
       </SimpleTooltip>
-      <ContextMenuContent>
+      <ContextMenuContent
+        onClick={(e) => {
+          e.stopPropagation()
+        }}
+      >
         <ContextMenuItem onSelect={() => togglePinTab(id)} className="gap-2">
           <IconPin size={16} />
           {pinned ? "Unpin Tab" : "Pin Tab"}

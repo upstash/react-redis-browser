@@ -14,22 +14,19 @@ import {
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers"
 import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { IconChevronDown, IconPlus, IconSearch } from "@tabler/icons-react"
+import { IconChevronDown, IconPlus } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
 import {
   Command,
   CommandEmpty,
   CommandGroup,
-  CommandInput,
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { Tab } from "./tab"
-import { TabTypeIcon } from "./tab-type-icon"
 
 const SortableTab = ({ id }: { id: TabId }) => {
   const [originalWidth, setOriginalWidth] = useState<number | null>(null)
@@ -264,7 +261,7 @@ export const DatabrowserTabs = () => {
         {/* Fixed right controls: search + add */}
         <div className="flex items-center gap-1 pl-1">
           {isOverflow && <AddTabButton />}
-          {tabs.length > 1 && <SearchTabButton tabs={tabs} onSelectTab={selectTab} />}
+          {tabs.length > 1 && <TabsListButton tabs={tabs} onSelectTab={selectTab} />}
         </div>
       </div>
     </div>
@@ -294,7 +291,7 @@ function AddTabButton() {
   )
 }
 
-function SearchTabButton({
+function TabsListButton({
   tabs,
   onSelectTab,
 }: {
@@ -302,85 +299,61 @@ function SearchTabButton({
   onSelectTab: (id: TabId) => void
 }) {
   const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState("")
 
-  const items = tabs.map(([id, data]) => ({
-    id,
-    label: data.search.key || data.selectedKey || "New Tab",
-    searchKey: data.search.key,
-    selectedKey: data.selectedKey,
-    selectedItemKey: data.selectedListItem?.key,
-  }))
+  const sorted = useMemo(() => {
+    return [...tabs].sort(([, a], [, b]) => {
+      if (a.pinned && !b.pinned) return -1
+      if (!a.pinned && b.pinned) return 1
+      return 0
+    })
+  }, [tabs])
 
-  // Build final label and de-duplicate by that label (case-insensitive)
-  const buildDisplayLabel = (it: (typeof items)[number]) =>
-    it.selectedItemKey ? `${it.label} > ${it.selectedItemKey}` : it.label
+  const rootRef = useDatabrowserRootRef()
 
-  const dedupedMap = new Map<string, (typeof items)[number]>()
-  for (const it of items) {
-    const display = buildDisplayLabel(it)
-    const key = display.toLowerCase()
-    if (!dedupedMap.has(key)) dedupedMap.set(key, it)
+  const handleSelectTab = (id: TabId) => {
+    onSelectTab(id)
+    setOpen(false)
+
+    setTimeout(() => {
+      const tab = rootRef?.current?.querySelector(`#tab-${id}`)
+      if (!tab) return
+
+      tab.scrollIntoView({ behavior: "smooth" })
+    }, 20)
   }
 
-  const deduped = [...dedupedMap.values()]
-
-  const filtered = (
-    query
-      ? deduped.filter((i) => buildDisplayLabel(i).toLowerCase().includes(query.toLowerCase()))
-      : deduped
-  ).sort((a, b) => buildDisplayLabel(a).localeCompare(buildDisplayLabel(b)))
-
   return (
-    <Popover
-      open={open}
-      onOpenChange={(v) => {
-        setOpen(v)
-        if (!v) setQuery("")
-      }}
-    >
-      <Tooltip delayDuration={400}>
-        <TooltipTrigger asChild>
-          <PopoverTrigger asChild>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="h-7 gap-1 px-2"
-              aria-label="Search in tabs"
-            >
-              <span className="text-xs text-zinc-600">{tabs.length}</span>
-              <IconChevronDown className="text-zinc-500" size={16} />
-            </Button>
-          </PopoverTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="top">Search in tabs</TooltipContent>
-      </Tooltip>
-      <PopoverContent className="w-72 p-0" align="end">
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="secondary"
+          size="sm"
+          className="h-7 gap-1 px-2"
+          aria-label="Search in tabs"
+        >
+          <span className="text-xs text-zinc-600">{tabs.length}</span>
+          <IconChevronDown className="text-zinc-500" size={16} />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-96 p-0" align="end">
         <Command>
-          <CommandInput
-            placeholder="Search tabs..."
-            value={query}
-            onValueChange={(v) => setQuery(v)}
-            className="h-9"
-          />
           <CommandList>
             <CommandEmpty>No tabs</CommandEmpty>
             <CommandGroup>
-              {filtered.map((item) => (
+              {sorted.map(([_id, item]) => (
                 <CommandItem
+                  style={{
+                    padding: 0,
+                  }}
                   key={item.id}
-                  value={buildDisplayLabel(item)}
+                  value={item.id}
                   onSelect={() => {
-                    onSelectTab(item.id)
-                    setOpen(false)
+                    handleSelectTab(item.id)
                   }}
                 >
-                  {item.searchKey ? (
-                    <IconSearch size={15} />
-                  ) : (
-                    <TabTypeIcon selectedKey={item.selectedKey} />
-                  )}
-                  <span className="truncate">{buildDisplayLabel(item)}</span>
+                  <TabIdProvider value={_id}>
+                    <Tab id={_id} isList />
+                  </TabIdProvider>
                 </CommandItem>
               ))}
             </CommandGroup>
