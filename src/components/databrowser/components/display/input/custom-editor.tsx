@@ -67,6 +67,7 @@ export const CustomEditor = ({
         automaticLayout: true,
         scrollBeyondLastLine: false,
         renderLineHighlight: "none",
+        unusualLineTerminators: "auto",
       }}
     />
   )
