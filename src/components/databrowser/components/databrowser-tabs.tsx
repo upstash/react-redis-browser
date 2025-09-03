@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { TabData, TabId } from "@/store"
-import { useDatabrowserStore } from "@/store"
+import { useDatabrowserRootRef, useDatabrowserStore } from "@/store"
 import { TabIdProvider } from "@/tab-provider"
 import {
   closestCenter,
@@ -14,29 +14,30 @@ import {
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers"
 import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { IconPlus, IconSearch } from "@tabler/icons-react"
+import { IconChevronDown, IconPlus } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
 import {
   Command,
   CommandEmpty,
   CommandGroup,
-  CommandInput,
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { Tab } from "./tab"
-import { TabTypeIcon } from "./tab-type-icon"
 
 const SortableTab = ({ id }: { id: TabId }) => {
   const [originalWidth, setOriginalWidth] = useState<number | null>(null)
   const textRef = useRef<HTMLElement | null>(null)
+  const { tabs } = useDatabrowserStore()
+  const tabData = tabs.find(([tabId]) => tabId === id)?.[1]
+  const isPinned = tabData?.pinned
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
+    disabled: isPinned,
     resizeObserverConfig: {
       disabled: true,
     },
@@ -110,9 +111,9 @@ const SortableTab = ({ id }: { id: TabId }) => {
     <div
       ref={measureRef}
       style={style}
-      className={isDragging ? "cursor-grabbing" : "cursor-grab"}
+      className={isDragging ? "cursor-grabbing" : isPinned ? "cursor-default" : "cursor-grab"}
       {...attributes}
-      {...listeners}
+      {...(isPinned ? {} : listeners)}
     >
       <TabIdProvider value={id as TabId}>
         <Tab id={id} />
@@ -122,7 +123,16 @@ const SortableTab = ({ id }: { id: TabId }) => {
 }
 
 export const DatabrowserTabs = () => {
-  const { tabs, addTab, reorderTabs, selectedTab, selectTab } = useDatabrowserStore()
+  const { tabs, reorderTabs, selectedTab, selectTab } = useDatabrowserStore()
+
+  // Sort tabs with pinned tabs first
+  const sortedTabs = useMemo(() => {
+    return [...tabs].sort(([, a], [, b]) => {
+      if (a.pinned && !b.pinned) return -1
+      if (!a.pinned && b.pinned) return 1
+      return 0
+    })
+  }, [tabs])
 
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const [hasLeftShadow, setHasLeftShadow] = useState(false)
@@ -234,50 +244,60 @@ export const DatabrowserTabs = () => {
               }}
             >
               <SortableContext
-                items={tabs.map(([id]) => id)}
+                items={sortedTabs.map(([id]) => id)}
                 strategy={horizontalListSortingStrategy}
               >
-                {selectedTab && tabs.map(([id]) => <SortableTab key={id} id={id} />)}
+                {selectedTab && sortedTabs.map(([id]) => <SortableTab key={id} id={id} />)}
               </SortableContext>
             </DndContext>
             {!isOverflow && (
               <div className="flex items-center gap-1 pl-1 pr-1">
-                {tabs.length > 4 && <TabSearch tabs={tabs} onSelectTab={selectTab} />}
-                <Button
-                  variant="secondary"
-                  size="icon-sm"
-                  onClick={addTab}
-                  className="flex-shrink-0"
-                  title="Add new tab"
-                >
-                  <IconPlus className="text-zinc-500" size={16} />
-                </Button>
+                <AddTabButton />
               </div>
             )}
           </div>
         </div>
 
-        {/* Always-visible controls */}
-        {isOverflow && (
-          <div className="flex items-center gap-1 pl-1">
-            {tabs.length > 4 && <TabSearch tabs={tabs} onSelectTab={selectTab} />}
-            <Button
-              variant="secondary"
-              size="icon-sm"
-              onClick={addTab}
-              className="mr-1 flex-shrink-0"
-              title="Add new tab"
-            >
-              <IconPlus className="text-zinc-500" size={16} />
-            </Button>
-          </div>
-        )}
+        {/* Fixed right controls: search + add */}
+        <div className="flex items-center gap-1 pl-1">
+          {isOverflow && <AddTabButton />}
+          {tabs.length > 1 && <TabsListButton tabs={tabs} onSelectTab={selectTab} />}
+        </div>
       </div>
     </div>
   )
 }
 
-function TabSearch({
+function AddTabButton() {
+  const { addTab, selectTab } = useDatabrowserStore()
+  const rootRef = useDatabrowserRootRef()
+
+  const handleAddTab = () => {
+    const tabsId = addTab()
+    selectTab(tabsId)
+
+    setTimeout(() => {
+      const tab = rootRef?.current?.querySelector(`#tab-${tabsId}`)
+      if (!tab) return
+
+      tab.scrollIntoView({ behavior: "smooth" })
+    }, 20)
+  }
+
+  return (
+    <Button
+      aria-label="Add new tab"
+      variant="secondary"
+      size="icon-sm"
+      onClick={handleAddTab}
+      className="flex-shrink-0"
+    >
+      <IconPlus className="text-zinc-500" size={16} />
+    </Button>
+  )
+}
+
+function TabsListButton({
   tabs,
   onSelectTab,
 }: {
@@ -285,79 +305,61 @@ function TabSearch({
   onSelectTab: (id: TabId) => void
 }) {
   const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState("")
 
-  const items = tabs.map(([id, data]) => ({
-    id,
-    label: data.search.key || data.selectedKey || "New Tab",
-    searchKey: data.search.key,
-    selectedKey: data.selectedKey,
-    selectedItemKey: data.selectedListItem?.key,
-  }))
+  const sorted = useMemo(() => {
+    return [...tabs].sort(([, a], [, b]) => {
+      if (a.pinned && !b.pinned) return -1
+      if (!a.pinned && b.pinned) return 1
+      return 0
+    })
+  }, [tabs])
 
-  // Build final label and de-duplicate by that label (case-insensitive)
-  const buildDisplayLabel = (it: (typeof items)[number]) =>
-    it.selectedItemKey ? `${it.label} > ${it.selectedItemKey}` : it.label
+  const rootRef = useDatabrowserRootRef()
 
-  const dedupedMap = new Map<string, (typeof items)[number]>()
-  for (const it of items) {
-    const display = buildDisplayLabel(it)
-    const key = display.toLowerCase()
-    if (!dedupedMap.has(key)) dedupedMap.set(key, it)
+  const handleSelectTab = (id: TabId) => {
+    onSelectTab(id)
+    setOpen(false)
+
+    setTimeout(() => {
+      const tab = rootRef?.current?.querySelector(`#tab-${id}`)
+      if (!tab) return
+
+      tab.scrollIntoView({ behavior: "smooth" })
+    }, 20)
   }
 
-  const deduped = [...dedupedMap.values()]
-
-  const filtered = (
-    query
-      ? deduped.filter((i) => buildDisplayLabel(i).toLowerCase().includes(query.toLowerCase()))
-      : deduped
-  ).sort((a, b) => buildDisplayLabel(a).localeCompare(buildDisplayLabel(b)))
-
   return (
-    <Popover
-      open={open}
-      onOpenChange={(v) => {
-        setOpen(v)
-        if (!v) setQuery("")
-      }}
-    >
-      <Tooltip delayDuration={400}>
-        <TooltipTrigger asChild>
-          <PopoverTrigger asChild>
-            <Button variant="secondary" size="icon-sm" aria-label="Search in tabs">
-              <IconSearch className="text-zinc-500" size={16} />
-            </Button>
-          </PopoverTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="top">Search in tabs</TooltipContent>
-      </Tooltip>
-      <PopoverContent className="w-72 p-0" align="end">
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="secondary"
+          size="sm"
+          className="h-7 gap-1 px-2"
+          aria-label="Search in tabs"
+        >
+          <span className="text-xs text-zinc-600">{tabs.length}</span>
+          <IconChevronDown className="text-zinc-500" size={16} />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-96 p-0" align="end">
         <Command>
-          <CommandInput
-            placeholder="Search tabs..."
-            value={query}
-            onValueChange={(v) => setQuery(v)}
-            className="h-9"
-          />
           <CommandList>
             <CommandEmpty>No tabs</CommandEmpty>
             <CommandGroup>
-              {filtered.map((item) => (
+              {sorted.map(([_id, item]) => (
                 <CommandItem
+                  style={{
+                    padding: 0,
+                  }}
                   key={item.id}
-                  value={buildDisplayLabel(item)}
+                  value={item.id}
                   onSelect={() => {
-                    onSelectTab(item.id)
-                    setOpen(false)
+                    handleSelectTab(item.id)
                   }}
                 >
-                  {item.searchKey ? (
-                    <IconSearch size={15} />
-                  ) : (
-                    <TabTypeIcon selectedKey={item.selectedKey} />
-                  )}
-                  <span className="truncate">{buildDisplayLabel(item)}</span>
+                  <TabIdProvider value={_id}>
+                    <Tab id={_id} isList />
+                  </TabIdProvider>
                 </CommandItem>
               ))}
             </CommandGroup>

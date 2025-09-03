@@ -1,4 +1,5 @@
 import { useState, type PropsWithChildren } from "react"
+import { IconCopy, IconExternalLink, IconTrash } from "@tabler/icons-react"
 import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
 import { ContextMenuSeparator } from "@radix-ui/react-context-menu"
@@ -57,7 +58,9 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
                 description: "Key copied to clipboard",
               })
             }}
+            className="gap-2"
           >
+            <IconCopy size={16} />
             Copy key
           </ContextMenuItem>
           <ContextMenuItem
@@ -67,11 +70,16 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
               setSearch(newTabId, currentSearch)
               selectTab(newTabId)
             }}
+            className="gap-2"
           >
+            <IconExternalLink size={16} />
             Open in new tab
           </ContextMenuItem>
           <ContextMenuSeparator />
-          <ContextMenuItem onClick={() => setAlertOpen(true)}>Delete key</ContextMenuItem>
+          <ContextMenuItem onClick={() => setAlertOpen(true)} className="gap-2">
+            <IconTrash size={16} />
+            Delete key
+          </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
     </>

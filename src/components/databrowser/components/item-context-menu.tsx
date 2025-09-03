@@ -1,4 +1,5 @@
 import { useState, type PropsWithChildren } from "react"
+import { IconCopy, IconExternalLink, IconTrash } from "@tabler/icons-react"
 import { useDatabrowserStore } from "@/store"
 import { type ListDataType } from "@/types"
 import { ContextMenuSeparator } from "@radix-ui/react-context-menu"
@@ -77,7 +78,9 @@ export const ItemContextMenu = ({
                 description: "Key copied to clipboard",
               })
             }}
+            className="gap-2"
           >
+            <IconCopy size={16} />
             Copy key
           </ContextMenuItem>
           {data?.value && (
@@ -88,7 +91,9 @@ export const ItemContextMenu = ({
                   description: "Value copied to clipboard",
                 })
               }}
+              className="gap-2"
             >
+              <IconCopy size={16} />
               Copy value
             </ContextMenuItem>
           )}
@@ -102,11 +107,18 @@ export const ItemContextMenu = ({
                 key: data.key,
               })
             }}
+            className="gap-2"
           >
+            <IconExternalLink size={16} />
             Open in new tab
           </ContextMenuItem>
           <ContextMenuSeparator />
-          <ContextMenuItem disabled={type === "stream"} onClick={() => setAlertOpen(true)}>
+          <ContextMenuItem
+            disabled={type === "stream"}
+            onClick={() => setAlertOpen(true)}
+            className="gap-2"
+          >
+            <IconTrash size={16} />
             Delete item
           </ContextMenuItem>
         </ContextMenuContent>
