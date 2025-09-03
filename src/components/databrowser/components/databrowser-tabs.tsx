@@ -285,7 +285,13 @@ function AddTabButton() {
   }
 
   return (
-    <Button variant="secondary" size="icon-sm" onClick={handleAddTab} className="flex-shrink-0">
+    <Button
+      aria-label="Add new tab"
+      variant="secondary"
+      size="icon-sm"
+      onClick={handleAddTab}
+      className="flex-shrink-0"
+    >
       <IconPlus className="text-zinc-500" size={16} />
     </Button>
   )
