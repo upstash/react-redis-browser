@@ -3,8 +3,16 @@
 @tailwind utilities;
 
 /* All these classes are already prefixed with .ups-db */
-* {
-  color: rgb(var(--color-zinc-700));
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: rgb(var(--color-zinc-200) / 1);
+  }
+
+  :root {
+    color: rgb(var(--color-zinc-700));
+  }
 }
 
 /* Horizontal scroll shadows utility for tab bar and similar strips */
@@ -259,9 +267,9 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --color-black: 255 255 255;
-    --color-white: 0 0 0;
+    --color-white: 14 14 16;
 
-    --color-zinc-50: 9 9 11;
+    --color-zinc-50: 14 14 16;
     --color-zinc-100: 39 39 42; /* zinc 800 */
     --color-zinc-200: 63 63 70; /* zinc 700 */
     --color-zinc-300: 82 82 91;
