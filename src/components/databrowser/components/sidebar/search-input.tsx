@@ -134,7 +134,7 @@ export const SearchInput = () => {
           type="button"
           variant="link"
           size="icon"
-          className="absolute right-1 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+          className="absolute right-1 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
           onClick={() => {
             setSearchKey("")
             setState("")

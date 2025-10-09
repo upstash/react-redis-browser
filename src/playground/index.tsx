@@ -22,10 +22,11 @@ const App = () => {
 
   return (
     <main
+      className="ups-db"
       style={{
         position: "fixed",
         inset: 0,
-        backgroundColor: "white",
+        backgroundColor: "rgb(var(--color-zinc-50))",
         padding: "20px",
       }}
     >
@@ -36,7 +37,6 @@ const App = () => {
           boxSizing: "border-box",
           margin: "0 auto",
         }}
-        className="ups-db"
       >
         {credentials ? (
           <RedisBrowser

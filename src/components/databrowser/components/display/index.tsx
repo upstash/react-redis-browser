@@ -18,7 +18,7 @@ export const DataDisplay = () => {
       ) : !type ? (
         query.isLoading ? (
           <div className="flex h-full items-center justify-center">
-            <span className="text-gray-500">Loading...</span>
+            <span className="text-zinc-500">Loading...</span>
           </div>
         ) : (
           <div />
