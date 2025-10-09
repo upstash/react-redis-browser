@@ -34,7 +34,7 @@ const SelectTrigger = React.forwardRef<
       >
         <path
           d="M4 6L8 10L12 6"
-          stroke="black"
+          stroke="currentColor"
           strokeOpacity="0.4"
           strokeWidth="1.4"
           strokeLinecap="round"
