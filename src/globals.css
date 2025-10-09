@@ -2,17 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* All these classes are already prefixed with .ups-db */
+* {
+  color: rgb(var(--color-zinc-700));
+}
+
 /* Horizontal scroll shadows utility for tab bar and similar strips */
-.ups-db .tabs-shadow-left {
+.tabs-shadow-left {
   background: linear-gradient(to right, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0));
 }
 
-.ups-db .tabs-shadow-right {
+.tabs-shadow-right {
   background: linear-gradient(to left, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0));
 }
-.ups-db {
-  color: rgb(var(--color-zinc-700));
-}
+
 
 :root {
   --color-black: 0 0 0;
