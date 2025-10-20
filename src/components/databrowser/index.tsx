@@ -1,6 +1,7 @@
 import "@/globals.css"
 
 import { useEffect, useMemo, useRef } from "react"
+import { DarkModeProvider, useDarkMode, type DarkModeOption } from "@/dark-mode-context"
 import { RedisProvider, type RedisCredentials } from "@/redis-context"
 import type { TabId } from "@/store"
 import { DatabrowserProvider, useDatabrowserStore } from "@/store"
@@ -26,6 +27,7 @@ export const RedisBrowser = ({
   url,
   hideTabs,
   storage,
+  darkMode = "light",
 }: RedisCredentials & {
   hideTabs?: boolean
 
@@ -41,6 +43,21 @@ export const RedisBrowser = ({
    * ```
    */
   storage?: RedisBrowserStorage
+
+  /**
+   * Dark mode configuration.
+   *
+   * @default "light"
+   * @example
+   * ```tsx
+   * // Light mode (default)
+   * <RedisBrowser darkMode="light" />
+   *
+   * // Dark mode
+   * <RedisBrowser darkMode="dark" />
+   * ```
+   */
+  darkMode?: DarkModeOption
 }) => {
   const credentials = useMemo(() => ({ token, url }), [token, url])
   const rootRef = useRef<HTMLDivElement>(null)
@@ -52,21 +69,37 @@ export const RedisBrowser = ({
   return (
     <QueryClientProvider client={queryClient}>
       <RedisProvider redisCredentials={credentials}>
-        <DatabrowserProvider storage={storage} rootRef={rootRef}>
-          <TooltipProvider>
-            {/* ups-db is the custom class used to prefix every style in the css bundle */}
-            <div
-              className="ups-db"
-              style={{ height: "100%", display: "flex", flexDirection: "column" }}
-              ref={rootRef}
-            >
-              {!hideTabs && <DatabrowserTabs />}
-              <DatabrowserInstances />
-            </div>
-          </TooltipProvider>
-        </DatabrowserProvider>
+        <DarkModeProvider darkMode={darkMode}>
+          <DatabrowserProvider storage={storage} rootRef={rootRef}>
+            <TooltipProvider>
+              <RedisBrowserRoot hideTabs={hideTabs} rootRef={rootRef} />
+            </TooltipProvider>
+          </DatabrowserProvider>
+        </DarkModeProvider>
       </RedisProvider>
     </QueryClientProvider>
+  )
+}
+
+const RedisBrowserRoot = ({
+  hideTabs,
+  rootRef,
+}: {
+  hideTabs?: boolean
+  rootRef: React.RefObject<HTMLDivElement>
+}) => {
+  const theme = useDarkMode()
+
+  return (
+    /* ups-db is the custom class used to prefix every style in the css bundle */
+    <div
+      className={`ups-db ${theme === "dark" ? "dark" : ""}`}
+      style={{ height: "100%", display: "flex", flexDirection: "column" }}
+      ref={rootRef}
+    >
+      {!hideTabs && <DatabrowserTabs />}
+      <DatabrowserInstances />
+    </div>
   )
 }
 

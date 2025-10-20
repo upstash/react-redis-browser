@@ -3,7 +3,7 @@ import { useTab } from "@/tab-provider"
 import { Editor, useMonaco } from "@monaco-editor/react"
 
 import { cn, isTest } from "@/lib/utils"
-import { useDarkMode } from "@/hooks/use-dark-mode"
+import { useDarkMode } from "@/dark-mode-context"
 import { CopyButton } from "@/components/databrowser/copy-button"
 
 export const CustomEditor = ({
