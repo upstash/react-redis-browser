@@ -26,8 +26,16 @@ export const RedisBrowser = ({
   url,
   hideTabs,
   storage,
+  onFullScreenClick,
 }: RedisCredentials & {
   hideTabs?: boolean
+
+  /**
+   * If defined, the databrowser will have a full screen button in the tab bar.
+   * Clicking on the button will call this function.
+   * @returns
+   */
+  onFullScreenClick?: () => void
 
   /**
    * Persistence storage for the Databrowser.
@@ -60,7 +68,7 @@ export const RedisBrowser = ({
               style={{ height: "100%", display: "flex", flexDirection: "column" }}
               ref={rootRef}
             >
-              {!hideTabs && <DatabrowserTabs />}
+              {!hideTabs && <DatabrowserTabs onFullScreenClick={onFullScreenClick} />}
               <DatabrowserInstances />
             </div>
           </TooltipProvider>

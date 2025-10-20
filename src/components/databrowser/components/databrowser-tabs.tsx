@@ -14,7 +14,7 @@ import {
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers"
 import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { IconChevronDown, IconPlus } from "@tabler/icons-react"
+import { IconChevronDown, IconMaximize, IconPlus } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -122,7 +122,7 @@ const SortableTab = ({ id }: { id: TabId }) => {
   )
 }
 
-export const DatabrowserTabs = () => {
+export const DatabrowserTabs = ({ onFullScreenClick }: { onFullScreenClick?: () => void }) => {
   const { tabs, reorderTabs, selectedTab, selectTab } = useDatabrowserStore()
 
   // Sort tabs with pinned tabs first
@@ -262,6 +262,17 @@ export const DatabrowserTabs = () => {
         <div className="flex items-center gap-1 pl-1">
           {isOverflow && <AddTabButton />}
           {tabs.length > 1 && <TabsListButton tabs={tabs} onSelectTab={selectTab} />}
+          {onFullScreenClick && (
+            <Button
+              aria-label="Toggle fullscreen"
+              variant="secondary"
+              size="icon-sm"
+              onClick={onFullScreenClick}
+              className="flex-shrink-0 bg-blue-100 hover:bg-blue-600 hover:text-white"
+            >
+              <IconMaximize size={16} />
+            </Button>
+          )}
         </div>
       </div>
     </div>
