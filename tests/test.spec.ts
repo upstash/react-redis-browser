@@ -42,7 +42,7 @@ describe("keys", () => {
     await page.getByRole("textbox", { name: "Search" }).fill("mykey-13")
     await page.getByRole("textbox", { name: "Search" }).press("Enter")
 
-    await page.getByRole("button", { name: "mykey-" }).click()
+    await page.getByRole("button", { name: "mykey-13", exact: true }).click()
   })
 
   test("can cancel out of deleting a key", async ({ page }) => {
