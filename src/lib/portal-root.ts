@@ -1,4 +1,5 @@
 let root
+let wrapper
 
 // This creates a div element and appends it to the body that will be used as the portal root
 // for all the components that need to be rendered outside the normal flow of the DOM.
@@ -12,12 +13,17 @@ let root
 if (typeof document !== "undefined") {
   const id = "react-redis-browser-portal-root"
 
-  root = document.querySelector(`#${id}`) ?? document.createElement("div")
+  wrapper = document.querySelector(`#${id}`) ?? document.createElement("div")
 
-  root.classList.add("ups-db")
-  root.id = "react-redis-browser-portal-root"
+  wrapper.classList.add("ups-db")
+  wrapper.id = "react-redis-browser-portal-root"
 
-  document.body.append(root)
+  root = document.createElement("div")
+  root.classList.add("text-zinc-700")
+
+  wrapper.append(root)
+  document.body.append(wrapper)
 }
 
 export const portalRoot = root as HTMLDivElement
+export const portalWrapper = wrapper as HTMLDivElement

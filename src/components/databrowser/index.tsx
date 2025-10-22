@@ -10,6 +10,7 @@ import { TooltipProvider } from "@radix-ui/react-tooltip"
 import { QueryClientProvider } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
+import { portalWrapper } from "@/lib/portal-root"
 
 import { DatabrowserInstance } from "./components/databrowser-instance"
 import { DatabrowserTabs } from "./components/databrowser-tabs"
@@ -90,6 +91,11 @@ const RedisBrowserRoot = ({
 }) => {
   const theme = useDarkMode()
 
+  useEffect(() => {
+    portalWrapper.classList.add("text-zinc-700")
+    portalWrapper.classList.toggle("dark", theme === "dark")
+  }, [theme])
+
   return (
     /* ups-db is the custom class used to prefix every style in the css bundle */
     <div
@@ -97,8 +103,10 @@ const RedisBrowserRoot = ({
       style={{ height: "100%", display: "flex", flexDirection: "column" }}
       ref={rootRef}
     >
-      {!hideTabs && <DatabrowserTabs />}
-      <DatabrowserInstances />
+      <div className="text-zinc-700">
+        {!hideTabs && <DatabrowserTabs />}
+        <DatabrowserInstances />
+      </div>
     </div>
   )
 }

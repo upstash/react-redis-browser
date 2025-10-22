@@ -1,10 +1,11 @@
-import ReactDOM from "react-dom/client"
-import { RedisBrowser } from "@/components/databrowser"
-import { CredentialsForm } from "@/playground/credentials-form"
-import { useCredentialsStore } from "@/playground/credentials-store"
 import { useEffect, useState } from "react"
 import type { DarkModeOption } from "@/dark-mode-context"
+import { CredentialsForm } from "@/playground/credentials-form"
+import { useCredentialsStore } from "@/playground/credentials-store"
 import { IconMoon, IconSun } from "@tabler/icons-react"
+import ReactDOM from "react-dom/client"
+
+import { RedisBrowser } from "@/components/databrowser"
 
 const safeProcess = typeof process === "undefined" ? { env: {} as Record<string, string> } : process
 
@@ -29,7 +30,6 @@ const App = () => {
 
   return (
     <main
-      className="ups-db"
       style={{
         position: "fixed",
         inset: 0,
