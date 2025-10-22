@@ -72,6 +72,10 @@ const App = () => {
         <div style={{ height: "800px" }}>
           {credentials ? (
             <RedisBrowser
+              onFullScreenClick={() => {
+                // eslint-disable-next-line no-console
+                console.log("Fullscreen button clicked")
+              }}
               storage={{
                 get: () => localStorage.getItem("redis-browser-data") || "",
                 set: (value) => localStorage.setItem("redis-browser-data", value),

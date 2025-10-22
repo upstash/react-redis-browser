@@ -29,8 +29,16 @@ export const RedisBrowser = ({
   hideTabs,
   storage,
   darkMode = "light",
+  onFullScreenClick,
 }: RedisCredentials & {
   hideTabs?: boolean
+
+  /**
+   * If defined, the databrowser will have a full screen button in the tab bar.
+   * Clicking on the button will call this function.
+   * @returns
+   */
+  onFullScreenClick?: () => void
 
   /**
    * Persistence storage for the Databrowser.
@@ -73,7 +81,11 @@ export const RedisBrowser = ({
         <DarkModeProvider darkMode={darkMode}>
           <DatabrowserProvider storage={storage} rootRef={rootRef}>
             <TooltipProvider>
-              <RedisBrowserRoot hideTabs={hideTabs} rootRef={rootRef} />
+              <RedisBrowserRoot
+                hideTabs={hideTabs}
+                rootRef={rootRef}
+                onFullScreenClick={onFullScreenClick}
+              />
             </TooltipProvider>
           </DatabrowserProvider>
         </DarkModeProvider>
@@ -85,11 +97,14 @@ export const RedisBrowser = ({
 const RedisBrowserRoot = ({
   hideTabs,
   rootRef,
+  onFullScreenClick,
 }: {
   hideTabs?: boolean
   rootRef: React.RefObject<HTMLDivElement>
+  onFullScreenClick?: () => void
 }) => {
   const theme = useDarkMode()
+  
 
   useEffect(() => {
     portalWrapper.classList.add("text-zinc-700")
@@ -104,7 +119,7 @@ const RedisBrowserRoot = ({
       ref={rootRef}
     >
       <div className="flex h-full flex-col text-zinc-700">
-        {!hideTabs && <DatabrowserTabs />}
+        {!hideTabs && <DatabrowserTabs onFullScreenClick={onFullScreenClick} />}
         <DatabrowserInstances />
       </div>
     </div>
