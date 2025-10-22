@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react"
+import { useTheme } from "@/dark-mode-context"
 import { useTab } from "@/tab-provider"
 import { Editor, useMonaco } from "@monaco-editor/react"
 
 import { cn, isTest } from "@/lib/utils"
-import { useDarkMode } from "@/dark-mode-context"
 import { CopyButton } from "@/components/databrowser/copy-button"
 
 export const CustomEditor = ({
@@ -24,7 +24,7 @@ export const CustomEditor = ({
   const { active } = useTab()
   const monaco = useMonaco()
   const editorRef = useRef()
-  const theme = useDarkMode()
+  const theme = useTheme()
 
   useEffect(() => {
     if (!active || !monaco || !editorRef.current) {

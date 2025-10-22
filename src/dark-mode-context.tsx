@@ -1,24 +1,20 @@
-import { createContext, type PropsWithChildren, useContext } from "react"
+import { createContext, useContext, type PropsWithChildren } from "react"
 
 export type DarkModeOption = "dark" | "light"
 
-type DarkModeContextProps = {
-  darkMode: DarkModeOption
-}
-
-const DarkModeContext = createContext<DarkModeContextProps | undefined>(undefined)
+const DarkModeContext = createContext<DarkModeOption | undefined>(undefined)
 
 export const DarkModeProvider = ({
   children,
-  darkMode,
-}: PropsWithChildren<{ darkMode: DarkModeOption }>) => {
-  return <DarkModeContext.Provider value={{ darkMode }}>{children}</DarkModeContext.Provider>
+  theme,
+}: PropsWithChildren<{ theme: DarkModeOption }>) => {
+  return <DarkModeContext.Provider value={theme}>{children}</DarkModeContext.Provider>
 }
 
-export const useDarkMode = (): DarkModeOption => {
+export const useTheme = (): DarkModeOption => {
   const context = useContext(DarkModeContext)
   if (!context) {
     throw new Error("useDarkMode must be used within a DarkModeProvider")
   }
-  return context.darkMode
+  return context
 }

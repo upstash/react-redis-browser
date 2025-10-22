@@ -11,7 +11,7 @@ const safeProcess = typeof process === "undefined" ? { env: {} as Record<string,
 
 const App = () => {
   const { credentials } = useCredentialsStore()
-  const [darkMode, setDarkMode] = useState<DarkModeOption>("light")
+  const [theme, setTheme] = useState<DarkModeOption>("light")
 
   useEffect(() => {
     if (safeProcess.env.UPSTASH_REDIS_REST_URL && safeProcess.env.UPSTASH_REDIS_REST_TOKEN) {
@@ -25,7 +25,7 @@ const App = () => {
   }, [safeProcess.env.UPSTASH_REDIS_REST_URL, safeProcess.env.UPSTASH_REDIS_REST_TOKEN])
 
   const toggleDarkMode = () => {
-    setDarkMode((prev) => (prev === "light" ? "dark" : "light"))
+    setTheme((prev) => (prev === "light" ? "dark" : "light"))
   }
 
   return (
@@ -33,7 +33,7 @@ const App = () => {
       style={{
         position: "fixed",
         inset: 0,
-        backgroundColor: darkMode === "dark" ? "#18181b" : "rgb(var(--color-zinc-50))",
+        backgroundColor: theme === "dark" ? "#18181b" : "rgb(var(--color-zinc-50))",
         padding: "20px",
         transition: "background-color 0.2s",
       }}
@@ -56,17 +56,17 @@ const App = () => {
             style={{
               padding: "8px",
               border: "1px solid",
-              borderColor: darkMode === "dark" ? "#3f3f46" : "#d4d4d8",
+              borderColor: theme === "dark" ? "#3f3f46" : "#d4d4d8",
               borderRadius: "6px",
-              backgroundColor: darkMode === "dark" ? "#27272a" : "#ffffff",
-              color: darkMode === "dark" ? "#fafafa" : "#18181b",
+              backgroundColor: theme === "dark" ? "#27272a" : "#ffffff",
+              color: theme === "dark" ? "#fafafa" : "#18181b",
               cursor: "pointer",
               fontSize: "14px",
               fontWeight: "500",
               transition: "all 0.2s",
             }}
           >
-            {darkMode === "dark" ? <IconMoon size={20} /> : <IconSun size={20} />}
+            {theme === "dark" ? <IconMoon size={20} /> : <IconSun size={20} />}
           </button>
         </div>
         <div style={{ height: "800px" }}>
@@ -82,7 +82,7 @@ const App = () => {
               }}
               token={credentials.token}
               url={credentials.url}
-              darkMode={darkMode}
+              theme={theme}
             />
           ) : (
             <CredentialsForm />

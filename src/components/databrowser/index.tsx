@@ -1,7 +1,7 @@
 import "@/globals.css"
 
 import { useEffect, useMemo, useRef } from "react"
-import { DarkModeProvider, useDarkMode, type DarkModeOption } from "@/dark-mode-context"
+import { DarkModeProvider, useTheme, type DarkModeOption } from "@/dark-mode-context"
 import { RedisProvider, type RedisCredentials } from "@/redis-context"
 import type { TabId } from "@/store"
 import { DatabrowserProvider, useDatabrowserStore } from "@/store"
@@ -28,8 +28,8 @@ export const RedisBrowser = ({
   url,
   hideTabs,
   storage,
-  darkMode = "light",
   onFullScreenClick,
+  theme = "light",
 }: RedisCredentials & {
   hideTabs?: boolean
 
@@ -54,19 +54,19 @@ export const RedisBrowser = ({
   storage?: RedisBrowserStorage
 
   /**
-   * Dark mode configuration.
+   * Theme configuration (light or dark).
    *
    * @default "light"
    * @example
    * ```tsx
    * // Light mode (default)
-   * <RedisBrowser darkMode="light" />
+   * <RedisBrowser theme="light" />
    *
    * // Dark mode
-   * <RedisBrowser darkMode="dark" />
+   * <RedisBrowser theme="dark" />
    * ```
    */
-  darkMode?: DarkModeOption
+  theme?: DarkModeOption
 }) => {
   const credentials = useMemo(() => ({ token, url }), [token, url])
   const rootRef = useRef<HTMLDivElement>(null)
@@ -78,7 +78,7 @@ export const RedisBrowser = ({
   return (
     <QueryClientProvider client={queryClient}>
       <RedisProvider redisCredentials={credentials}>
-        <DarkModeProvider darkMode={darkMode}>
+        <DarkModeProvider theme={theme}>
           <DatabrowserProvider storage={storage} rootRef={rootRef}>
             <TooltipProvider>
               <RedisBrowserRoot
@@ -103,8 +103,7 @@ const RedisBrowserRoot = ({
   rootRef: React.RefObject<HTMLDivElement>
   onFullScreenClick?: () => void
 }) => {
-  const theme = useDarkMode()
-  
+  const theme = useTheme()
 
   useEffect(() => {
     portalWrapper.classList.add("text-zinc-700")
