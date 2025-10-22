@@ -100,10 +100,10 @@ const RedisBrowserRoot = ({
     /* ups-db is the custom class used to prefix every style in the css bundle */
     <div
       className={`ups-db ${theme === "dark" ? "dark" : ""}`}
-      style={{ height: "100%", display: "flex", flexDirection: "column" }}
+      style={{ height: "100%" }}
       ref={rootRef}
     >
-      <div className="text-zinc-700">
+      <div className="flex h-full flex-col text-zinc-700">
         {!hideTabs && <DatabrowserTabs />}
         <DatabrowserInstances />
       </div>
