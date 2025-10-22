@@ -1,3 +1,4 @@
+import { useTab } from "@/tab-provider"
 import type { DataType, RedisKey } from "@/types"
 
 import { cn } from "@/lib/utils"
@@ -6,7 +7,6 @@ import { TypeTag } from "@/components/databrowser/components/type-tag"
 
 import { useKeys } from "../../hooks/use-keys"
 import { SidebarContextMenu } from "../sidebar-context-menu"
-import { useTab } from "@/tab-provider"
 
 export const KeysList = () => {
   const { keys } = useKeys()
@@ -44,7 +44,7 @@ const KeyItem = ({ data, nextKey }: { data: RedisKey; nextKey: string }) => {
       data-key={dataKey}
       variant={isKeySelected ? "default" : "ghost"}
       className={cn(
-        "relative flex h-10 w-full items-center justify-start gap-2 px-3 py-0 !ring-0 focus-visible:bg-zinc-50 dark:focus-visible:bg-zinc-100",
+        "relative flex h-10 w-full items-center justify-start gap-2 px-3 py-0 !ring-0 focus-visible:bg-zinc-50",
         "select-none border border-transparent text-left",
         isKeySelected && "shadow-sm",
         isKeySelected && keyStyles[dataType]
