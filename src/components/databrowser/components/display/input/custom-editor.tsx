@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react"
+import { useTheme } from "@/dark-mode-context"
 import { useTab } from "@/tab-provider"
 import { Editor, useMonaco } from "@monaco-editor/react"
 
@@ -23,6 +24,7 @@ export const CustomEditor = ({
   const { active } = useTab()
   const monaco = useMonaco()
   const editorRef = useRef()
+  const theme = useTheme()
 
   useEffect(() => {
     if (!active || !monaco || !editorRef.current) {
@@ -35,6 +37,7 @@ export const CustomEditor = ({
 
   const editor = (
     <Editor
+      theme={theme === "dark" ? "vs-dark" : "light"}
       loading={undefined}
       onMount={(editor) => {
         // @ts-expect-error not typing the editor type
@@ -68,7 +71,9 @@ export const CustomEditor = ({
         scrollBeyondLastLine: false,
         renderLineHighlight: "none",
         unusualLineTerminators: "auto",
+        padding: { top: 0, bottom: 0 },
       }}
+      className="[&_.monaco-editor-background]:!bg-transparent [&_.monaco-editor]:!bg-transparent"
     />
   )
 

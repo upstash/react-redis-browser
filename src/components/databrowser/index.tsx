@@ -1,6 +1,7 @@
 import "@/globals.css"
 
 import { useEffect, useMemo, useRef } from "react"
+import { DarkModeProvider, useTheme, type DarkModeOption } from "@/dark-mode-context"
 import { RedisProvider, type RedisCredentials } from "@/redis-context"
 import type { TabId } from "@/store"
 import { DatabrowserProvider, useDatabrowserStore } from "@/store"
@@ -9,6 +10,7 @@ import { TooltipProvider } from "@radix-ui/react-tooltip"
 import { QueryClientProvider } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
+import { portalWrapper } from "@/lib/portal-root"
 
 import { DatabrowserInstance } from "./components/databrowser-instance"
 import { DatabrowserTabs } from "./components/databrowser-tabs"
@@ -26,8 +28,17 @@ export const RedisBrowser = ({
   url,
   hideTabs,
   storage,
+  onFullScreenClick,
+  theme = "light",
 }: RedisCredentials & {
   hideTabs?: boolean
+
+  /**
+   * If defined, the databrowser will have a full screen button in the tab bar.
+   * Clicking on the button will call this function.
+   * @returns
+   */
+  onFullScreenClick?: () => void
 
   /**
    * Persistence storage for the Databrowser.
@@ -41,6 +52,21 @@ export const RedisBrowser = ({
    * ```
    */
   storage?: RedisBrowserStorage
+
+  /**
+   * Theme configuration (light or dark).
+   *
+   * @default "light"
+   * @example
+   * ```tsx
+   * // Light mode (default)
+   * <RedisBrowser theme="light" />
+   *
+   * // Dark mode
+   * <RedisBrowser theme="dark" />
+   * ```
+   */
+  theme?: DarkModeOption
 }) => {
   const credentials = useMemo(() => ({ token, url }), [token, url])
   const rootRef = useRef<HTMLDivElement>(null)
@@ -52,21 +78,50 @@ export const RedisBrowser = ({
   return (
     <QueryClientProvider client={queryClient}>
       <RedisProvider redisCredentials={credentials}>
-        <DatabrowserProvider storage={storage} rootRef={rootRef}>
-          <TooltipProvider>
-            {/* ups-db is the custom class used to prefix every style in the css bundle */}
-            <div
-              className="ups-db"
-              style={{ height: "100%", display: "flex", flexDirection: "column" }}
-              ref={rootRef}
-            >
-              {!hideTabs && <DatabrowserTabs />}
-              <DatabrowserInstances />
-            </div>
-          </TooltipProvider>
-        </DatabrowserProvider>
+        <DarkModeProvider theme={theme}>
+          <DatabrowserProvider storage={storage} rootRef={rootRef}>
+            <TooltipProvider>
+              <RedisBrowserRoot
+                hideTabs={hideTabs}
+                rootRef={rootRef}
+                onFullScreenClick={onFullScreenClick}
+              />
+            </TooltipProvider>
+          </DatabrowserProvider>
+        </DarkModeProvider>
       </RedisProvider>
     </QueryClientProvider>
+  )
+}
+
+const RedisBrowserRoot = ({
+  hideTabs,
+  rootRef,
+  onFullScreenClick,
+}: {
+  hideTabs?: boolean
+  rootRef: React.RefObject<HTMLDivElement>
+  onFullScreenClick?: () => void
+}) => {
+  const theme = useTheme()
+
+  useEffect(() => {
+    portalWrapper.classList.add("text-zinc-700")
+    portalWrapper.classList.toggle("dark", theme === "dark")
+  }, [theme])
+
+  return (
+    /* ups-db is the custom class used to prefix every style in the css bundle */
+    <div
+      className={`ups-db ${theme === "dark" ? "dark" : ""}`}
+      style={{ height: "100%" }}
+      ref={rootRef}
+    >
+      <div className="flex h-full flex-col text-zinc-700">
+        {!hideTabs && <DatabrowserTabs onFullScreenClick={onFullScreenClick} />}
+        <DatabrowserInstances />
+      </div>
+    </div>
   )
 }
 
