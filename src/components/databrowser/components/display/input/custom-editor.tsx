@@ -79,7 +79,7 @@ export const CustomEditor = ({
 
   return (
     <div
-      className={cn("group/editor relative", height === undefined && "h-full p-2")}
+      className={cn("group/editor relative", height === undefined && "h-full")}
       style={{ height: height }}
     >
       {isTest ? (

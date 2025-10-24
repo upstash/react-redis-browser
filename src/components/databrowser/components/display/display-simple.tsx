@@ -63,9 +63,7 @@ const EditorDisplayForm = ({
           {type === "json" ? <div /> : selector}
         </div>
 
-        <div className="grow rounded-md border border-zinc-300 bg-white p-1 dark:!bg-[#192321]">
-          {editor}
-        </div>
+        <div className="grow rounded-md border border-zinc-300 bg-white p-2">{editor}</div>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
