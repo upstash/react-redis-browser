@@ -31,15 +31,27 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
+
+    /* Viewport height */
+    viewport: { width: 1280, height: 1280 },
   },
 
   /* Configure projects for major browsers */
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    {
+      name: "chromium",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 1500 } },
+    },
 
-    { name: "firefox", use: { ...devices["Desktop Firefox"] } },
+    {
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"], viewport: { width: 1280, height: 1500 } },
+    },
 
-    { name: "webkit", use: { ...devices["Desktop Safari"] } },
+    {
+      name: "webkit",
+      use: { ...devices["Desktop Safari"], viewport: { width: 1280, height: 1500 } },
+    },
 
     /* Test against mobile viewports. */
     // {
