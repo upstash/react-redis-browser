@@ -80,30 +80,21 @@ const ListEditForm = ({
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={onSubmit} className="flex flex-col gap-2">
+      <form onSubmit={onSubmit} className="flex h-full flex-col gap-2">
         <div className="flex grow flex-col gap-2">
+          {type === "zset" && <NumberFormItem name="value" label={valueLabel} />}
+
           {type !== "list" && (
-            <FormItem
-              readOnly={type === "stream"}
-              name="key"
-              height={type === "set" ? 250 : 100}
-              label={keyLabel}
-              data={itemKey}
-            />
+            <FormItem readOnly={type === "stream"} name="key" label={keyLabel} data={itemKey} />
           )}
 
-          {type === "zset" ? (
-            <NumberFormItem name="value" label={valueLabel} />
-          ) : (
-            type !== "set" && (
-              <FormItem
-                readOnly={type === "stream"}
-                name="value"
-                height={type === "list" ? 250 : 100}
-                label={valueLabel}
-                data={itemValue ?? ""}
-              />
-            )
+          {type !== "set" && type !== "zset" && (
+            <FormItem
+              readOnly={type === "stream"}
+              name="value"
+              label={valueLabel}
+              data={itemValue ?? ""}
+            />
           )}
         </div>
 
@@ -195,14 +186,19 @@ const FormItem = ({
   })
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className={cn("flex flex-col gap-1", !height && "h-full")}>
       <div className="flex items-center gap-1 text-xs">
         <span className="font-medium text-zinc-700">{label}</span>{" "}
         <span className="text-zinc-300">/</span>
         {selector}
       </div>
 
-      <div className="overflow-hidden rounded-md border border-zinc-300 bg-white p-2 shadow-sm">
+      <div
+        className={cn(
+          "overflow-hidden rounded-md border border-zinc-300 bg-white p-2 shadow-sm",
+          !height && "h-full"
+        )}
+      >
         {editor}
       </div>
     </div>
