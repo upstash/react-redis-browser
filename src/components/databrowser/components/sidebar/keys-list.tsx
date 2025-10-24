@@ -1,3 +1,4 @@
+import { useTab } from "@/tab-provider"
 import type { DataType, RedisKey } from "@/types"
 
 import { cn } from "@/lib/utils"
@@ -6,7 +7,6 @@ import { TypeTag } from "@/components/databrowser/components/type-tag"
 
 import { useKeys } from "../../hooks/use-keys"
 import { SidebarContextMenu } from "../sidebar-context-menu"
-import { useTab } from "@/tab-provider"
 
 export const KeysList = () => {
   const { keys } = useKeys()

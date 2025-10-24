@@ -13,13 +13,13 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const iconsMap = {
-  string: <IconQuote size={15} stroke={1.3} />,
-  set: <IconLayersIntersect size={15} stroke={1.3} />,
-  hash: <IconHash size={15} stroke={1.3} />,
-  json: <IconCodeDots size={15} stroke={1.3} />,
-  zset: <IconArrowsSort size={15} stroke={1.3} />,
-  list: <IconList size={15} stroke={1.3} />,
-  stream: <IconList size={15} stroke={1.3} />,
+  string: <IconQuote size={15} stroke={1.2} />,
+  set: <IconLayersIntersect size={15} stroke={1.2} />,
+  hash: <IconHash size={15} stroke={1.2} />,
+  json: <IconCodeDots size={15} stroke={1.2} />,
+  zset: <IconArrowsSort size={15} stroke={1.2} />,
+  list: <IconList size={15} stroke={1.2} />,
+  stream: <IconList size={15} stroke={1.2} />,
 } as const
 
 const tagVariants = cva("inline-flex shrink-0 items-center rounded-md justify-center", {
