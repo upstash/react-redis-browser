@@ -16,15 +16,21 @@ export const KeysList = () => {
   return (
     <SidebarContextMenu>
       <>
+        {/* Since the selection border is overflowing, we need a px padding for the first item */}
+        <div className="h-px" />
         {keys.map((data, i) => (
-          <KeyItem
-            key={data[0]}
-            index={i}
-            nextKey={keys.at(i + 1)?.[0] ?? ""}
-            data={data}
-            allKeys={keys}
-            lastClickedIndexRef={lastClickedIndexRef}
-          />
+          <>
+            <KeyItem
+              key={data[0]}
+              index={i}
+              data={data}
+              allKeys={keys}
+              lastClickedIndexRef={lastClickedIndexRef}
+            />
+            {i !== keys.length - 1 && (
+              <div className="-z-10 mx-2 h-px bg-zinc-100 dark:bg-zinc-200" />
+            )}
+          </>
         ))}
       </>
     </SidebarContextMenu>
@@ -43,13 +49,11 @@ const keyStyles = {
 
 const KeyItem = ({
   data,
-  nextKey,
   index,
   allKeys,
   lastClickedIndexRef,
 }: {
   data: RedisKey
-  nextKey: string
   index: number
   allKeys: RedisKey[]
   lastClickedIndexRef: React.MutableRefObject<number | null>
@@ -58,7 +62,6 @@ const KeyItem = ({
 
   const [dataKey, dataType] = data
   const isKeySelected = selectedKeys.includes(dataKey)
-  const isNextKeySelected = selectedKeys.includes(nextKey)
 
   const handleClick = (e: React.MouseEvent) => {
     if (e.shiftKey && lastClickedIndexRef.current !== null) {
@@ -80,7 +83,7 @@ const KeyItem = ({
       variant={isKeySelected ? "default" : "ghost"}
       className={cn(
         "relative flex h-10 w-full items-center justify-start gap-2 px-3 py-0 !ring-0 focus-visible:bg-zinc-50",
-        "select-none border border-transparent text-left",
+        "-my-px select-none border border-transparent text-left",
         isKeySelected && "shadow-sm",
         isKeySelected && keyStyles[dataType]
       )}
@@ -88,10 +91,6 @@ const KeyItem = ({
     >
       <TypeTag variant={dataType} type="icon" />
       <p className="truncate whitespace-nowrap">{dataKey}</p>
-
-      {!isKeySelected && !isNextKeySelected && (
-        <span className="absolute -bottom-px left-3 right-3 h-px bg-zinc-100" />
-      )}
     </Button>
   )
 }
