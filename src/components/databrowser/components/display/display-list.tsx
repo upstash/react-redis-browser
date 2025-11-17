@@ -84,7 +84,9 @@ export const ListItems = ({
           onClick={() => {
             setSelectedListItem({ key })
           }}
-          className={cn("h-10 border-b border-b-zinc-100 transition-colors hover:bg-zinc-100")}
+          className={cn(
+            "h-10 border-b border-b-zinc-100 transition-colors hover:bg-zinc-100 dark:border-b-zinc-200 dark:hover:bg-zinc-200"
+          )}
         >
           <td
             className={cn(
@@ -103,7 +105,7 @@ export const ListItems = ({
           )}
           {type !== "stream" && (
             <td
-              className="w-0 min-w-0 p-0"
+              className="w-0 min-w-0 p-0 pr-2"
               onClick={(e) => {
                 e.stopPropagation()
               }}

@@ -1,8 +1,4 @@
-import { IconRefresh } from "@tabler/icons-react"
-
 import { queryClient } from "@/lib/clients"
-import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
 
 import { FETCH_LIST_ITEMS_QUERY_KEY, FETCH_SIMPLE_KEY_QUERY_KEY } from "../../hooks"
 import { FETCH_KEY_TYPE_QUERY_KEY } from "../../hooks/use-fetch-key-type"
@@ -12,6 +8,7 @@ import { DisplayDbSize, FETCH_DB_SIZE_QUERY_KEY } from "./db-size"
 import { Empty } from "./empty"
 import { InfiniteScroll } from "./infinite-scroll"
 import { KeysList } from "./keys-list"
+import { ReloadButton } from "./reload-button"
 import { SearchInput } from "./search-input"
 import { LoadingSkeleton } from "./skeleton-buttons"
 import { DataTypeSelector } from "./type-selector"
@@ -26,9 +23,7 @@ export function Sidebar() {
         <div className="flex h-10 items-center justify-between pl-1">
           <DisplayDbSize />
           <div className="flex gap-1">
-            <Button
-              aria-label="Refresh"
-              className="h-7 w-7 px-0 text-zinc-500"
+            <ReloadButton
               onClick={() => {
                 queryClient.invalidateQueries({
                   queryKey: [FETCH_KEYS_QUERY_KEY],
@@ -46,11 +41,8 @@ export function Sidebar() {
                   queryKey: [FETCH_KEY_TYPE_QUERY_KEY],
                 })
               }}
-            >
-              <Spinner isLoading={query.isFetching}>
-                <IconRefresh size={16} />
-              </Spinner>
-            </Button>
+              isLoading={query.isFetching}
+            />
             <AddKeyModal />
           </div>
         </div>
