@@ -1,3 +1,4 @@
+import { useRef } from "react"
 import { useTab } from "@/tab-provider"
 import type { DataType, RedisKey } from "@/types"
 
@@ -10,12 +11,20 @@ import { SidebarContextMenu } from "../sidebar-context-menu"
 
 export const KeysList = () => {
   const { keys } = useKeys()
+  const lastClickedIndexRef = useRef<number | null>(null)
 
   return (
     <SidebarContextMenu>
       <>
         {keys.map((data, i) => (
-          <KeyItem key={data[0]} nextKey={keys.at(i + 1)?.[0] ?? ""} data={data} />
+          <KeyItem
+            key={data[0]}
+            index={i}
+            nextKey={keys.at(i + 1)?.[0] ?? ""}
+            data={data}
+            allKeys={keys}
+            lastClickedIndexRef={lastClickedIndexRef}
+          />
         ))}
       </>
     </SidebarContextMenu>
@@ -32,12 +41,38 @@ const keyStyles = {
   stream: "border-green-400 !bg-green-50 text-green-900",
 } as Record<DataType, string>
 
-const KeyItem = ({ data, nextKey }: { data: RedisKey; nextKey: string }) => {
-  const { selectedKey, setSelectedKey } = useTab()
+const KeyItem = ({
+  data,
+  nextKey,
+  index,
+  allKeys,
+  lastClickedIndexRef,
+}: {
+  data: RedisKey
+  nextKey: string
+  index: number
+  allKeys: RedisKey[]
+  lastClickedIndexRef: React.MutableRefObject<number | null>
+}) => {
+  const { selectedKeys, setSelectedKeys, setSelectedKey } = useTab()
 
   const [dataKey, dataType] = data
-  const isKeySelected = selectedKey === dataKey
-  const isNextKeySelected = selectedKey === nextKey
+  const isKeySelected = selectedKeys.includes(dataKey)
+  const isNextKeySelected = selectedKeys.includes(nextKey)
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (e.shiftKey && lastClickedIndexRef.current !== null) {
+      // Shift+Click: select range
+      const start = Math.min(lastClickedIndexRef.current, index)
+      const end = Math.max(lastClickedIndexRef.current, index)
+      const rangeKeys = allKeys.slice(start, end + 1).map(([key]) => key)
+      setSelectedKeys(rangeKeys)
+    } else {
+      // Regular click: select single key
+      setSelectedKey(dataKey)
+      lastClickedIndexRef.current = index
+    }
+  }
 
   return (
     <Button
@@ -49,7 +84,7 @@ const KeyItem = ({ data, nextKey }: { data: RedisKey; nextKey: string }) => {
         isKeySelected && "shadow-sm",
         isKeySelected && keyStyles[dataType]
       )}
-      onClick={() => setSelectedKey(dataKey)}
+      onClick={handleClick}
     >
       <TypeTag variant={dataType} type="icon" />
       <p className="truncate whitespace-nowrap">{dataKey}</p>

@@ -28,7 +28,7 @@ export function Sidebar() {
           <div className="flex gap-1">
             <Button
               aria-label="Refresh"
-              className="h-7 w-7 px-0 text-zinc-500"
+              className="h-7 w-7 px-0 text-zinc-500 dark:text-zinc-600"
               onClick={() => {
                 queryClient.invalidateQueries({
                   queryKey: [FETCH_KEYS_QUERY_KEY],

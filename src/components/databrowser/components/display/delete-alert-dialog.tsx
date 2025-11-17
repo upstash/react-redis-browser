@@ -18,13 +18,19 @@ export function DeleteAlertDialog({
   open,
   onOpenChange,
   deletionType,
+  count = 1,
 }: {
   children?: React.ReactNode
   onDeleteConfirm: MouseEventHandler
   open?: boolean
   onOpenChange?: (open: boolean) => void
   deletionType: "item" | "key"
+  count?: number
 }) {
+  const isPlural = count > 1
+  const itemLabel = deletionType === "item" ? "Item" : "Key"
+  const itemsLabel = deletionType === "item" ? "Items" : "Keys"
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       {children && <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>}
@@ -32,10 +38,10 @@ export function DeleteAlertDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {deletionType === "item" ? "Delete Item" : "Delete Key"}
+            {isPlural ? `Delete ${count} ${itemsLabel}` : `Delete ${itemLabel}`}
           </AlertDialogTitle>
           <AlertDialogDescription className="mt-5">
-            Are you sure you want to delete this {deletionType}?<br />
+            Are you sure you want to delete {isPlural ? `these ${count} ${deletionType}s` : `this ${deletionType}`}?<br />
             This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>

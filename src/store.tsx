@@ -45,7 +45,7 @@ export const DatabrowserProvider = ({
           setItem: (_name, value) => storage.set(JSON.stringify(value)),
           removeItem: () => {},
         },
-        version: 2,
+        version: 3,
         // @ts-expect-error Reset the store for < v1
         migrate: (originalState, version) => {
           const state = originalState as DatabrowserStore
@@ -57,6 +57,23 @@ export const DatabrowserProvider = ({
             return {
               ...state,
               tabs: state.tabs.map(([id, data]) => [id, { ...data, id }]),
+            }
+          }
+
+          if (version === 2) {
+            // Migrate from selectedKey to selectedKeys
+            return {
+              ...state,
+              tabs: state.tabs.map(([id, data]) => {
+                const oldData = data as any
+                return [
+                  id,
+                  {
+                    ...data,
+                    selectedKeys: oldData.selectedKey ? [oldData.selectedKey] : [],
+                  },
+                ]
+              }),
             }
           }
 
@@ -102,7 +119,7 @@ export type SelectedItem = {
 
 export type TabData = {
   id: TabId
-  selectedKey: string | undefined
+  selectedKeys: string[]
   selectedListItem?: SelectedItem
 
   search: SearchFilter
@@ -128,8 +145,9 @@ type DatabrowserStore = {
   closeAllButPinned: () => void
 
   // Tab actions
-  getSelectedKey: (tabId: TabId) => string | undefined
+  getSelectedKeys: (tabId: TabId) => string[]
   setSelectedKey: (tabId: TabId, key: string | undefined) => void
+  setSelectedKeys: (tabId: TabId, keys: string[]) => void
   setSelectedListItem: (tabId: TabId, item?: { key: string; isNew?: boolean }) => void
   setSearch: (tabId: TabId, search: SearchFilter) => void
   setSearchKey: (tabId: TabId, key: string) => void
@@ -150,7 +168,7 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
 
     const newTabData: TabData = {
       id,
-      selectedKey: undefined,
+      selectedKeys: [],
       search: { key: "", type: undefined },
       pinned: false,
     }
@@ -275,18 +293,22 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
     set({ selectedTab: id })
   },
 
-  getSelectedKey: (tabId) => {
-    return get().tabs.find(([id]) => id === tabId)?.[1]?.selectedKey
+  getSelectedKeys: (tabId) => {
+    return get().tabs.find(([id]) => id === tabId)?.[1]?.selectedKeys ?? []
   },
 
   setSelectedKey: (tabId, key) => {
+    get().setSelectedKeys(tabId, key ? [key] : [])
+  },
+
+  setSelectedKeys: (tabId, keys) => {
     set((old) => {
       const tabIndex = old.tabs.findIndex(([id]) => id === tabId)
       if (tabIndex === -1) return old
 
       const newTabs = [...old.tabs]
       const [, tabData] = newTabs[tabIndex]
-      newTabs[tabIndex] = [tabId, { ...tabData, selectedKey: key, selectedListItem: undefined }]
+      newTabs[tabIndex] = [tabId, { ...tabData, selectedKeys: keys, selectedListItem: undefined }]
 
       return { ...old, tabs: newTabs }
     })

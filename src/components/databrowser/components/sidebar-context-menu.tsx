@@ -18,19 +18,23 @@ import { DeleteAlertDialog } from "./display/delete-alert-dialog"
 export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
   const { mutate: deleteKey } = useDeleteKey()
   const [isAlertOpen, setAlertOpen] = useState(false)
-  const [dataKey, setDataKey] = useState("")
-  const { addTab, setSelectedKey, selectTab, setSearch } = useDatabrowserStore()
-  const { search: currentSearch } = useTab()
+  const [contextKeys, setContextKeys] = useState<string[]>([])
+  const { addTab, setSelectedKey: setSelectedKeyGlobal, selectTab, setSearch } = useDatabrowserStore()
+  const { search: currentSearch, selectedKeys, setSelectedKey } = useTab()
 
   return (
     <>
       <DeleteAlertDialog
         deletionType="key"
+        count={contextKeys.length}
         open={isAlertOpen}
         onOpenChange={setAlertOpen}
         onDeleteConfirm={(e) => {
           e.stopPropagation()
-          deleteKey(dataKey)
+          // Delete all selected keys
+          for (const key of contextKeys) {
+            deleteKey(key)
+          }
           setAlertOpen(false)
         }}
       />
@@ -42,7 +46,16 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
             const key = el.closest("[data-key]")
 
             if (key && key instanceof HTMLElement && key.dataset.key !== undefined) {
-              setDataKey(key.dataset.key)
+              const clickedKey = key.dataset.key
+
+              // If right-clicking on a selected key, keep all selected keys
+              if (selectedKeys.includes(clickedKey)) {
+                setContextKeys(selectedKeys)
+              } else {
+                // If right-clicking on an unselected key, select only that key
+                setSelectedKey(clickedKey)
+                setContextKeys([clickedKey])
+              }
             } else {
               throw new Error("Key not found")
             }
@@ -53,12 +66,13 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
         <ContextMenuContent>
           <ContextMenuItem
             onClick={() => {
-              navigator.clipboard.writeText(dataKey)
+              navigator.clipboard.writeText(contextKeys[0])
               toast({
                 description: "Key copied to clipboard",
               })
             }}
             className="gap-2"
+            disabled={contextKeys.length !== 1}
           >
             <IconCopy size={16} />
             Copy key
@@ -66,11 +80,12 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
           <ContextMenuItem
             onClick={() => {
               const newTabId = addTab()
-              setSelectedKey(newTabId, dataKey)
+              setSelectedKeyGlobal(newTabId, contextKeys[0])
               setSearch(newTabId, currentSearch)
               selectTab(newTabId)
             }}
             className="gap-2"
+            disabled={contextKeys.length !== 1}
           >
             <IconExternalLink size={16} />
             Open in new tab
@@ -78,7 +93,7 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
           <ContextMenuSeparator />
           <ContextMenuItem onClick={() => setAlertOpen(true)} className="gap-2">
             <IconTrash size={16} />
-            Delete key
+            {contextKeys.length > 1 ? `Delete ${contextKeys.length} keys` : "Delete key"}
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
