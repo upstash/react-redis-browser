@@ -83,11 +83,11 @@ export const SearchInput = () => {
     <div className="relative grow">
       <Popover open={isFocus && filteredHistory.length > 0}>
         <PopoverTrigger asChild>
-          <div>
+          <div className="h-8 rounded-md rounded-l-none border border-zinc-300 font-normal">
             <Input
               ref={inputRef}
               placeholder="Search"
-              className={"rounded-l-none border-zinc-300 font-normal"}
+              className={"h-full rounded-l-none border-none pr-6"}
               onKeyDown={handleKeyDown}
               onChange={(e) => {
                 setState(e.currentTarget.value)

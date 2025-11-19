@@ -23,6 +23,7 @@ export const useTab = () => {
     selectedTab,
     tabs,
     setSelectedKey,
+    setSelectedKeys,
     setSelectedListItem,
     setSearch,
     setSearchKey,
@@ -37,12 +38,14 @@ export const useTab = () => {
   return useMemo(
     () => ({
       active: selectedTab === tabId,
-      selectedKey: tabData.selectedKey,
+      selectedKey: tabData.selectedKeys[0], // Backwards compatibility - first selected key
+      selectedKeys: tabData.selectedKeys,
       selectedListItem: tabData.selectedListItem,
       search: tabData.search,
       pinned: tabData.pinned,
 
       setSelectedKey: (key: string | undefined) => setSelectedKey(tabId, key),
+      setSelectedKeys: (keys: string[]) => setSelectedKeys(tabId, keys),
       setSelectedListItem: (item: SelectedItem | undefined) => setSelectedListItem(tabId, item),
       setSearch: (search: SearchFilter) => setSearch(tabId, search),
       setSearchKey: (key: string) => setSearchKey(tabId, key),
