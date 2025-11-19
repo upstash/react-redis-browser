@@ -78,11 +78,7 @@ describe("keys", () => {
 
   test("can add a string key", async ({ page }) => {
     await page.getByRole("main").click()
-    await page
-      .getByRole("button", {
-        name: "Add key",
-      })
-      .click()
+    await page.getByTestId("add-key-button").click()
     await page.getByRole("textbox", { name: "mykey" }).click()
     await page.getByRole("textbox", { name: "mykey" }).fill("----added-key")
     await page.getByRole("button", { name: "Create" }).click()
@@ -99,11 +95,7 @@ describe("keys", () => {
   })
 
   test("can add a json key", async ({ page }) => {
-    await page
-      .getByRole("button", {
-        name: "Add key",
-      })
-      .click()
+    await page.getByTestId("add-key-button").click()
     await page.getByRole("combobox").click()
     await page.getByRole("option", { name: "JSON" }).click()
     await page.getByRole("textbox", { name: "mykey" }).click()
