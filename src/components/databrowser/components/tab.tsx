@@ -75,7 +75,7 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
             e.stopPropagation()
             removeTab(id)
           }}
-          className="p-1 text-zinc-300 transition-colors hover:text-zinc-500"
+          className="p-1 text-zinc-300 transition-colors hover:text-zinc-500 dark:text-zinc-400"
         >
           <IconX size={16} />
         </button>

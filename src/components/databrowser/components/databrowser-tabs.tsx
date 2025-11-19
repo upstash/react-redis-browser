@@ -301,9 +301,9 @@ function AddTabButton() {
       variant="secondary"
       size="icon-sm"
       onClick={handleAddTab}
-      className="flex-shrink-0"
+      className="flex-shrink-0 dark:bg-zinc-200"
     >
-      <IconPlus className="text-zinc-500" size={16} />
+      <IconPlus className="text-zinc-500 dark:text-zinc-600" size={16} />
     </Button>
   )
 }
