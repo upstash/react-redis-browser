@@ -70,6 +70,14 @@ const KeyItem = ({
       const end = Math.max(lastClickedIndexRef.current, index)
       const rangeKeys = allKeys.slice(start, end + 1).map(([key]) => key)
       setSelectedKeys(rangeKeys)
+    } else if (e.metaKey || e.ctrlKey) {
+      // cmd/ctrl+click to toggle selection
+      if (isKeySelected) {
+        setSelectedKeys(selectedKeys.filter((k) => k !== dataKey))
+      } else {
+        setSelectedKeys([...selectedKeys, dataKey])
+      }
+      lastClickedIndexRef.current = index
     } else {
       // Regular click: select single key
       setSelectedKey(dataKey)
