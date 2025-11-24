@@ -25,6 +25,7 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { TypeTag } from "@/components/databrowser/components/type-tag"
 import { useAddKey } from "@/components/databrowser/hooks/use-add-key"
+import { SimpleTooltip } from "@/components/ui/tooltip"
 
 export function AddKeyModal() {
   const { setSelectedKey } = useTab()
@@ -62,10 +63,12 @@ export function AddKeyModal() {
         setOpen(open)
       }}
     >
-      <DialogTrigger asChild>
-        <Button variant="primary" size="icon-sm" aria-label="Add key">
-          <PlusIcon className="size-4" />
-        </Button>
+      <DialogTrigger>
+        <SimpleTooltip content="Add key">
+          <Button variant="primary" size="icon-sm" data-testid="add-key-button">
+            <PlusIcon className="size-4" />
+          </Button>
+        </SimpleTooltip>
       </DialogTrigger>
 
       <DialogContent className="max-w-[400px]">

@@ -59,8 +59,8 @@ export const HeaderTTLBadge = ({ dataKey }: { dataKey: string }) => {
 }
 
 export const Badge = ({ children, label }: { children: React.ReactNode; label: string }) => (
-  <div className="flex h-6 items-center gap-0.5 rounded-md bg-white px-2 text-xs text-zinc-700">
-    <span className="text-zinc-500">{label}</span>
+  <div className="flex h-6 items-center gap-0.5 rounded-md bg-white px-2 text-xs text-zinc-700 dark:bg-zinc-200">
+    <span className="text-zinc-500 dark:text-zinc-600">{label}</span>
     <span className="font-medium">{children}</span>
   </div>
 )
