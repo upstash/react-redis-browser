@@ -46,7 +46,6 @@ export const DatabrowserProvider = ({
           removeItem: () => {},
         },
         version: 4,
-        // @ts-expect-error Reset the store for < v1
         migrate: (originalState, version) => {
           const state = originalState as DatabrowserStore
 
