@@ -39,9 +39,7 @@ export const SimpleTooltip = ({
 
   return (
     <Tooltip delayDuration={400}>
-      <TooltipTrigger asChild>
-        <div>{children}</div>
-      </TooltipTrigger>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
       <TooltipContent side="top">{content}</TooltipContent>
     </Tooltip>
   )

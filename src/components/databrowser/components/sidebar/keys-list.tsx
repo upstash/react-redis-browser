@@ -1,4 +1,4 @@
-import { useRef } from "react"
+import { Fragment, useRef } from "react"
 import { useTab } from "@/tab-provider"
 import type { DataType, RedisKey } from "@/types"
 
@@ -19,9 +19,8 @@ export const KeysList = () => {
         {/* Since the selection border is overflowing, we need a px padding for the first item */}
         <div className="h-px" />
         {keys.map((data, i) => (
-          <>
+          <Fragment key={data[0]}>
             <KeyItem
-              key={data[0]}
               index={i}
               data={data}
               allKeys={keys}
@@ -30,7 +29,7 @@ export const KeysList = () => {
             {i !== keys.length - 1 && (
               <div className="-z-10 mx-2 h-px bg-zinc-100 dark:bg-zinc-200" />
             )}
-          </>
+          </Fragment>
         ))}
       </>
     </SidebarContextMenu>
