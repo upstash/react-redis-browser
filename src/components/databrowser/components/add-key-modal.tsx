@@ -2,7 +2,6 @@ import { useState } from "react"
 import { useTab } from "@/tab-provider"
 import { DATA_TYPES, type DataType } from "@/types"
 import { DialogDescription } from "@radix-ui/react-dialog"
-import { PlusIcon } from "@radix-ui/react-icons"
 import { Controller, useForm } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
@@ -26,6 +25,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { TypeTag } from "@/components/databrowser/components/type-tag"
 import { useAddKey } from "@/components/databrowser/hooks/use-add-key"
 import { SimpleTooltip } from "@/components/ui/tooltip"
+import { IconPlus } from "@tabler/icons-react"
 
 export function AddKeyModal() {
   const { setSelectedKey } = useTab()
@@ -66,7 +66,7 @@ export function AddKeyModal() {
       <DialogTrigger>
         <SimpleTooltip content="Add key">
           <Button variant="primary" size="icon-sm" data-testid="add-key-button">
-            <PlusIcon className="size-4" />
+            <IconPlus className="size-4" />
           </Button>
         </SimpleTooltip>
       </DialogTrigger>
