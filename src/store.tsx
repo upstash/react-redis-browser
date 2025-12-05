@@ -49,9 +49,6 @@ export const DatabrowserProvider = ({
         // @ts-expect-error Reset the store for < v1
         migrate: (originalState, version) => {
           const state = originalState as DatabrowserStore
-          if (version === 0) {
-            return
-          }
 
           if (version <= 1) {
             state.tabs = state.tabs.map(([id, data]) => [id, { ...data, id }])
