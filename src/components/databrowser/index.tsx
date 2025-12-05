@@ -2,7 +2,7 @@ import "@/globals.css"
 
 import { useEffect, useMemo, useRef } from "react"
 import { DarkModeProvider, useTheme, type DarkModeOption } from "@/dark-mode-context"
-import { RedisProvider, type RedisCredentials } from "@/redis-context"
+import { RedisProvider } from "@/redis-context"
 import type { TabId } from "@/store"
 import { DatabrowserProvider, useDatabrowserStore } from "@/store"
 import { TabIdProvider } from "@/tab-provider"
@@ -28,9 +28,26 @@ export const RedisBrowser = ({
   url,
   hideTabs,
   storage,
+  disableTelemetry,
   onFullScreenClick,
   theme = "light",
-}: RedisCredentials & {
+}: {
+  token: string
+  url: string
+
+  /**
+   * Whether to disable telemetry.
+   *
+   * The redis client sends telemetry data to help us improve your experience.
+   * We collect the following:
+   * - SDK version
+   * - Platform (Deno, Cloudflare, Vercel)
+   * - Runtime version (node@18.x)
+   *
+   * @default false
+   */
+  disableTelemetry?: boolean
+
   hideTabs?: boolean
 
   /**
@@ -77,7 +94,7 @@ export const RedisBrowser = ({
 
   return (
     <QueryClientProvider client={queryClient}>
-      <RedisProvider redisCredentials={credentials}>
+      <RedisProvider redisCredentials={credentials} telemetry={!disableTelemetry}>
         <DarkModeProvider theme={theme}>
           <DatabrowserProvider storage={storage} rootRef={rootRef}>
             <TooltipProvider>
