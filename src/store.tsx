@@ -45,7 +45,7 @@ export const DatabrowserProvider = ({
           setItem: (_name, value) => storage.set(JSON.stringify(value)),
           removeItem: () => {},
         },
-        version: 3,
+        version: 4,
         // @ts-expect-error Reset the store for < v1
         migrate: (originalState, version) => {
           const state = originalState as DatabrowserStore
@@ -53,28 +53,19 @@ export const DatabrowserProvider = ({
             return
           }
 
-          if (version === 1) {
-            return {
-              ...state,
-              tabs: state.tabs.map(([id, data]) => [id, { ...data, id }]),
-            }
+          if (version <= 1) {
+            state.tabs = state.tabs.map(([id, data]) => [id, { ...data, id }])
           }
 
-          if (version === 2) {
+          if (version <= 2) {
             // Migrate from selectedKey to selectedKeys
-            return {
-              ...state,
-              tabs: state.tabs.map(([id, data]) => {
-                const oldData = data as any
-                return [
-                  id,
-                  {
-                    ...data,
-                    selectedKeys: oldData.selectedKey ? [oldData.selectedKey] : [],
-                  },
-                ]
-              }),
-            }
+            state.tabs = state.tabs.map(([id, data]) => {
+              const oldData = data as any
+              return [
+                id,
+                { ...data, selectedKeys: oldData.selectedKey ? [oldData.selectedKey] : [] },
+              ]
+            })
           }
 
           return state
