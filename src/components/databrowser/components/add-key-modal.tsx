@@ -63,13 +63,13 @@ export function AddKeyModal() {
         setOpen(open)
       }}
     >
-      <DialogTrigger>
-        <SimpleTooltip content="Add key">
+      <SimpleTooltip content="Add key">
+        <DialogTrigger asChild>
           <Button variant="primary" size="icon-sm" data-testid="add-key-button">
             <IconPlus className="size-4" />
           </Button>
-        </SimpleTooltip>
-      </DialogTrigger>
+        </DialogTrigger>
+      </SimpleTooltip>
 
       <DialogContent className="max-w-[400px]">
         <DialogHeader>
