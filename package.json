@@ -49,7 +49,7 @@
     "@tabler/icons-react": "^3.19.0",
     "@tanstack/react-query": "^5.32.0",
     "@types/bytes": "^3.1.4",
-    "@upstash/redis": "^1.35.7",
+    "@upstash/redis": "1.35.8-canary-2",
     "bytes": "^3.1.2",
     "cmdk": "^1.1.1",
     "react-hook-form": "^7.53.0",
