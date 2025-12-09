@@ -7,22 +7,23 @@ import ReactDOM from "react-dom/client"
 
 import { RedisBrowser } from "@/components/databrowser"
 
-const safeProcess = typeof process === "undefined" ? { env: {} as Record<string, string> } : process
+const safeEnv =
+  typeof process !== "undefined" && process && typeof process.env === "object" ? process.env : {}
 
 const App = () => {
   const { credentials } = useCredentialsStore()
   const [theme, setTheme] = useState<DarkModeOption>("light")
 
   useEffect(() => {
-    if (safeProcess.env.UPSTASH_REDIS_REST_URL && safeProcess.env.UPSTASH_REDIS_REST_TOKEN) {
+    if (safeEnv.UPSTASH_REDIS_REST_URL && safeEnv.UPSTASH_REDIS_REST_TOKEN) {
       useCredentialsStore.setState({
         credentials: {
-          url: safeProcess.env.UPSTASH_REDIS_REST_URL,
-          token: safeProcess.env.UPSTASH_REDIS_REST_TOKEN,
+          url: safeEnv.UPSTASH_REDIS_REST_URL,
+          token: safeEnv.UPSTASH_REDIS_REST_TOKEN,
         },
       })
     }
-  }, [safeProcess.env.UPSTASH_REDIS_REST_URL, safeProcess.env.UPSTASH_REDIS_REST_TOKEN])
+  }, [safeEnv.UPSTASH_REDIS_REST_URL, safeEnv.UPSTASH_REDIS_REST_TOKEN])
 
   const toggleDarkMode = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"))

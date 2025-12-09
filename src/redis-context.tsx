@@ -4,7 +4,13 @@ import type { Redis } from "@upstash/redis"
 import { redisClient } from "./lib/clients"
 
 export type RedisCredentials = {
+  /**
+   * The URL of the redis database.
+   */
   url?: string
+  /**
+   * The token of the redis database.
+   */
   token?: string
 }
 

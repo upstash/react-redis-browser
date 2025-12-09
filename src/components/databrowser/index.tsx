@@ -3,7 +3,7 @@ import "@/globals.css"
 import { useEffect, useMemo, useRef } from "react"
 import { DarkModeProvider, useTheme, type DarkModeOption } from "@/dark-mode-context"
 import { RedisProvider } from "@/redis-context"
-import type { TabId } from "@/store"
+import type { RedisCredentials, TabId } from "@/store"
 import { DatabrowserProvider, useDatabrowserStore } from "@/store"
 import { TabIdProvider } from "@/tab-provider"
 import { TooltipProvider } from "@radix-ui/react-tooltip"
@@ -24,17 +24,14 @@ export type RedisBrowserStorage = {
 }
 
 export const RedisBrowser = ({
-  token,
   url,
+  token,
   hideTabs,
   storage,
   disableTelemetry,
   onFullScreenClick,
   theme = "light",
-}: {
-  token: string
-  url: string
-
+}: RedisCredentials & {
   /**
    * Whether to disable telemetry.
    *
