@@ -1,10 +1,16 @@
 import { createContext, useContext, useMemo, type PropsWithChildren } from "react"
-import type { Redis } from "@upstash/redis/cloudflare"
+import type { Redis } from "@upstash/redis"
 
 import { redisClient } from "./lib/clients"
 
 export type RedisCredentials = {
+  /**
+   * The URL of the redis database.
+   */
   url?: string
+  /**
+   * The token of the redis database.
+   */
   token?: string
 }
 
@@ -15,21 +21,23 @@ type RedisContextProps = {
 
 const RedisContext = createContext<RedisContextProps | undefined>(undefined)
 
-type RedisProviderProps = {
+export type RedisProviderProps = {
   redisCredentials: RedisCredentials
+  telemetry: boolean
 }
 
 export const RedisProvider = ({
   children,
   redisCredentials,
+  telemetry,
 }: PropsWithChildren<RedisProviderProps>) => {
   const redisInstance = useMemo(
-    () => redisClient({ credentials: redisCredentials, pipelining: true }),
-    [redisCredentials]
+    () => redisClient({ credentials: redisCredentials, pipelining: true, telemetry }),
+    [redisCredentials, telemetry]
   )
   const redisInstanceNoPipeline = useMemo(
-    () => redisClient({ credentials: redisCredentials, pipelining: false }),
-    [redisCredentials]
+    () => redisClient({ credentials: redisCredentials, pipelining: false, telemetry }),
+    [redisCredentials, telemetry]
   )
 
   return (

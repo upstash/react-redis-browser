@@ -1,15 +1,17 @@
 import type { RedisCredentials } from "@/store"
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query"
-import { Redis } from "@upstash/redis/cloudflare"
+import { Redis } from "@upstash/redis"
 
 import { toast } from "@/components/ui/use-toast"
 
 export const redisClient = ({
   credentials,
   pipelining,
+  telemetry,
 }: {
   credentials?: RedisCredentials
   pipelining: boolean
+  telemetry: boolean
 }) => {
   const safeProcess =
     typeof process === "undefined" ? { env: {} as Record<string, string> } : process
@@ -29,6 +31,7 @@ export const redisClient = ({
     enableAutoPipelining: pipelining,
     automaticDeserialization: false,
     keepAlive: false,
+    enableTelemetry: telemetry,
   })
 
   return redis
