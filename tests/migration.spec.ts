@@ -108,7 +108,7 @@ test.describe("migrate from v2", () => {
   testFunctionality()
 })
 
-test.describe("migrate from v2 that looks has version set to 3", () => {
+test.describe("migrate from v2 that has version set to 3 (broken)", () => {
   test.beforeEach(async ({ page }) => {
     await setup(page)
     const state = createVersion2Data()
