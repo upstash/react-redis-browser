@@ -70,6 +70,7 @@ const createVersion2Data = () => ({
     ],
     searchHistory: ["previous-search"],
   },
+
   version: 2,
 })
 
