@@ -1,7 +1,6 @@
 import { expect, test, type Page } from "@playwright/test"
 
 import { setup } from "./utils"
-import { describe } from "node:test"
 
 /**
  * Helper to set localStorage before page loads
@@ -74,13 +73,13 @@ const createVersion2Data = () => ({
   version: 2,
 })
 
-const testFunctionality = (version: number) => {
-  test(`v${version} add new tab`, async ({ page }) => {
+const testFunctionality = () => {
+  test("add new tab", async ({ page }) => {
     await page.getByRole("button", { name: "Add new tab" }).click()
     await expect(getTabs(page)).toHaveCount(3)
   })
 
-  test(`v${version} select new key`, async ({ page }) => {
+  test("select new key", async ({ page }) => {
     await page.getByRole("textbox", { name: "Search" }).click()
     await page.getByRole("textbox", { name: "Search" }).fill("mykey-33")
     await page.getByRole("textbox", { name: "Search" }).press("Enter")
@@ -89,22 +88,34 @@ const testFunctionality = (version: number) => {
   })
 }
 
-describe("migration from version 1", () => {
+test.describe("migrate from v1", () => {
   test.beforeEach(async ({ page }) => {
     await setup(page)
     await setStorageBeforeLoad(page, createVersion1Data())
     await page.goto("/")
   })
 
-  testFunctionality(1)
+  testFunctionality()
 })
 
-describe("migration from version 2", () => {
+test.describe("migrate from v2", () => {
   test.beforeEach(async ({ page }) => {
     await setup(page)
     await setStorageBeforeLoad(page, createVersion2Data())
     await page.goto("/")
   })
 
-  testFunctionality(2)
+  testFunctionality()
+})
+
+test.describe("migrate from v2 that looks has version set to 3", () => {
+  test.beforeEach(async ({ page }) => {
+    await setup(page)
+    const state = createVersion2Data()
+    state.version = 3
+    await setStorageBeforeLoad(page, state)
+    await page.goto("/")
+  })
+
+  testFunctionality()
 })
