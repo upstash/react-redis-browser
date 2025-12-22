@@ -21,6 +21,13 @@ export const setup = async (page: Page) => {
   })
   page.on("console", (msg) => {
     if (msg.type() === "error") {
+      // const text = msg.text()
+
+      // // Ignore Monaco loader cancelation noise (expected when editors unmount)
+      // if (text.includes("operation is manually canceled")) {
+      //   return
+      // }
+
       throw new Error(`Console error: ${msg.text()}`)
     }
   })
