@@ -38,8 +38,8 @@ export const useTab = () => {
   return useMemo(
     () => ({
       active: selectedTab === tabId,
-      selectedKey: tabData.selectedKeys[0], // Backwards compatibility - first selected key
-      selectedKeys: tabData.selectedKeys,
+      selectedKey: tabData.selectedKeys?.[0], // Backwards compatibility - first selected key
+      selectedKeys: tabData.selectedKeys ?? [],
       selectedListItem: tabData.selectedListItem,
       search: tabData.search,
       pinned: tabData.pinned,
