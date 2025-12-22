@@ -45,7 +45,7 @@ export const DatabrowserProvider = ({
           setItem: (_name, value) => storage.set(JSON.stringify(value)),
           removeItem: () => {},
         },
-        version: 4,
+        version: 5,
         migrate: (originalState, version) => {
           const state = originalState as DatabrowserStore
 
@@ -53,10 +53,11 @@ export const DatabrowserProvider = ({
             state.tabs = state.tabs.map(([id, data]) => [id, { ...data, id }])
           }
 
-          if (version <= 2) {
+          if (version <= 4) {
             // Migrate from selectedKey to selectedKeys
             state.tabs = state.tabs.map(([id, data]) => {
               const oldData = data as any
+              if (oldData.selectedKeys && Array.isArray(oldData.selectedKeys)) return [id, data]
               return [
                 id,
                 { ...data, selectedKeys: oldData.selectedKey ? [oldData.selectedKey] : [] },

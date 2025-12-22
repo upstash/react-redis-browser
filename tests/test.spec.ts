@@ -1,4 +1,3 @@
-import { describe } from "node:test"
 import { expect, test } from "@playwright/test"
 
 import { markDatabaseAsModified, setup } from "./utils"
@@ -9,7 +8,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/")
 })
 
-describe("keys", () => {
+test.describe("keys", () => {
   test("can search for a key", async ({ page }) => {
     await page.getByRole("textbox", { name: "Search" }).click()
     await page.getByRole("textbox", { name: "Search" }).fill("mykey-2")
@@ -114,7 +113,7 @@ describe("keys", () => {
   })
 })
 
-describe("hash", () => {
+test.describe("hash", () => {
   test("can read a hash value and cancel", async ({ page }) => {
     await page.getByRole("textbox", { name: "Search" }).click()
     await page.getByRole("textbox", { name: "Search" }).fill("myhash")
@@ -182,7 +181,7 @@ describe("hash", () => {
   })
 })
 
-describe("tabs", () => {
+test.describe("tabs", () => {
   test("can switch tabs", async ({ page }) => {
     await page.getByRole("textbox", { name: "Search" }).click()
     await page.getByRole("textbox", { name: "Search" }).fill("mykey-42")

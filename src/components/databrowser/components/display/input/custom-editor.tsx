@@ -6,21 +6,32 @@ import { Editor, useMonaco } from "@monaco-editor/react"
 import { cn, isTest } from "@/lib/utils"
 import { CopyButton } from "@/components/databrowser/copy-button"
 
-export const CustomEditor = ({
-  language,
-  value,
-  onChange,
-  height,
-  showCopyButton,
-  readOnly,
-}: {
+type CustomEditorProps = {
   language: string
   value: string
   onChange: (value: string) => void
   height?: number
   showCopyButton?: boolean
   readOnly?: boolean
-}) => {
+}
+
+export const CustomEditor = (props: CustomEditorProps) => {
+  // Avoid mounting Monaco at all during Playwright runs
+  if (isTest) {
+    return <TestEditor {...props} />
+  }
+
+  return <MonacoEditor {...props} />
+}
+
+const MonacoEditor = ({
+  language,
+  value,
+  onChange,
+  height,
+  showCopyButton,
+  readOnly,
+}: CustomEditorProps) => {
   const { active } = useTab()
   const monaco = useMonaco()
   const editorRef = useRef()
@@ -82,11 +93,24 @@ export const CustomEditor = ({
       className={cn("group/editor relative", height === undefined && "h-full")}
       style={{ height: height }}
     >
-      {isTest ? (
-        <input aria-label="editor" value={value} onChange={(e) => onChange(e.target.value)} />
-      ) : (
-        editor
+      {editor}
+      {showCopyButton && (
+        <CopyButton
+          value={value}
+          className="absolute right-0 top-0 hidden group-hover/editor:flex"
+        />
       )}
+    </div>
+  )
+}
+
+const TestEditor = ({ value, onChange, height, showCopyButton }: CustomEditorProps) => {
+  return (
+    <div
+      className={cn("group/editor relative", height === undefined && "h-full")}
+      style={{ height: height }}
+    >
+      <input aria-label="editor" value={value} onChange={(e) => onChange(e.target.value)} />
       {showCopyButton && (
         <CopyButton
           value={value}

@@ -15,6 +15,16 @@ export const setup = async (page: Page) => {
     ;(window as any).__PLAYWRIGHT__ = true
   })
 
+  // Fail fast on browser-side errors instead of waiting for timeouts
+  page.on("pageerror", (error) => {
+    throw error
+  })
+  page.on("console", (msg) => {
+    if (msg.type() === "error") {
+      throw new Error(`Console error: ${msg.text()}`)
+    }
+  })
+
   const isOriginal = await redis.exists(IS_ORIGINAL_KEY)
 
   if (!isOriginal) {
