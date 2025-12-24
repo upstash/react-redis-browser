@@ -1,62 +1,14 @@
-import { queryClient } from "@/lib/clients"
-
-import { FETCH_LIST_ITEMS_QUERY_KEY, FETCH_SIMPLE_KEY_QUERY_KEY } from "../../hooks"
-import { FETCH_KEY_TYPE_QUERY_KEY } from "../../hooks/use-fetch-key-type"
-import { FETCH_KEYS_QUERY_KEY, useKeys } from "../../hooks/use-keys"
-import { AddKeyModal } from "../add-key-modal"
-import { DisplayDbSize, FETCH_DB_SIZE_QUERY_KEY } from "./db-size"
+import { useKeys } from "../../hooks/use-keys"
 import { Empty } from "./empty"
 import { InfiniteScroll } from "./infinite-scroll"
 import { KeysList } from "./keys-list"
-import { ReloadButton } from "./reload-button"
-import { SearchInput } from "./search-input"
 import { LoadingSkeleton } from "./skeleton-buttons"
-import { DataTypeSelector } from "./type-selector"
 
 export function Sidebar() {
   const { keys, query } = useKeys()
 
   return (
     <div className="flex h-full flex-col gap-2 p-4">
-      <div className="rounded-lg bg-zinc-100">
-        {/* Meta */}
-        <div className="flex h-10 items-center justify-between pl-1">
-          <DisplayDbSize />
-          <div className="flex gap-1">
-            <ReloadButton
-              onClick={() => {
-                queryClient.invalidateQueries({
-                  queryKey: [FETCH_KEYS_QUERY_KEY],
-                })
-                queryClient.invalidateQueries({
-                  queryKey: [FETCH_LIST_ITEMS_QUERY_KEY],
-                })
-                queryClient.invalidateQueries({
-                  queryKey: [FETCH_SIMPLE_KEY_QUERY_KEY],
-                })
-                queryClient.invalidateQueries({
-                  queryKey: [FETCH_DB_SIZE_QUERY_KEY],
-                })
-                queryClient.invalidateQueries({
-                  queryKey: [FETCH_KEY_TYPE_QUERY_KEY],
-                })
-              }}
-              isLoading={query.isFetching}
-            />
-            <AddKeyModal />
-          </div>
-        </div>
-
-        {/* Filter */}
-        <div className="flex h-10 items-center">
-          {/* Types */}
-          <DataTypeSelector />
-
-          {/* Search */}
-          <SearchInput />
-        </div>
-      </div>
-
       {query.isLoading && keys.length === 0 ? (
         <LoadingSkeleton />
       ) : keys.length > 0 ? (

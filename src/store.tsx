@@ -45,7 +45,7 @@ export const DatabrowserProvider = ({
           setItem: (_name, value) => storage.set(JSON.stringify(value)),
           removeItem: () => {},
         },
-        version: 5,
+        version: 6,
         migrate: (originalState, version) => {
           const state = originalState as DatabrowserStore
 
@@ -62,6 +62,21 @@ export const DatabrowserProvider = ({
                 id,
                 { ...data, selectedKeys: oldData.selectedKey ? [oldData.selectedKey] : [] },
               ]
+            })
+          }
+
+          if (version <= 5) {
+            // Add the new valuesSearch and isValuesSearchSelected fields
+            state.tabs = state.tabs.map(([id, data]) => {
+              const oldData = data as any
+              return [
+                id,
+                {
+                  ...data,
+                  valuesSearch: oldData.valuesSearch ?? { index: "", query: "" },
+                  isValuesSearchSelected: oldData.isValuesSearchSelected ?? false,
+                },
+              ] as const
             })
           }
 
@@ -100,6 +115,11 @@ export type SearchFilter = {
   type: DataType | undefined
 }
 
+export type ValuesSearchFilter = {
+  index: string
+  query: string
+}
+
 export type SelectedItem = {
   key: string
   isNew?: boolean
@@ -111,6 +131,8 @@ export type TabData = {
   selectedListItem?: SelectedItem
 
   search: SearchFilter
+  valuesSearch: ValuesSearchFilter
+  isValuesSearchSelected: boolean
   pinned?: boolean
 }
 
@@ -137,9 +159,15 @@ type DatabrowserStore = {
   setSelectedKey: (tabId: TabId, key: string | undefined) => void
   setSelectedKeys: (tabId: TabId, keys: string[]) => void
   setSelectedListItem: (tabId: TabId, item?: { key: string; isNew?: boolean }) => void
+
   setSearch: (tabId: TabId, search: SearchFilter) => void
   setSearchKey: (tabId: TabId, key: string) => void
   setSearchType: (tabId: TabId, type: DataType | undefined) => void
+
+  setValuesSearch: (tabId: TabId, search: ValuesSearchFilter) => void
+  setValuesSearchIndex: (tabId: TabId, index: string) => void
+  setValuesSearchQuery: (tabId: TabId, query: string) => void
+  setIsValuesSearchSelected: (tabId: TabId, isSelected: boolean) => void
 
   searchHistory: string[]
   addSearchHistory: (key: string) => void
@@ -158,6 +186,8 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
       id,
       selectedKeys: [],
       search: { key: "", type: undefined },
+      valuesSearch: { index: "", query: "" },
+      isValuesSearchSelected: false,
       pinned: false,
     }
 
@@ -361,6 +391,70 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
           search: { ...tabData.search, type },
         },
       ]
+
+      return { ...old, tabs: newTabs }
+    })
+  },
+
+  setValuesSearch: (tabId, valuesSearch) => {
+    set((old) => {
+      const tabIndex = old.tabs.findIndex(([id]) => id === tabId)
+      if (tabIndex === -1) return old
+
+      const newTabs = [...old.tabs]
+      const [, tabData] = newTabs[tabIndex]
+      newTabs[tabIndex] = [tabId, { ...tabData, valuesSearch }]
+
+      return { ...old, tabs: newTabs }
+    })
+  },
+
+  setValuesSearchIndex: (tabId, index) => {
+    set((old) => {
+      const tabIndex = old.tabs.findIndex(([id]) => id === tabId)
+      if (tabIndex === -1) return old
+
+      const newTabs = [...old.tabs]
+      const [, tabData] = newTabs[tabIndex]
+      newTabs[tabIndex] = [
+        tabId,
+        {
+          ...tabData,
+          valuesSearch: { ...tabData.valuesSearch, index },
+        },
+      ]
+
+      return { ...old, tabs: newTabs }
+    })
+  },
+
+  setValuesSearchQuery: (tabId, query) => {
+    set((old) => {
+      const tabIndex = old.tabs.findIndex(([id]) => id === tabId)
+      if (tabIndex === -1) return old
+
+      const newTabs = [...old.tabs]
+      const [, tabData] = newTabs[tabIndex]
+      newTabs[tabIndex] = [
+        tabId,
+        {
+          ...tabData,
+          valuesSearch: { ...tabData.valuesSearch, query },
+        },
+      ]
+
+      return { ...old, tabs: newTabs }
+    })
+  },
+
+  setIsValuesSearchSelected: (tabId, isSelected) => {
+    set((old) => {
+      const tabIndex = old.tabs.findIndex(([id]) => id === tabId)
+      if (tabIndex === -1) return old
+
+      const newTabs = [...old.tabs]
+      const [, tabData] = newTabs[tabIndex]
+      newTabs[tabIndex] = [tabId, { ...tabData, isValuesSearchSelected: isSelected }]
 
       return { ...old, tabs: newTabs }
     })

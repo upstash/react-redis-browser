@@ -26,7 +26,7 @@ export function DataTypeSelector() {
       }}
       value={search.type === undefined ? ALL_TYPES_KEY : search.type}
     >
-      <SelectTrigger className="!w-auto select-none whitespace-nowrap rounded-r-none border-r-0 border-zinc-300 pr-8">
+      <SelectTrigger className="!w-auto select-none whitespace-nowrap border-zinc-300 pr-8">
         <SelectValue />
       </SelectTrigger>
 

@@ -5,11 +5,15 @@ import { Toaster } from "@/components/ui/toaster"
 import { DataDisplay } from "./display"
 import { Sidebar } from "./sidebar"
 import { KeysProvider } from "../hooks/use-keys"
+import { Header } from "./header"
 
 export const DatabrowserInstance = ({ hidden }: { hidden?: boolean }) => {
   return (
     <KeysProvider>
       <div className={cn("min-h-0 grow rounded-md bg-zinc-100", hidden && "hidden")}>
+        <div className="p-5">
+          <Header />
+        </div>
         <PanelGroup
           autoSaveId="persistence"
           direction="horizontal"

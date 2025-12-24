@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo } from "react"
 
-import type { SearchFilter, SelectedItem } from "./store"
+import type { SearchFilter, SelectedItem, ValuesSearchFilter } from "./store"
 import { useDatabrowserStore, type TabId } from "./store"
 import type { DataType } from "./types"
 
@@ -28,6 +28,10 @@ export const useTab = () => {
     setSearch,
     setSearchKey,
     setSearchType,
+    setValuesSearch,
+    setValuesSearchIndex,
+    setValuesSearchQuery,
+    setIsValuesSearchSelected,
   } = useDatabrowserStore()
   const tabId = useTabId()
   const tabData = useMemo(() => tabs.find(([id]) => id === tabId)?.[1], [tabs, tabId])
@@ -42,6 +46,8 @@ export const useTab = () => {
       selectedKeys: tabData.selectedKeys ?? [],
       selectedListItem: tabData.selectedListItem,
       search: tabData.search,
+      valuesSearch: tabData.valuesSearch,
+      isValuesSearchSelected: tabData.isValuesSearchSelected,
       pinned: tabData.pinned,
 
       setSelectedKey: (key: string | undefined) => setSelectedKey(tabId, key),
@@ -50,6 +56,11 @@ export const useTab = () => {
       setSearch: (search: SearchFilter) => setSearch(tabId, search),
       setSearchKey: (key: string) => setSearchKey(tabId, key),
       setSearchType: (type: DataType | undefined) => setSearchType(tabId, type),
+      setValuesSearch: (search: ValuesSearchFilter) => setValuesSearch(tabId, search),
+      setValuesSearchIndex: (index: string) => setValuesSearchIndex(tabId, index),
+      setValuesSearchQuery: (query: string) => setValuesSearchQuery(tabId, query),
+      setIsValuesSearchSelected: (isSelected: boolean) =>
+        setIsValuesSearchSelected(tabId, isSelected),
     }),
     [selectedTab, tabs, tabId]
   )
