@@ -22,8 +22,8 @@ export const SearchDisplay = ({ dataKey, type }: { dataKey: string; type: DataTy
             <span className="text-zinc-500">No data found</span>
           </div>
         ) : (
-          <div className="grow rounded-md border border-zinc-300 bg-white p-2 overflow-auto">
-            <pre className="text-sm font-mono whitespace-pre-wrap break-words">
+          <div className="grow overflow-auto rounded-md border border-zinc-300 bg-white p-2">
+            <pre className="whitespace-pre-wrap break-words font-mono text-sm">
               {JSON.stringify(data, null, 2)}
             </pre>
           </div>

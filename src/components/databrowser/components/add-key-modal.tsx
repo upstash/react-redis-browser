@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useTab } from "@/tab-provider"
 import { DATA_TYPES, type DataType } from "@/types"
 import { DialogDescription } from "@radix-ui/react-dialog"
+import { IconPlus } from "@tabler/icons-react"
 import { Controller, useForm } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
@@ -22,10 +23,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
+import { SimpleTooltip } from "@/components/ui/tooltip"
 import { TypeTag } from "@/components/databrowser/components/type-tag"
 import { useAddKey } from "@/components/databrowser/hooks/use-add-key"
-import { SimpleTooltip } from "@/components/ui/tooltip"
-import { IconPlus } from "@tabler/icons-react"
 
 export function AddKeyModal() {
   const { setSelectedKey } = useTab()

@@ -2,10 +2,11 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 
 import { cn } from "@/lib/utils"
 import { Toaster } from "@/components/ui/toaster"
-import { DataDisplay } from "./display"
-import { Sidebar } from "./sidebar"
+
 import { KeysProvider } from "../hooks/use-keys"
+import { DataDisplay } from "./display"
 import { Header } from "./header"
+import { Sidebar } from "./sidebar"
 
 export const DatabrowserInstance = ({ hidden }: { hidden?: boolean }) => {
   return (

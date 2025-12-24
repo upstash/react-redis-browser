@@ -1,9 +1,11 @@
 import { createContext, useContext, useMemo, type PropsWithChildren } from "react"
 import { useRedis } from "@/redis-context"
+import { useTab } from "@/tab-provider"
 import type { DataType, RedisKey } from "@/types"
 import { useInfiniteQuery, type UseInfiniteQueryResult } from "@tanstack/react-query"
-import { useTab } from "@/tab-provider"
+
 import { queryClient } from "@/lib/clients"
+
 import { FETCH_KEY_TYPE_QUERY_KEY } from "./use-fetch-key-type"
 
 const KeysContext = createContext<

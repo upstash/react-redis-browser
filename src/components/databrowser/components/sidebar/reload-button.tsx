@@ -1,8 +1,8 @@
 import { useState } from "react"
+import { IconLoader2, IconRefresh } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
 import { SimpleTooltip } from "@/components/ui/tooltip"
-import { IconLoader2, IconRefresh } from "@tabler/icons-react"
 
 export const ReloadButton = ({
   onClick,

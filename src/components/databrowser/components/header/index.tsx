@@ -1,18 +1,7 @@
-import { Segmented } from "@/components/ui/Segmented"
-import { DataTypeSelector } from "../sidebar/type-selector"
-import { SearchInput } from "../sidebar/search-input"
-import { queryClient } from "@/lib/clients"
-import {
-  FETCH_KEYS_QUERY_KEY,
-  FETCH_LIST_ITEMS_QUERY_KEY,
-  FETCH_SIMPLE_KEY_QUERY_KEY,
-  useKeys,
-} from "../../hooks"
-import { FETCH_KEY_TYPE_QUERY_KEY } from "../../hooks/use-fetch-key-type"
-import { ReloadButton } from "../sidebar/reload-button"
-import { AddKeyModal } from "../add-key-modal"
 import { useTab } from "@/tab-provider"
-import { useFetchSearchIndexes } from "../../hooks/use-fetch-search-indexes"
+
+import { queryClient } from "@/lib/clients"
+import { Segmented } from "@/components/ui/Segmented"
 import {
   Select,
   SelectContent,
@@ -21,6 +10,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+
+import {
+  FETCH_KEYS_QUERY_KEY,
+  FETCH_LIST_ITEMS_QUERY_KEY,
+  FETCH_SIMPLE_KEY_QUERY_KEY,
+  useKeys,
+} from "../../hooks"
+import { FETCH_KEY_TYPE_QUERY_KEY } from "../../hooks/use-fetch-key-type"
+import { useFetchSearchIndexes } from "../../hooks/use-fetch-search-indexes"
+import { AddKeyModal } from "../add-key-modal"
+import { ReloadButton } from "../sidebar/reload-button"
+import { SearchInput } from "../sidebar/search-input"
+import { DataTypeSelector } from "../sidebar/type-selector"
 
 export const Header = () => {
   const { isValuesSearchSelected, setIsValuesSearchSelected } = useTab()

@@ -1,3 +1,6 @@
+import type { TabId } from "@/store"
+import { useDatabrowserStore } from "@/store"
+import { useTab } from "@/tab-provider"
 import {
   IconArrowsMinimize,
   IconCopyPlus,
@@ -6,7 +9,9 @@ import {
   IconSquareX,
   IconX,
 } from "@tabler/icons-react"
-import { SimpleTooltip } from "@/components/ui/tooltip"
+
+import { cn } from "@/lib/utils"
+import { useOverflow } from "@/hooks/use-overflow"
 import {
   ContextMenu,
   ContextMenuContent,
@@ -14,12 +19,9 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
-import { cn } from "@/lib/utils"
-import type { TabId } from "@/store"
-import { useDatabrowserStore } from "@/store"
+import { SimpleTooltip } from "@/components/ui/tooltip"
+
 import { TabTypeIcon } from "./tab-type-icon"
-import { useTab } from "@/tab-provider"
-import { useOverflow } from "@/hooks/use-overflow"
 
 export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
   const { active, search, selectedKey, pinned } = useTab()

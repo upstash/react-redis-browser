@@ -1,11 +1,11 @@
 import type { PropsWithChildren } from "react"
+import { useEffect, useRef } from "react"
+import { useTab } from "@/tab-provider"
 import { IconLoader2 } from "@tabler/icons-react"
 import type { UseInfiniteQueryResult } from "@tanstack/react-query"
-import { useEffect, useRef } from "react"
 
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
-import { useTab } from "@/tab-provider"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 export const InfiniteScroll = ({
   query,

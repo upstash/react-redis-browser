@@ -1,4 +1,5 @@
 import type { SelectedItem } from "@/store"
+import { useTab } from "@/tab-provider"
 import type { ListDataType } from "@/types"
 import { Controller, FormProvider, useForm, useFormContext } from "react-hook-form"
 
@@ -12,7 +13,6 @@ import { useEditListItem } from "../../hooks/use-edit-list-item"
 import { headerLabels } from "./display-list"
 import { HashFieldTTLBadge } from "./hash/hash-field-ttl-badge"
 import { useField } from "./input/use-field"
-import { useTab } from "@/tab-provider"
 
 export const ListEditDisplay = ({
   dataKey,

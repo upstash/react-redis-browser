@@ -1,4 +1,5 @@
 import { useMemo } from "react"
+import { useTab } from "@/tab-provider"
 import type { ListDataType } from "@/types"
 import { IconTrash } from "@tabler/icons-react"
 import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query"
@@ -14,7 +15,6 @@ import { DeleteAlertDialog } from "./delete-alert-dialog"
 import { DisplayHeader } from "./display-header"
 import { ListEditDisplay } from "./display-list-edit"
 import { HashFieldTTLInfo } from "./hash/hash-field-ttl-info"
-import { useTab } from "@/tab-provider"
 
 export const headerLabels = {
   list: ["Index", "Content"],

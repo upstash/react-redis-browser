@@ -1,4 +1,13 @@
-export const DATA_TYPES = ["string", "list", "hash", "set", "zset", "json", "stream", "search"] as const
+export const DATA_TYPES = [
+  "string",
+  "list",
+  "hash",
+  "set",
+  "zset",
+  "json",
+  "stream",
+  "search",
+] as const
 export const DATA_TYPE_NAMES = {
   string: "String",
   list: "List",

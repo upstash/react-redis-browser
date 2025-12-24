@@ -1,3 +1,4 @@
+import { useTab } from "@/tab-provider"
 import { DATA_TYPE_NAMES, type DataType } from "@/types"
 
 import {
@@ -8,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useTab } from "@/tab-provider"
 
 const ALL_TYPES_KEY = "all"
 

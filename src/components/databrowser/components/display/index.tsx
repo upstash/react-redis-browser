@@ -1,10 +1,11 @@
 /* eslint-disable unicorn/no-negated-condition */
 
+import { useTab } from "@/tab-provider"
+
 import { useKeys, useKeyType } from "../../hooks/use-keys"
 import { ListDisplay } from "./display-list"
 import { SearchDisplay } from "./display-search"
 import { EditorDisplay } from "./display-simple"
-import { useTab } from "@/tab-provider"
 
 export const DataDisplay = () => {
   const { selectedKey } = useTab()

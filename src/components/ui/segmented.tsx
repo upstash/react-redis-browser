@@ -1,5 +1,6 @@
-import { cn } from "@/lib/utils"
 import React from "react"
+
+import { cn } from "@/lib/utils"
 
 // Custom component similar to the antd segmented component
 

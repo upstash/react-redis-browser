@@ -1,8 +1,8 @@
 import { useState, type PropsWithChildren } from "react"
-import { IconCopy, IconExternalLink, IconTrash } from "@tabler/icons-react"
 import { useDatabrowserStore } from "@/store"
 import { type ListDataType } from "@/types"
 import { ContextMenuSeparator } from "@radix-ui/react-context-menu"
+import { IconCopy, IconExternalLink, IconTrash } from "@tabler/icons-react"
 
 import {
   ContextMenu,

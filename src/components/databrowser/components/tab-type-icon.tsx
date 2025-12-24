@@ -1,4 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton"
+
 import { useFetchKeyType } from "../hooks/use-fetch-key-type"
 import { TypeTag } from "./type-tag"
 
