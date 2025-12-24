@@ -7,6 +7,7 @@ import {
   IconLayersIntersect,
   IconList,
   IconQuote,
+  IconSearch,
 } from "@tabler/icons-react"
 import { cva, type VariantProps } from "class-variance-authority"
 
@@ -20,6 +21,7 @@ const iconsMap = {
   zset: <IconArrowsSort size={15} stroke={1.2} />,
   list: <IconList size={15} stroke={1.2} />,
   stream: <IconList size={15} stroke={1.2} />,
+  search: <IconSearch size={15} stroke={1.2} />,
 } as const
 
 const tagVariants = cva("inline-flex shrink-0 items-center rounded-md justify-center", {
@@ -32,6 +34,7 @@ const tagVariants = cva("inline-flex shrink-0 items-center rounded-md justify-ce
       json: "bg-purple-200 text-purple-800",
       list: "bg-orange-200 text-orange-800",
       stream: "bg-green-200 text-green-800",
+      search: "bg-rose-200 text-rose-800",
     },
     type: {
       icon: "size-5",

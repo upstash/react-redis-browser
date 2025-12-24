@@ -44,6 +44,7 @@ const keyStyles = {
   json: "border-purple-400 !bg-purple-50 text-purple-900",
   list: "border-orange-400 !bg-orange-50 text-orange-900",
   stream: "border-green-400 !bg-green-50 text-green-900",
+  search: "border-rose-400 !bg-rose-50 text-rose-900",
 } as Record<DataType, string>
 
 const KeyItem = ({

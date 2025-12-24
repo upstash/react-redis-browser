@@ -91,7 +91,7 @@ export function AddKeyModal() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {DATA_TYPES.map((type) => (
+                      {DATA_TYPES.filter((t) => t !== "search").map((type) => (
                         <SelectItem key={type} value={type}>
                           <TypeTag variant={type} type="badge" />
                         </SelectItem>

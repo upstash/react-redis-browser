@@ -36,7 +36,7 @@ export const DisplayHeader = ({
         </h2>
 
         <div className="flex items-center gap-1">
-          {type !== "string" && type !== "json" && (
+          {type !== "string" && type !== "json" && type !== "search" && (
             <SimpleTooltip content="Add item">
               <Button onClick={handleAddItem} size="icon-sm" aria-label="Add item">
                 <IconPlus className="size-4 text-zinc-500 dark:text-zinc-600" />
