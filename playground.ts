@@ -50,7 +50,8 @@ const res = await index.query({
       name: {
         $eq: "Yusuf"
       }
-    }
+    },
+    "contact.email": "asd",
   }
 })
 
