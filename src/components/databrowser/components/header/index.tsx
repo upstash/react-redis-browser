@@ -1,7 +1,7 @@
 import { useTab } from "@/tab-provider"
 
 import { queryClient } from "@/lib/clients"
-import { Segmented } from "@/components/ui/Segmented"
+import { Segmented } from "@/components/ui/segmented"
 import {
   Select,
   SelectContent,
