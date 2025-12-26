@@ -20,8 +20,10 @@ export const QueryBuilder = () => {
 
           const sliced = value.slice(PREFIX.length)
           const parsed = parseJSObjectLiteral(sliced)
-          if (parsed) {
-            setValuesSearchQuery(value.slice(PREFIX.length))
+
+          const newValue = value.slice(PREFIX.length)
+          if (parsed && valuesSearch.query !== newValue) {
+            setValuesSearchQuery(newValue)
           }
         }}
         schema={indexDetails?.schema}

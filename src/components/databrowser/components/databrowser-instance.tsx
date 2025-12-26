@@ -17,7 +17,7 @@ export const DatabrowserInstance = ({ hidden }: { hidden?: boolean }) => {
   const { isValuesSearchSelected } = useTab()
   return (
     <KeysProvider>
-      <div className={cn("min-h-0 grow rounded-md bg-zinc-100", hidden && "hidden")}>
+      <div className={cn("flex min-h-0 grow flex-col rounded-md bg-zinc-100", hidden && "hidden")}>
         <div className="space-y-3 p-5">
           <Header />
 
