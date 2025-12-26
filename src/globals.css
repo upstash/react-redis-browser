@@ -486,7 +486,7 @@ svg.tabler-icon {
 }
 
 .mtk5 {
-  color: #336554 !important;
+  color: rgb(var(--color-emerald-700)) !important;
 }
 .mtk6 {
   color: #a626a4 !important;

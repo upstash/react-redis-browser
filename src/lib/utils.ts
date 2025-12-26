@@ -5,6 +5,30 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+export function safeParseJSON<T>(value: string): T | undefined {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return
+  }
+}
+
+/**
+ * Parses a JavaScript object literal string (with unquoted keys) into a JS object.
+ * Adds double quotes around unquoted keys like `$and:` -> `"$and":`
+ */
+export function parseJSObjectLiteral<T>(value: string): T | undefined {
+  try {
+    // Add double quotes around unquoted keys (handles $ prefixed and regular identifiers)
+    let jsonified = value.replaceAll(/([,{]\s*)(\$?[A-Z_a-z]\w*)\s*:/g, '$1"$2":')
+    // Remove trailing commas before closing braces/brackets (valid in JS, invalid in JSON)
+    jsonified = jsonified.replaceAll(/,\s*([\]}])/g, '$1')
+    return JSON.parse(jsonified)
+  } catch {
+    return
+  }
+}
+
 export function formatNumberWithCommas(value: number) {
   return value.toString().replaceAll(/\B(?=(\d{3})+(?!\d))/g, ",")
 }

@@ -8,6 +8,7 @@ import { queryClient } from "@/lib/clients"
 
 import { FETCH_KEY_TYPE_QUERY_KEY } from "./use-fetch-key-type"
 import { useFetchSearchIndex } from "./use-fetch-search-index"
+import { parseJSObjectLiteral } from "@/lib/utils"
 
 const KeysContext = createContext<
   | {
@@ -29,6 +30,8 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
   )
 
   const { redisNoPipeline: redis } = useRedis()
+
+  const parsedValueQuery = parseJSObjectLiteral(valuesSearch.query)
 
   const isQueryEnabled =
     active &&
@@ -89,8 +92,7 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     const offset = Number.parseInt(cursor, 10) || 0
 
     const result = await redis.search.index(valuesSearch.index).query({
-      // TODO: implement the filter
-      filter: {},
+      filter: parsedValueQuery ?? {},
       limit: count,
       offset,
       select: {},
@@ -156,6 +158,9 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
         keys,
         hasNextPage: cursor !== "0",
       }
+    },
+    meta: {
+      hideToast: true,
     },
     select: (data) => data,
     getNextPageParam: ({ cursor }) => cursor,

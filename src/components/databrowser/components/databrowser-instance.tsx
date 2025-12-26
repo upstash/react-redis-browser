@@ -4,28 +4,14 @@ import { cn } from "@/lib/utils"
 import { Toaster } from "@/components/ui/toaster"
 
 import { KeysProvider } from "../hooks/use-keys"
-import { useFetchSearchIndex } from "../hooks/use-fetch-search-index"
 import { DataDisplay } from "./display"
 import { Header } from "./header"
 import { Sidebar } from "./sidebar"
 import { useTab } from "@/tab-provider"
-import { QueryEditor } from "./display/input/query-editor"
+import { QueryBuilder } from "./query-builder"
+import { HeaderError } from "./header-error"
 
-export const QueryBuilder = () => {
-  const { valuesSearch, setValuesSearchQuery } = useTab()
-  const { data: indexDetails } = useFetchSearchIndex(valuesSearch.index)
-
-  return (
-    <div className="rounded-lg border border-zinc-300 bg-white px-[6px] dark:border-zinc-700 dark:bg-zinc-900">
-      <QueryEditor
-        height={200}
-        value={valuesSearch.query}
-        onChange={setValuesSearchQuery}
-        schema={indexDetails?.schema}
-      />
-    </div>
-  )
-}
+export const PREFIX = "const query: Query = "
 
 export const DatabrowserInstance = ({ hidden }: { hidden?: boolean }) => {
   const { isValuesSearchSelected } = useTab()
@@ -36,6 +22,7 @@ export const DatabrowserInstance = ({ hidden }: { hidden?: boolean }) => {
           <Header />
 
           {isValuesSearchSelected && <QueryBuilder />}
+          <HeaderError />
         </div>
         <PanelGroup
           autoSaveId="persistence"

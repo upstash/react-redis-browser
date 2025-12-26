@@ -70,7 +70,11 @@ export const queryClient = new QueryClient({
     },
   },
   queryCache: new QueryCache({
-    onError: handleError,
+    onError: (error, query) => {
+      if (query.meta?.hideToast)
+        return
+      handleError(error)
+    },
   }),
   mutationCache: new MutationCache({
     onError: handleError,

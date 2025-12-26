@@ -165,7 +165,7 @@ const MonacoQueryEditor = ({ value, onChange, height, schema }: QueryEditorProps
           minimap: { enabled: false },
           folding: true,
           glyphMargin: false,
-          lineNumbers: "off",
+          lineNumbers: "on",
           parameterHints: { enabled: true },
           lineDecorationsWidth: 0,
           automaticLayout: true,
@@ -173,7 +173,7 @@ const MonacoQueryEditor = ({ value, onChange, height, schema }: QueryEditorProps
           renderLineHighlight: "line",
           unusualLineTerminators: "auto",
           padding: { top: 8, bottom: 8 },
-          quickSuggestions: false,
+          quickSuggestions: true,
           suggest: {
             showVariables: false,
             showConstants: false,
@@ -199,7 +199,7 @@ const MonacoQueryEditor = ({ value, onChange, height, schema }: QueryEditorProps
           definitionLinkOpensInPeek: false,
           contextmenu: false,
         }}
-        className="[&_.monaco-editor-background]:!bg-transparent [&_.monaco-editor]:!bg-transparent"
+        className="[&_.current-line]:!border-none [&_.current-line]:!bg-emerald-50 [&_.monaco-editor-background]:!bg-transparent [&_.monaco-editor]:!bg-transparent [&_[role='presentation']]:!bg-transparent"
       />
     </div>
   )
