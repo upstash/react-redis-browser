@@ -37,7 +37,7 @@ export const ListDisplay = ({ dataKey, type }: { dataKey: string; type: ListData
       )}
 
       <div className={cn("min-h-0 grow", selectedListItem && "hidden")}>
-        <InfiniteScroll query={query}>
+        <InfiniteScroll query={query} className="rounded-lg border border-zinc-200 bg-white">
           <table className="w-full">
             <ItemContextMenu dataKey={dataKey} type={type}>
               <tbody>
@@ -85,7 +85,7 @@ export const ListItems = ({
             setSelectedListItem({ key })
           }}
           className={cn(
-            "h-10 border-b border-b-zinc-100 transition-colors hover:bg-zinc-100 dark:border-b-zinc-200 dark:hover:bg-zinc-200"
+            "h-9 border-b border-b-zinc-100 transition-colors hover:bg-zinc-100 dark:border-b-zinc-200 dark:hover:bg-zinc-200"
           )}
         >
           <td

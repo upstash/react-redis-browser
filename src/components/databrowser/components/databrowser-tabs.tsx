@@ -14,7 +14,7 @@ import {
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers"
 import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { IconChevronDown, IconMaximize, IconPlus } from "@tabler/icons-react"
+import { IconChevronDown, IconPlus, IconWindowMaximize } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -210,7 +210,7 @@ export const DatabrowserTabs = ({ onFullScreenClick }: { onFullScreenClick?: () 
   }
 
   return (
-    <div className="relative mb-2 shrink-0 bg-zinc-300">
+    <div className="relative shrink-0 overflow-hidden rounded-t-lg bg-zinc-300">
       <div className="flex items-center gap-1">
         {/* Scrollable tabs area */}
         <div className="relative min-w-0 flex-1">
@@ -267,9 +267,9 @@ export const DatabrowserTabs = ({ onFullScreenClick }: { onFullScreenClick?: () 
               variant="secondary"
               size="icon-sm"
               onClick={onFullScreenClick}
-              className="flex-shrink-0 bg-blue-100 hover:bg-blue-600 hover:text-white"
+              className="flex-shrink-0 bg-white text-zinc-500 dark:bg-zinc-100"
             >
-              <IconMaximize size={16} />
+              <IconWindowMaximize size={16} />
             </Button>
           )}
         </div>
@@ -300,9 +300,9 @@ function AddTabButton() {
       variant="secondary"
       size="icon-sm"
       onClick={handleAddTab}
-      className="flex-shrink-0 dark:bg-zinc-200"
+      className="flex-shrink-0 bg-zinc-200 "
     >
-      <IconPlus className="text-zinc-500 dark:text-zinc-600" size={16} />
+      <IconPlus className="text-zinc-600" size={16} />
     </Button>
   )
 }
@@ -344,7 +344,7 @@ function TabsListButton({
         <Button
           variant="secondary"
           size="sm"
-          className="h-7 gap-1 px-2"
+          className="gap-1 bg-white px-2"
           aria-label="Search in tabs"
         >
           <span className="text-xs text-zinc-600">{tabs.length}</span>

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useMemo } from "react"
 import { useTheme } from "@/dark-mode-context"
-import { useTab } from "@/tab-provider"
 import { Editor, useMonaco, type Monaco, type BeforeMount } from "@monaco-editor/react"
 
 import { cn, isTest } from "@/lib/utils"
@@ -34,7 +33,6 @@ export const QueryEditor = (props: QueryEditorProps) => {
 }
 
 const MonacoQueryEditor = ({ value, onChange, height, schema }: QueryEditorProps) => {
-  const { active } = useTab()
   const monaco = useMonaco()
   const editorRef = useRef<unknown>(null)
   const theme = useTheme()
@@ -93,16 +91,6 @@ const MonacoQueryEditor = ({ value, onChange, height, schema }: QueryEditorProps
     // Enable eager model sync for better performance
     monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true)
   }
-
-  useEffect(() => {
-    if (!active || !monaco || !editorRef.current) {
-      return
-    }
-
-    // Ensure language is set to typescript
-    // @ts-expect-error not typing the editor type
-    monaco?.editor.setModelLanguage(editorRef.current.getModel(), "typescript")
-  }, [monaco, active])
 
   useEffect(() => {
     const match = value.startsWith("const query: Query = {")

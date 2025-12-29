@@ -13,7 +13,12 @@ export function Sidebar() {
         <LoadingSkeleton />
       ) : keys.length > 0 ? (
         // Infinite scroll already has a loader at the bottom
-        <InfiniteScroll query={query} disableRoundedInherit className="min-h-0 bg-zinc-100">
+        <InfiniteScroll
+          query={query}
+          disableRoundedInherit
+          className="min-h-0 rounded-xl bg-zinc-100 px-2 py-5 pr-4"
+          scrollBarClassName="py-5"
+        >
           <KeysList />
         </InfiniteScroll>
       ) : (

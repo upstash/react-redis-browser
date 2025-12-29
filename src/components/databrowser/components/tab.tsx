@@ -41,18 +41,17 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
   const { ref, isOverflow } = useOverflow()
 
   const label = isValuesSearchSelected ? valuesSearch.index : search.key || selectedKey
-  const iconNode =
-    isValuesSearchSelected && valuesSearch.index ? (
-      <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-emerald-200 text-emerald-800">
-        <IconSearch size={14} />
-      </div>
-    ) : search.key ? (
-      <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-zinc-100 text-zinc-600">
-        <IconSearch size={14} />
-      </div>
-    ) : selectedKey ? (
-      <TabTypeIcon selectedKey={selectedKey} />
-    ) : undefined
+  const iconNode = isValuesSearchSelected ? (
+    <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-emerald-200 text-emerald-800">
+      <IconSearch size={14} />
+    </div>
+  ) : search.key ? (
+    <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-zinc-100 text-zinc-600">
+      <IconSearch size={14} />
+    </div>
+  ) : selectedKey ? (
+    <TabTypeIcon selectedKey={selectedKey} />
+  ) : undefined
 
   const tabNode = (
     <div

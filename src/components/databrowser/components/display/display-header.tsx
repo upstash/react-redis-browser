@@ -25,13 +25,14 @@ export const DisplayHeader = ({
   }
 
   return (
-    <div className="rounded-lg bg-zinc-100">
-      <div className="flex min-h-10 items-center justify-between gap-4">
-        <h2 className="grow truncate text-base">
+    <div className="rounded-lg">
+      {/* Key title and actions */}
+      <div className="flex h-[26px] items-center justify-between gap-4">
+        <h2 className="grow truncate text-sm">
           {dataKey.trim() === "" ? (
             <span className="ml-1 text-zinc-500">(Empty Key)</span>
           ) : (
-            <span className="font-semibold">{dataKey}</span>
+            <span className="font-medium text-zinc-950">{dataKey}</span>
           )}
         </h2>
 
@@ -48,7 +49,8 @@ export const DisplayHeader = ({
         </div>
       </div>
 
-      <div className="flex h-10 flex-wrap items-center gap-1.5">
+      {/* Key info badges */}
+      <div className="flex h-10 items-center gap-1.5 overflow-scroll">
         <TypeTag variant={type} type="badge" />
         <SizeBadge dataKey={dataKey} />
         <LengthBadge dataKey={dataKey} type={type} content={content} />

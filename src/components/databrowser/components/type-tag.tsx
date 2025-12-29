@@ -38,7 +38,8 @@ const tagVariants = cva("inline-flex shrink-0 items-center rounded-md justify-ce
     },
     type: {
       icon: "size-5",
-      badge: "h-6 px-2 uppercase whitespace-nowrap text-xs font-medium leading-none tracking-wide",
+      badge:
+        "h-[26px] px-2 uppercase whitespace-nowrap text-xs font-medium leading-none tracking-wide",
     },
   },
   defaultVariants: {

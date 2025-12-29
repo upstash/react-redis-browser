@@ -57,10 +57,7 @@ export const InfiniteScroll = ({
       type="always"
       onScroll={handleScroll}
       {...props}
-      className={cn(
-        "block h-full w-full overflow-visible rounded-lg p-1 pr-3 transition-all",
-        props.className
-      )}
+      className={cn("block h-full w-full overflow-visible transition-all", props.className)}
       ref={scrollRef}
     >
       <div ref={contentRef}>

@@ -19,7 +19,10 @@ export function KeyActions({ dataKey, content }: { dataKey: string; content?: st
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button size="icon-sm" aria-label="Key actions">
-          <IconDotsVertical className="size-4 text-zinc-500 dark:text-zinc-600" />
+          <IconDotsVertical
+            className="size-4 text-zinc-500 dark:text-zinc-600"
+            fill="rgb(var(--color-zinc-500))"
+          />
         </Button>
       </DropdownMenuTrigger>
 

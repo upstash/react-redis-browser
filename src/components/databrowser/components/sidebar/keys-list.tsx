@@ -3,7 +3,6 @@ import { useTab } from "@/tab-provider"
 import type { RedisKey } from "@/types"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import { TypeTag } from "@/components/databrowser/components/type-tag"
 
 import { useKeys } from "../../hooks/use-keys"
@@ -28,7 +27,7 @@ export const KeysList = () => {
               lastClickedIndexRef={lastClickedIndexRef}
             />
             {i !== keys.length - 1 && (
-              <div className="-z-10 mx-2 h-px bg-zinc-200 dark:bg-zinc-200" />
+              <div className="-z-10 mx-[13px] h-px bg-zinc-200 dark:bg-zinc-200" />
             )}
           </Fragment>
         ))}
@@ -76,21 +75,20 @@ const KeyItem = ({
   }
 
   return (
-    <Button
+    <button
       data-key={dataKey}
-      variant={isKeySelected ? "default" : "ghost"}
       className={cn(
         "relative flex h-10 w-full items-center justify-start gap-2 rounded-lg px-3 py-0 !ring-0 transition-colors focus-visible:bg-zinc-50",
         "-my-px select-none border border-transparent text-left",
         isKeySelected
           ? "border-zinc-300 bg-white font-medium text-zinc-950 shadow-[0_1px_2px_0_rgba(0,0,0,0.10)]"
-          : "shadow-none"
+          : "shadow-none hover:bg-zinc-200"
       )}
       onClick={handleClick}
     >
       <TypeTag variant={dataType} type="icon" />
-      <p className="grow truncate whitespace-nowrap">{dataKey}ASDKJALSKDJKLASJDLKAJSDLKJA</p>
+      <p className="grow truncate whitespace-nowrap">{dataKey}</p>
       {isKeySelected && <IconChevronRight className="shrink-0 text-zinc-500" size={20} />}
-    </Button>
+    </button>
   )
 }
