@@ -480,9 +480,9 @@
   background: linear-gradient(to left, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0));
 }
 
-/* Set 1.2 stroke for all tabler icons */
+/* Set 1.5 stroke for all tabler icons */
 svg.tabler-icon {
-  stroke-width: 1.2 !important;
+  stroke-width: 1.5 !important;
 }
 
 .mtk5 {
