@@ -17,8 +17,13 @@ export const DatabrowserInstance = ({ hidden }: { hidden?: boolean }) => {
   const { isValuesSearchSelected } = useTab()
   return (
     <KeysProvider>
-      <div className={cn("flex min-h-0 grow flex-col rounded-md bg-zinc-100", hidden && "hidden")}>
-        <div className="space-y-3 p-5">
+      <div
+        className={cn(
+          "flex min-h-0 grow flex-col rounded-md bg-white px-5 pb-5",
+          hidden && "hidden"
+        )}
+      >
+        <div className="space-y-3 py-5">
           <Header />
 
           {isValuesSearchSelected && <QueryBuilder />}
@@ -27,13 +32,15 @@ export const DatabrowserInstance = ({ hidden }: { hidden?: boolean }) => {
         <PanelGroup
           autoSaveId="persistence"
           direction="horizontal"
-          className="h-full w-full gap-0.5 text-sm antialiased"
+          className="h-full w-full text-sm antialiased"
         >
           <Panel defaultSize={30} minSize={30}>
             <Sidebar />
           </Panel>
-          <PanelResizeHandle className="group flex h-full w-3 justify-center">
-            <div className="h-full border-r border-dashed border-zinc-200 transition-colors group-hover:border-zinc-500" />
+          <PanelResizeHandle className="group mx-[2px] flex h-full flex-col items-center justify-center gap-1 rounded-md px-[8px] transition-colors hover:bg-zinc-300/10">
+            <div className="h-[3px] w-[3px] rounded-full bg-zinc-300" />
+            <div className="h-[3px] w-[3px] rounded-full bg-zinc-300" />
+            <div className="h-[3px] w-[3px] rounded-full bg-zinc-300" />
           </PanelResizeHandle>
           <Panel minSize={40}>
             <DataDisplay />

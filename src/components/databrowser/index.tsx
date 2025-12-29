@@ -131,7 +131,7 @@ const RedisBrowserRoot = ({
       style={{ height: "100%" }}
       ref={rootRef}
     >
-      <div className="flex h-full flex-col text-zinc-700">
+      <div className="flex h-full flex-col rounded-xl border-[4px] border-zinc-300 text-zinc-700">
         {!hideTabs && <DatabrowserTabs onFullScreenClick={onFullScreenClick} />}
         <DatabrowserInstances />
       </div>

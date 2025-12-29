@@ -8,12 +8,12 @@ export function Sidebar() {
   const { keys, query } = useKeys()
 
   return (
-    <div className="flex h-full flex-col gap-2 p-4">
+    <div className="flex h-full flex-col gap-2">
       {query.isLoading && keys.length === 0 ? (
         <LoadingSkeleton />
       ) : keys.length > 0 ? (
         // Infinite scroll already has a loader at the bottom
-        <InfiniteScroll query={query} disableRoundedInherit className="min-h-0">
+        <InfiniteScroll query={query} disableRoundedInherit className="min-h-0 bg-zinc-100">
           <KeysList />
         </InfiniteScroll>
       ) : (

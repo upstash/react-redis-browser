@@ -210,10 +210,8 @@ export const DatabrowserTabs = ({ onFullScreenClick }: { onFullScreenClick?: () 
   }
 
   return (
-    <div className="relative mb-2 shrink-0">
-      <div className="absolute bottom-0 left-0 right-0 -z-10 h-[1px] w-full bg-zinc-200" />
-
-      <div className="flex translate-y-[1px] items-center gap-1">
+    <div className="relative mb-2 shrink-0 bg-zinc-300">
+      <div className="flex items-center gap-1">
         {/* Scrollable tabs area */}
         <div className="relative min-w-0 flex-1">
           <div
@@ -227,10 +225,11 @@ export const DatabrowserTabs = ({ onFullScreenClick }: { onFullScreenClick?: () 
             }`}
           />
 
+          {/* TAB */}
           <div
             ref={scrollRef}
             onScroll={recomputeShadows}
-            className="scrollbar-hide flex min-w-0 flex-1 items-center gap-1 overflow-x-auto pb-[1px] [&::-webkit-scrollbar]:hidden"
+            className="scrollbar-hide flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [&::-webkit-scrollbar]:hidden"
           >
             <DndContext
               sensors={sensors}

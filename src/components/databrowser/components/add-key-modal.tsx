@@ -68,7 +68,7 @@ export function AddKeyModal() {
           <Button
             variant="primary"
             data-testid="add-key-button"
-            className="flex items-center gap-1 rounded-lg pl-2 pr-3 text-sm font-medium"
+            className="flex h-8 items-center gap-1 rounded-lg pl-2 pr-3 text-sm font-medium"
           >
             <IconPlus className="size-5" />
             Key
