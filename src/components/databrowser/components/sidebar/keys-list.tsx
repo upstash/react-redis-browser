@@ -1,13 +1,13 @@
 import { Fragment, useRef } from "react"
 import { useTab } from "@/tab-provider"
 import type { RedisKey } from "@/types"
+import { IconChevronRight } from "@tabler/icons-react"
 
 import { cn } from "@/lib/utils"
 import { TypeTag } from "@/components/databrowser/components/type-tag"
 
 import { useKeys } from "../../hooks/use-keys"
 import { SidebarContextMenu } from "../sidebar-context-menu"
-import { IconChevronRight } from "@tabler/icons-react"
 
 export const KeysList = () => {
   const { keys } = useKeys()

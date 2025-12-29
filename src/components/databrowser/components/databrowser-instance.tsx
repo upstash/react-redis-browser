@@ -1,3 +1,4 @@
+import { useTab } from "@/tab-provider"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 
 import { cn } from "@/lib/utils"
@@ -6,10 +7,9 @@ import { Toaster } from "@/components/ui/toaster"
 import { KeysProvider } from "../hooks/use-keys"
 import { DataDisplay } from "./display"
 import { Header } from "./header"
-import { Sidebar } from "./sidebar"
-import { useTab } from "@/tab-provider"
-import { QueryBuilder } from "./query-builder"
 import { HeaderError } from "./header-error"
+import { QueryBuilder } from "./query-builder"
+import { Sidebar } from "./sidebar"
 
 export const PREFIX = "const query: Query = "
 

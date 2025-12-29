@@ -1,9 +1,11 @@
+import { useState } from "react"
 import { useTab } from "@/tab-provider"
+
+import { parseJSObjectLiteral } from "@/lib/utils"
+
 import { useFetchSearchIndex } from "../hooks/use-fetch-search-index"
 import { PREFIX } from "./databrowser-instance"
 import { QueryEditor } from "./display/input/query-editor"
-import { useState } from "react"
-import { parseJSObjectLiteral } from "@/lib/utils"
 
 export const QueryBuilder = () => {
   const { valuesSearch, setValuesSearchQuery } = useTab()

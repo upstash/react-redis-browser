@@ -71,8 +71,7 @@ export const queryClient = new QueryClient({
   },
   queryCache: new QueryCache({
     onError: (error, query) => {
-      if (query.meta?.hideToast)
-        return
+      if (query.meta?.hideToast) return
       handleError(error)
     },
   }),

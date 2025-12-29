@@ -5,10 +5,10 @@ import type { DataType, RedisKey } from "@/types"
 import { useInfiniteQuery, type UseInfiniteQueryResult } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
+import { parseJSObjectLiteral } from "@/lib/utils"
 
 import { FETCH_KEY_TYPE_QUERY_KEY } from "./use-fetch-key-type"
 import { useFetchSearchIndex } from "./use-fetch-search-index"
-import { parseJSObjectLiteral } from "@/lib/utils"
 
 const KeysContext = createContext<
   | {

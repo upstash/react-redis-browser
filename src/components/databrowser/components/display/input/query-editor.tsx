@@ -1,8 +1,9 @@
-import { useEffect, useRef, useMemo } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { useTheme } from "@/dark-mode-context"
-import { Editor, useMonaco, type Monaco, type BeforeMount } from "@monaco-editor/react"
+import { Editor, useMonaco, type BeforeMount, type Monaco } from "@monaco-editor/react"
 
 import { cn, isTest } from "@/lib/utils"
+
 import { generateTypeDefinitions } from "./generateTypeDefinitions"
 
 // Schema field types as returned by index.describe()
