@@ -19,7 +19,8 @@
     "build": "tsup",
     "dev": "vite",
     "lint": "tsc && eslint",
-    "fmt": "prettier --write ./src"
+    "fmt": "prettier --write ./src",
+    "prepare": "husky"
   },
   "lint-staged": {
     "**/*.{js,ts,tsx}": [
@@ -70,6 +71,8 @@
     "dotenv": "^16.5.0",
     "eslint": "9.10.0",
     "eslint-plugin-unicorn": "55.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "postcss": "^8.4.31",
     "postcss-prefix-selector": "^2.1.0",
     "prettier": "^3.0.3",
