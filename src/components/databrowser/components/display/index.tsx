@@ -1,5 +1,6 @@
 /* eslint-disable unicorn/no-negated-condition */
 
+import { DATA_TYPES, SIMPLE_DATA_TYPES, type SimpleDataType } from "@/types"
 import { useKeys, useKeyType } from "../../hooks/use-keys"
 import { ListDisplay } from "./display-list"
 import { EditorDisplay } from "./display-simple"
@@ -23,12 +24,16 @@ export const DataDisplay = () => {
         ) : (
           <div />
         )
+      ) : !DATA_TYPES.includes(type as any) ? (
+        <div className="flex h-full items-center justify-center">
+          <span className="text-zinc-500">Unrecognized key type: {type}</span>
+        </div>
       ) : (
         <>
-          {type === "string" || type === "json" ? (
-            <EditorDisplay dataKey={selectedKey} type={type} />
+          {SIMPLE_DATA_TYPES.includes(type as SimpleDataType) ? (
+            <EditorDisplay dataKey={selectedKey} type={type as SimpleDataType} />
           ) : (
-            <ListDisplay dataKey={selectedKey} type={type} />
+            <ListDisplay dataKey={selectedKey} type={type as Exclude<typeof type, SimpleDataType>} />
           )}
         </>
       )}
