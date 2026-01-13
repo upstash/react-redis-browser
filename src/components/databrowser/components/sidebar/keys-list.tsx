@@ -1,6 +1,6 @@
 import { Fragment, useRef } from "react"
 import { useTab } from "@/tab-provider"
-import type { DataType, RedisKey } from "@/types"
+import type { RedisKey } from "@/types"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -36,7 +36,7 @@ export const KeysList = () => {
   )
 }
 
-const keyStyles = {
+const keyStyles: Record<string, string> = {
   string: "border-sky-400 !bg-sky-50 text-sky-900",
   hash: "border-amber-400 !bg-amber-50 text-amber-900",
   set: "border-indigo-400 !bg-indigo-50 text-indigo-900",
@@ -44,7 +44,9 @@ const keyStyles = {
   json: "border-purple-400 !bg-purple-50 text-purple-900",
   list: "border-orange-400 !bg-orange-50 text-orange-900",
   stream: "border-green-400 !bg-green-50 text-green-900",
-} as Record<DataType, string>
+}
+
+const defaultKeyStyle = "border-gray-400 !bg-gray-50 text-gray-900"
 
 const KeyItem = ({
   data,
@@ -92,7 +94,7 @@ const KeyItem = ({
         "relative flex h-10 w-full items-center justify-start gap-2 px-3 py-0 !ring-0 focus-visible:bg-zinc-50",
         "-my-px select-none border border-transparent text-left",
         isKeySelected && "shadow-sm",
-        isKeySelected && keyStyles[dataType]
+        isKeySelected && (keyStyles[dataType] ?? defaultKeyStyle)
       )}
       onClick={handleClick}
     >
