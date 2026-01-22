@@ -1,0 +1,306 @@
+import { useState } from "react"
+import { IconGripVertical, IconX } from "@tabler/icons-react"
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+import { BoostBadge, NodeActionsMenu, NotBadge } from "./condition-common"
+import { useQueryBuilderUI } from "./query-builder-context"
+import {
+  getOperatorsForFieldType,
+  OPERATOR_OPTIONS,
+  type FieldOperator,
+  type QueryNode,
+} from "./types"
+
+type QueryConditionProps = {
+  node: QueryNode & { type: "condition" }
+  isDragging?: boolean
+  /** Props for the drag handle - passed by DraggableItem */
+  dragHandleProps?: {
+    ref: React.Ref<HTMLElement>
+    listeners: Record<string, unknown>
+    attributes: Record<string, unknown>
+  }
+}
+
+// Format condition value for display
+const formatValueForDisplay = (value: string | number | boolean | string[]): string => {
+  if (Array.isArray(value)) {
+    return value.join(", ")
+  }
+  if (typeof value === "boolean") {
+    return value ? "true" : "false"
+  }
+  return String(value)
+}
+
+export const QueryCondition = ({
+  node,
+  isDragging = false,
+  dragHandleProps,
+}: QueryConditionProps) => {
+  const { fieldNames, fieldInfos, updateNode, deleteNode } = useQueryBuilderUI()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const { condition } = node
+
+  // Local state for the value input to allow free editing without immediate parsing
+  const [localValue, setLocalValue] = useState<string>(() => formatValueForDisplay(condition.value))
+  const [isValueFocused, setIsValueFocused] = useState(false)
+
+  // Sync local value when condition.value changes externally (and input is not focused)
+  const formattedConditionValue = formatValueForDisplay(condition.value)
+  if (!isValueFocused && localValue !== formattedConditionValue) {
+    setLocalValue(formattedConditionValue)
+  }
+
+  // Get the current field's type for operator filtering
+  const currentFieldInfo = fieldInfos?.find((f) => f.name === condition.field)
+  const currentFieldType = currentFieldInfo?.type ?? "unknown"
+
+  const handleFieldChange = (value: string) => {
+    updateNode(node.id, {
+      ...node,
+      condition: { ...condition, field: value },
+    })
+  }
+
+  const handleOperatorChange = (value: FieldOperator) => {
+    const updates: Partial<typeof condition> = { operator: value }
+
+    // Handle fuzzy operator special case
+    if (value === "fuzzy" && !condition.fuzzyDistance) {
+      updates.fuzzyDistance = 1
+    } else if (value !== "fuzzy") {
+      updates.fuzzyDistance = undefined
+    }
+
+    // Handle in operator - convert value to array
+    if (value === "in" && !Array.isArray(condition.value)) {
+      updates.value = condition.value ? [String(condition.value)] : []
+    } else if (value !== "in" && Array.isArray(condition.value)) {
+      updates.value = condition.value[0] || ""
+    }
+
+    updateNode(node.id, {
+      ...node,
+      condition: { ...condition, ...updates },
+    })
+  }
+
+  // Parse and commit the value to the parent state
+  const commitValue = (value: string) => {
+    let parsedValue: string | number | string[] = value
+
+    // Try to parse as number for comparison operators
+    if (["gt", "gte", "lt", "lte"].includes(condition.operator)) {
+      const numValue = Number(value)
+      if (!Number.isNaN(numValue) && value !== "") {
+        parsedValue = numValue
+      }
+    }
+
+    // Handle in operator - parse as comma-separated array, filtering out empty strings
+    if (condition.operator === "in") {
+      parsedValue = value
+        .split(",")
+        .map((v) => v.trim())
+        .filter((v) => v !== "")
+    }
+
+    updateNode(node.id, {
+      ...node,
+      condition: { ...condition, value: parsedValue },
+    })
+  }
+
+  const handleValueChange = (value: string) => {
+    setLocalValue(value)
+    commitValue(value) // Commit immediately so changes are visible
+  }
+
+  const handleValueBlur = () => {
+    setIsValueFocused(false)
+  }
+
+  const handleValueFocus = () => {
+    setIsValueFocused(true)
+  }
+
+  const handleToggleNot = () => {
+    updateNode(node.id, { ...node, not: !node.not })
+  }
+
+  const handleToggleBoost = () => {
+    // Boost is now on the node level (works for both conditions and groups)
+    updateNode(node.id, {
+      ...node,
+      boost: node.boost ? undefined : 2,
+    })
+  }
+
+  const handleBoostChange = (value: string) => {
+    const numValue = Number(value)
+    if (!Number.isNaN(numValue)) {
+      // Boost is now on the node level, and can be negative (for demotion)
+      updateNode(node.id, {
+        ...node,
+        boost: numValue,
+      })
+    }
+  }
+
+  const handleFuzzyDistanceChange = (value: string) => {
+    const distance = Number(value) as 1 | 2
+    updateNode(node.id, {
+      ...node,
+      condition: { ...condition, fuzzyDistance: distance },
+    })
+  }
+
+  const handleDelete = () => {
+    deleteNode(node.id)
+  }
+
+  const allowedOperators = getOperatorsForFieldType(currentFieldType)
+  const filteredOperators = OPERATOR_OPTIONS.filter((op) => allowedOperators.includes(op.value))
+
+  return (
+    <div className="group/condition flex items-center gap-1 px-1">
+      {/* Drag handle - only this element can initiate dragging */}
+      <div
+        ref={dragHandleProps?.ref as React.Ref<HTMLDivElement>}
+        className="flex cursor-grab items-center px-1 text-zinc-400 hover:text-zinc-600"
+        {...(dragHandleProps?.attributes as React.HTMLAttributes<HTMLDivElement>)}
+        {...(dragHandleProps?.listeners as React.HTMLAttributes<HTMLDivElement>)}
+      >
+        <IconGripVertical size={16} />
+      </div>
+
+      {/* Field / Operator / Value - joined group */}
+      <div className="flex">
+        {/* Field selector */}
+        <Select value={condition.field} onValueChange={handleFieldChange}>
+          <SelectTrigger className="h-[26px] w-32 gap-3 rounded-none rounded-l-md border-r-0 border-zinc-200 bg-white px-2 text-sm font-normal">
+            <SelectValue placeholder="Select field" />
+          </SelectTrigger>
+          <SelectContent>
+            {fieldNames.length > 0 ? (
+              fieldNames.map((field) => (
+                <SelectItem key={field} value={field}>
+                  {field}
+                </SelectItem>
+              ))
+            ) : (
+              <div className="px-2 py-1.5 text-sm text-zinc-500">No fields available</div>
+            )}
+          </SelectContent>
+        </Select>
+
+        {/* Operator selector - filtered by field type */}
+        <Select value={condition.operator} onValueChange={handleOperatorChange}>
+          <SelectTrigger className="h-[26px] w-24 gap-3 rounded-none border-r-0 border-zinc-200 px-2 text-sm font-normal">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {filteredOperators.map((op) => (
+              <SelectItem key={op.value} value={op.value}>
+                {op.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Value input - select for boolean fields, text input for others */}
+        {currentFieldType === "boolean" && condition.operator !== "in" ? (
+          <Select
+            value={typeof condition.value === "boolean" ? String(condition.value) : localValue}
+            onValueChange={(value) => {
+              const boolValue = value === "true"
+              updateNode(node.id, {
+                ...node,
+                condition: { ...condition, value: boolValue },
+              })
+            }}
+          >
+            <SelectTrigger className="h-[26px] w-20 gap-3 rounded-none rounded-r-md border border-zinc-200 bg-white px-2 text-sm font-normal">
+              <SelectValue placeholder="Select value" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="true">true</SelectItem>
+              <SelectItem value="false">false</SelectItem>
+            </SelectContent>
+          </Select>
+        ) : (
+          <input
+            type="text"
+            value={localValue}
+            onChange={(e) => handleValueChange(e.target.value)}
+            onBlur={handleValueBlur}
+            onFocus={handleValueFocus}
+            placeholder={condition.operator === "in" ? "value1, value2, ..." : "value"}
+            className="h-[26px] min-w-0 flex-1 rounded-none rounded-r-md border border-zinc-200 bg-white px-2 text-sm transition-colors focus:border-zinc-400 focus:outline-none"
+          />
+        )}
+      </div>
+
+      {/* Fuzzy distance selector */}
+      {condition.operator === "fuzzy" && (
+        <Select
+          value={String(condition.fuzzyDistance || 1)}
+          onValueChange={handleFuzzyDistanceChange}
+        >
+          <SelectTrigger className="h-[26px] w-16 gap-3 border-zinc-200 bg-white px-2 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">1</SelectItem>
+            <SelectItem value="2">2</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
+
+      {/* Boost badge */}
+      {node.boost !== undefined && (
+        <BoostBadge boost={node.boost} onBoostChange={handleBoostChange} />
+      )}
+
+      {/* Not badge */}
+      {node.not && <NotBadge />}
+
+      {/* Actions */}
+      <div
+        className={`flex items-center gap-1 transition-opacity ${
+          isDragging
+            ? "opacity-0"
+            : menuOpen
+              ? "opacity-100"
+              : "opacity-0 group-hover/condition:opacity-100"
+        }`}
+      >
+        <NodeActionsMenu
+          boost={node.boost}
+          not={node.not}
+          onToggleBoost={handleToggleBoost}
+          onToggleNot={handleToggleNot}
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+        />
+
+        <button
+          type="button"
+          onClick={handleDelete}
+          className="flex h-[26px] w-[26px] items-center justify-center rounded-md border border-zinc-300 text-zinc-500 transition-colors hover:text-red-500"
+        >
+          <IconX size={16} />
+        </button>
+      </div>
+    </div>
+  )
+}

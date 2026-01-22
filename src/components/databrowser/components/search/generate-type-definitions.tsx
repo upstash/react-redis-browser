@@ -1,12 +1,14 @@
-import type { IndexSchema } from "./query-editor"
+import type { SearchIndex } from "@/components/databrowser/hooks/use-fetch-search-index"
 
-// Generate TypeScript type definitions based on the actual schema
-export const generateTypeDefinitions = (schema?: IndexSchema): string => {
+// Generates the typescript types to be used in the
+// query builder editor
+export const generateTypeDefinitions = (schema?: SearchIndex): string => {
   // Generate schema-specific field types
   let schemaFieldsInterface = ""
 
-  if (schema && Object.keys(schema).length > 0) {
-    const fieldLines = Object.entries(schema)
+  const schemaFields = schema?.schema
+  if (schemaFields && Object.keys(schemaFields).length > 0) {
+    const fieldLines = Object.entries(schemaFields)
       .map(([fieldName, fieldDef]) => {
         const fieldType = fieldDef.type
         let operationType: string
@@ -66,8 +68,8 @@ type StringOperationMap = {
   $in: string[];
   /** Fuzzy match with optional distance */
   $fuzzy: string | { value: string; distance?: number; transpositionCostOne?: boolean };
-  /** Phrase match */
-  $phrase: string;
+  /** Phrase match with optional slop or prefix */
+  $phrase: string | { value: string } | { value: string; slop: number; prefix?: never } | { value: string; prefix: boolean; slop?: never };
   /** Regular expression match */
   $regex: string;
 };
@@ -108,6 +110,14 @@ type DateOperationMap = {
   $ne: string | Date;
   /** Match any value in array */
   $in: (string | Date)[];
+  /** Greater than */
+  $gt: string | Date;
+  /** Greater than or equal */
+  $gte: string | Date;
+  /** Less than */
+  $lt: string | Date;
+  /** Less than or equal */
+  $lte: string | Date;
 };
 
 // String field operations with optional boost
@@ -116,7 +126,7 @@ type StringOperations =
   | { $ne: string; $boost?: number }
   | { $in: string[]; $boost?: number }
   | { $fuzzy: string | { value: string; distance?: number; transpositionCostOne?: boolean }; $boost?: number }
-  | { $phrase: string; $boost?: number }
+  | { $phrase: string | { value: string } | { value: string; slop: number; prefix?: never } | { value: string; prefix: boolean; slop?: never }; $boost?: number }
   | { $regex: string; $boost?: number }
   | string;
 
@@ -143,6 +153,10 @@ type DateOperations =
   | { $eq: string | Date; $boost?: number }
   | { $ne: string | Date; $boost?: number }
   | { $in: (string | Date)[]; $boost?: number }
+  | { $gt: string | Date; $boost?: number }
+  | { $gte: string | Date; $boost?: number }
+  | { $lt: string | Date; $boost?: number }
+  | { $lte: string | Date; $boost?: number }
   | string
   | Date;
 
@@ -164,7 +178,7 @@ type BoolBase = SchemaFields;
 // $and: all conditions must match
 type AndNode = BoolBase & {
   /** All conditions in this array must match */
-  $and: QueryFilter[];
+  $and: QueryFilter | QueryFilter[];
   /** Boost score for this node */
   $boost?: number;
   $or?: never;
@@ -176,7 +190,7 @@ type AndNode = BoolBase & {
 // $or: at least one condition must match
 type OrNode = BoolBase & {
   /** At least one condition must match */
-  $or: QueryFilter[];
+  $or: QueryFilter | QueryFilter[];
   /** Boost score for this node */
   $boost?: number;
   $and?: never;
@@ -188,7 +202,7 @@ type OrNode = BoolBase & {
 // $must only (Elasticsearch-style)
 type MustNode = BoolBase & {
   /** All conditions must match (similar to $and) */
-  $must: QueryFilter[];
+  $must: QueryFilter | QueryFilter[];
   /** Boost score for this node */
   $boost?: number;
   $and?: never;
@@ -200,7 +214,7 @@ type MustNode = BoolBase & {
 // $should only (Elasticsearch-style)
 type ShouldNode = BoolBase & {
   /** At least one should match (affects scoring) */
-  $should: QueryFilter[];
+  $should: QueryFilter | QueryFilter[];
   /** Boost score for this node */
   $boost?: number;
   $and?: never;
@@ -212,9 +226,9 @@ type ShouldNode = BoolBase & {
 // $must + $should combined
 type MustShouldNode = BoolBase & {
   /** All these must match */
-  $must: QueryFilter[];
+  $must: QueryFilter | QueryFilter[];
   /** At least one should match for higher score */
-  $should: QueryFilter[];
+  $should: QueryFilter | QueryFilter[];
   $and?: never;
   $or?: never;
   $mustNot?: never;
@@ -223,7 +237,7 @@ type MustShouldNode = BoolBase & {
 // $mustNot only
 type NotNode = BoolBase & {
   /** None of these conditions should match */
-  $mustNot: QueryFilter[];
+  $mustNot: QueryFilter | QueryFilter[];
   /** Boost score for this node */
   $boost?: number;
   $and?: never;
@@ -234,8 +248,8 @@ type NotNode = BoolBase & {
 
 // $and + $mustNot combined
 type AndNotNode = BoolBase & {
-  $and: QueryFilter[];
-  $mustNot: QueryFilter[];
+  $and: QueryFilter | QueryFilter[];
+  $mustNot: QueryFilter | QueryFilter[];
   $boost?: number;
   $or?: never;
   $must?: never;
@@ -244,8 +258,8 @@ type AndNotNode = BoolBase & {
 
 // $or + $mustNot combined
 type OrNotNode = BoolBase & {
-  $or: QueryFilter[];
-  $mustNot: QueryFilter[];
+  $or: QueryFilter | QueryFilter[];
+  $mustNot: QueryFilter | QueryFilter[];
   $boost?: number;
   $and?: never;
   $must?: never;
@@ -254,8 +268,8 @@ type OrNotNode = BoolBase & {
 
 // $should + $mustNot combined
 type ShouldNotNode = BoolBase & {
-  $should: QueryFilter[];
-  $mustNot: QueryFilter[];
+  $should: QueryFilter | QueryFilter[];
+  $mustNot: QueryFilter | QueryFilter[];
   $boost?: number;
   $and?: never;
   $or?: never;
@@ -264,8 +278,8 @@ type ShouldNotNode = BoolBase & {
 
 // $must + $mustNot combined
 type MustNotNode = BoolBase & {
-  $must: QueryFilter[];
-  $mustNot: QueryFilter[];
+  $must: QueryFilter | QueryFilter[];
+  $mustNot: QueryFilter | QueryFilter[];
   $boost?: number;
   $and?: never;
   $or?: never;
@@ -274,9 +288,9 @@ type MustNotNode = BoolBase & {
 
 // Full boolean node: $must + $should + $mustNot
 type BoolNode = BoolBase & {
-  $must: QueryFilter[];
-  $should: QueryFilter[];
-  $mustNot: QueryFilter[];
+  $must: QueryFilter | QueryFilter[];
+  $should: QueryFilter | QueryFilter[];
+  $mustNot: QueryFilter | QueryFilter[];
   $boost?: number;
   $and?: never;
   $or?: never;
@@ -299,7 +313,7 @@ type QueryFilter =
 
 // Root-level $or restriction (no field conditions at root with $or)
 type RootOrNode = {
-  $or: QueryFilter[];
+  $or: QueryFilter | QueryFilter[];
   $boost?: number;
   $and?: never;
   $must?: never;

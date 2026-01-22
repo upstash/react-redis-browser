@@ -4,6 +4,7 @@
 
 /* All these classes are already prefixed with .ups-db */
 @layer base {
+
   *,
   ::before,
   ::after {
@@ -480,14 +481,15 @@
   background: linear-gradient(to left, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0));
 }
 
-/* Set 1.5 stroke for all tabler icons */
+/* Set 2 stroke for all tabler icons */
 svg.tabler-icon {
-  stroke-width: 1.5 !important;
+  stroke-width: 2 !important;
 }
 
 .mtk5 {
   color: rgb(var(--color-emerald-700)) !important;
 }
+
 .mtk6 {
   color: #a626a4 !important;
 }
@@ -495,6 +497,7 @@ svg.tabler-icon {
 .mtk20 {
   color: #059669 !important;
 }
+
 .mtk8 {
   color: #fcc28c !important;
 }
@@ -518,4 +521,30 @@ svg.tabler-icon {
 
 .monaco-editor {
   --vscode-focusBorder: #0000 !important;
+}
+
+/* ============================================================================
+   DRAG OVERLAY ANIMATIONS (Query Builder)
+   ============================================================================ */
+
+.dropping .drag-overlay-bg {
+  animation: fadeOutBg 200ms ease-out forwards;
+}
+
+@keyframes fadeOutBg {
+  0% {
+    opacity: 1;
+    border-color: rgb(212, 212, 216);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    visibility: visible;
+  }
+  99% {
+    visibility: visible;
+  }
+  100% {
+    opacity: 0;
+    border-color: transparent;
+    box-shadow: none;
+    visibility: hidden;
+  }
 }

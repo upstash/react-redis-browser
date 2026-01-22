@@ -8,6 +8,8 @@ export const Segmented = ({
   options,
   value,
   onChange,
+  className,
+  buttonClassName,
 }: {
   options: {
     key: string
@@ -15,14 +17,24 @@ export const Segmented = ({
   }[]
   value: string
   onChange?: (value: string) => void
+  className?: string
+  buttonClassName?: string
 }) => {
   return (
-    <div className="flex w-fit gap-[2px] rounded-lg bg-zinc-200 p-[2px] text-sm">
+    <div
+      className={cn(
+        "flex w-fit gap-[2px] rounded-lg bg-zinc-200 p-[2px] text-sm dark:bg-zinc-700",
+        className
+      )}
+    >
       {options.map((option) => (
         <button
           className={cn(
             "h-7 rounded-md px-3 transition-all",
-            value === option.key ? "bg-white text-zinc-950" : "text-zinc-700"
+            value === option.key
+              ? "bg-white text-zinc-950 dark:bg-zinc-800 dark:text-zinc-100"
+              : "text-zinc-700 dark:text-zinc-400",
+            buttonClassName
           )}
           key={option.key}
           onClick={() => {

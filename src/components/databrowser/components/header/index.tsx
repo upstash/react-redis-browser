@@ -39,7 +39,7 @@ export const Header = () => {
             key: "values",
             label: (
               <div className="flex items-center gap-1">
-                Values
+                Search
                 <div className="flex h-[18px] items-center rounded-md bg-emerald-100 px-[5px] text-[11px] text-emerald-700">
                   NEW
                 </div>

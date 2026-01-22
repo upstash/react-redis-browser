@@ -1,17 +1,62 @@
+import { useState } from "react"
 import { useTab } from "@/tab-provider"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 
 import { cn } from "@/lib/utils"
+import { Segmented } from "@/components/ui/segmented"
 import { Toaster } from "@/components/ui/toaster"
 
+import { useFetchSearchIndexes } from "../hooks/use-fetch-search-indexes"
 import { KeysProvider } from "../hooks/use-keys"
 import { DataDisplay } from "./display"
 import { Header } from "./header"
 import { HeaderError } from "./header-error"
 import { QueryBuilder } from "./query-builder"
+import { SearchEmptyState } from "./search-empty-state"
 import { Sidebar } from "./sidebar"
+import { UIQueryBuilder } from "./ui-query-builder"
 
 export const PREFIX = "const query: Query = "
+
+type QueryBuilderMode = "builder" | "code"
+
+/**
+ * Content shown when on the Search tab.
+ * Shows either the query builders (if indexes exist) or empty state (if no indexes).
+ */
+const SearchContent = () => {
+  const { data: indexes, isLoading } = useFetchSearchIndexes()
+  const [mode, setMode] = useState<QueryBuilderMode>("builder")
+
+  // Don't show anything while loading
+  if (isLoading) {
+    return null
+  }
+
+  // Show empty state if no indexes exist
+  const hasIndexes = indexes && indexes.length > 0
+  if (!hasIndexes) {
+    return <SearchEmptyState />
+  }
+
+  // Show query builders if indexes exist
+  return (
+    <div className="relative">
+      <div className="absolute right-4 top-4 z-10">
+        <Segmented
+          options={[
+            { key: "builder", label: "Query Builder" },
+            { key: "code", label: "Code Editor" },
+          ]}
+          value={mode}
+          onChange={(value) => setMode(value as QueryBuilderMode)}
+          buttonClassName="h-6"
+        />
+      </div>
+      {mode === "builder" ? <UIQueryBuilder /> : <QueryBuilder />}
+    </div>
+  )
+}
 
 export const DatabrowserInstance = ({ hidden }: { hidden?: boolean }) => {
   const { isValuesSearchSelected } = useTab()
@@ -26,7 +71,7 @@ export const DatabrowserInstance = ({ hidden }: { hidden?: boolean }) => {
         <div className="space-y-3 py-5">
           <Header />
 
-          {isValuesSearchSelected && <QueryBuilder />}
+          {isValuesSearchSelected && <SearchContent />}
           <HeaderError />
         </div>
         <PanelGroup

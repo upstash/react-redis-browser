@@ -3,125 +3,56 @@ import { useTheme } from "@/dark-mode-context"
 import { Editor, useMonaco, type BeforeMount, type Monaco } from "@monaco-editor/react"
 
 import { cn, isTest } from "@/lib/utils"
+import type { SearchIndex } from "@/components/databrowser/hooks/use-fetch-search-index"
 
-import { generateTypeDefinitions } from "./generateTypeDefinitions"
-
-// Schema field types as returned by index.describe()
-type SchemaFieldType = "TEXT" | "U64" | "I64" | "F64" | "BOOL" | "DATE"
-
-type SchemaField = {
-  type: SchemaFieldType | string
-  fast?: boolean
-}
-
-// Flexible type that accepts any schema structure from the SDK
-export type IndexSchema = Record<string, SchemaField | { type: string }>
+import { generateTypeDefinitions } from "./generate-type-definitions"
 
 type QueryEditorProps = {
   value: string
   onChange: (value: string) => void
   height?: number
-  schema?: IndexSchema
+  schema?: SearchIndex
 }
 
 export const QueryEditor = (props: QueryEditorProps) => {
-  // Avoid mounting Monaco at all during Playwright runs
-  if (isTest) {
-    return <TestQueryEditor {...props} />
-  }
-
-  return <MonacoQueryEditor {...props} />
+  return isTest ? <TestQueryEditor {...props} /> : <MonacoQueryEditor {...props} />
 }
 
 const MonacoQueryEditor = ({ value, onChange, height, schema }: QueryEditorProps) => {
   const monaco = useMonaco()
   const editorRef = useRef<unknown>(null)
   const theme = useTheme()
-  const libDisposableRef = useRef<{ dispose: () => void } | null>(null)
-
-  // Generate type definitions based on schema
   const typeDefinitions = useMemo(() => generateTypeDefinitions(schema), [schema])
 
-  // Update type definitions when schema changes
+  const extraLibRef = useRef<{ dispose: () => void } | null>(null)
+
+  // Update type definitions
   useEffect(() => {
     if (!monaco) return
 
-    // Dispose previous lib if exists
-    if (libDisposableRef.current) {
-      libDisposableRef.current.dispose()
-    }
+    if (extraLibRef.current) extraLibRef.current.dispose()
 
-    // Add new type definitions
-    libDisposableRef.current = monaco.languages.typescript.typescriptDefaults.addExtraLib(
+    extraLibRef.current = monaco.languages.typescript.typescriptDefaults.addExtraLib(
       typeDefinitions,
       "file:///query-types.d.ts"
     )
-
-    return () => {
-      if (libDisposableRef.current) {
-        libDisposableRef.current.dispose()
-      }
-    }
   }, [monaco, typeDefinitions])
 
-  const handleBeforeMount: BeforeMount = (monaco: Monaco) => {
-    // Configure TypeScript compiler options
-    monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
-      target: monaco.languages.typescript.ScriptTarget.ES2020,
-      allowNonTsExtensions: true,
-      moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-      module: monaco.languages.typescript.ModuleKind.CommonJS,
-      noEmit: true,
-      esModuleInterop: true,
-      strict: true,
-      allowJs: true,
-    })
-
-    // Add initial type definitions
-    libDisposableRef.current = monaco.languages.typescript.typescriptDefaults.addExtraLib(
-      typeDefinitions,
-      "file:///query-types.d.ts"
-    )
-
-    // Configure diagnostics
-    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-      noSemanticValidation: false,
-      noSyntaxValidation: false,
-    })
-
-    // Enable eager model sync for better performance
-    monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true)
-  }
-
-  useEffect(() => {
-    const match = value.startsWith("const query: Query = {")
-    const ending = value.endsWith("}")
-    if (!match || !ending) {
-      onChange("const query: Query = {}")
-    }
-  }, [value, editorRef.current, onChange])
-
-  // Wrap the value to make it a valid TypeScript expression
-  const handleChange = (newValue: string | undefined) => {
-    if (!newValue) {
-      onChange("")
-      return
-    }
-
-    // Check if the value contains the required prefix
-    const match = newValue.startsWith("const query: Query = {")
+  // Prevent deleting the "const query: Query" prefix
+  const handleChange = (newValue: string = "") => {
+    const match = isQueryStringValid(newValue)
     if (match) {
       onChange(newValue)
     } else {
-      // Revert the editor content to prevent removing the required prefix
-      const editor = editorRef.current
-      if (editor) {
-        // Use setValue to restore the previous valid value
-        // @ts-expect-error not typing the editor type
-        editor.setValue(value)
-      }
+      // @ts-expect-error not typing the editor type
+      editorRef.current?.setValue?.(value)
     }
   }
+
+  // If the prefix is somehow deleted, restore it
+  useEffect(() => {
+    if (!isQueryStringValid(value)) onChange("const query: Query = {}")
+  }, [value, editorRef.current, onChange])
 
   return (
     <div className={cn("group/editor relative")} style={{ height }}>
@@ -145,7 +76,7 @@ const MonacoQueryEditor = ({ value, onChange, height, schema }: QueryEditorProps
           renderWhitespace: "none",
           smoothScrolling: true,
           scrollbar: {
-            verticalScrollbarSize: 12,
+            verticalScrollbarSize: 6,
           },
           autoIndent: "full",
           guides: { indentation: false },
@@ -194,6 +125,32 @@ const MonacoQueryEditor = ({ value, onChange, height, schema }: QueryEditorProps
   )
 }
 
+const isQueryStringValid = (value: string) => {
+  return value.startsWith("const query: Query = {") && value.endsWith("}")
+}
+
+// Configure Monaco
+const handleBeforeMount: BeforeMount = (monaco: Monaco) => {
+  monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+    target: monaco.languages.typescript.ScriptTarget.ES2020,
+    allowNonTsExtensions: true,
+    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+    module: monaco.languages.typescript.ModuleKind.CommonJS,
+    noEmit: true,
+    esModuleInterop: true,
+    strict: true,
+    allowJs: true,
+  })
+
+  monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+    noSemanticValidation: false,
+    noSyntaxValidation: false,
+  })
+
+  monaco.languages.typescript.typescriptDefaults.setEagerModelSync(true)
+}
+
+// Dummy for the tests
 const TestQueryEditor = ({ value, onChange, height }: QueryEditorProps) => {
   return (
     <div className={cn("group/editor relative")} style={{ height }}>
