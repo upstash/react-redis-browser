@@ -91,12 +91,16 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
 
     const offset = Number.parseInt(cursor, 10) || 0
 
-    const result = await redis.search.index(valuesSearch.index).query({
-      filter: parsedValueQuery ?? {},
-      limit: count,
-      offset,
-      select: {},
-    })
+    const result = await redis.search
+      .index({
+        name: valuesSearch.index,
+      })
+      .query({
+        filter: parsedValueQuery ?? {},
+        limit: count,
+        offset,
+        select: {},
+      })
 
     const keys = result.map((doc) => ({
       key: doc.key,

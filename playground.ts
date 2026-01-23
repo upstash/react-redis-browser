@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
-import { Redis, s } from "@upstash/redis";
+import { Redis, s } from "@upstash/redis"
 
-const redis = Redis.fromEnv();
+const redis = Redis.fromEnv()
 
 // await redis.search.index("user-index").drop();
 
@@ -18,15 +18,18 @@ const schema = s.object({
   contact: s.object({
     email: s.string(),
     phone: s.string(),
-  })
+  }),
 })
 
-const index = redis.search.index("user-index", schema)
+const index = redis.search.index({
+  name: "user-index",
+  schema: schema,
+})
 
 if (await index.describe()) {
   console.log("index exists, dropping")
-  await index.drop();
-  console.log('index dropped')
+  await index.drop()
+  console.log("index dropped")
 }
 
 console.log("creating index")
@@ -35,7 +38,7 @@ await redis.search.createIndex({
   prefix: "user:",
   name: "user-index",
   schema: schema,
-});
+})
 
 console.log("created index")
 
@@ -43,16 +46,15 @@ console.log("created index")
 
 console.log("indexing done")
 
-
 const res = await index.query({
   filter: {
     $and: {
       name: {
-        $eq: "Yusuf"
-      }
+        $eq: "Yusuf",
+      },
     },
     "contact.email": "asd",
-  }
+  },
 })
 
 console.log("query result, should be empty:", res)
@@ -69,7 +71,7 @@ await redis.mset({
     contact: {
       email: "yusuf@example.com",
       phone: "1234567890",
-    }
+    },
   }),
   "user:fatima": JSON.stringify({
     name: "Fatima",
@@ -80,7 +82,7 @@ await redis.mset({
     contact: {
       email: "fatima@example.com",
       phone: "0987654321",
-    }
+    },
   }),
   // josh
   // arda
@@ -95,7 +97,7 @@ await redis.mset({
     contact: {
       email: "josh@example.com",
       phone: "0987654321",
-    }
+    },
   }),
   "user:arda": JSON.stringify({
     name: "Arda",
@@ -106,7 +108,7 @@ await redis.mset({
     contact: {
       email: "arda@example.com",
       phone: "0987654321",
-    }
+    },
   }),
   "user:ali": JSON.stringify({
     name: "Ali",
@@ -117,7 +119,7 @@ await redis.mset({
     contact: {
       email: "ali@example.com",
       phone: "0987654321",
-    }
+    },
   }),
   "user:sertug": JSON.stringify({
     name: "Sertug",
@@ -128,7 +130,7 @@ await redis.mset({
     contact: {
       email: "sertug@example.com",
       phone: "0987654321",
-    }
+    },
   }),
 })
 
@@ -142,13 +144,12 @@ const res2 = await index.query({
   filter: {
     $and: {
       name: {
-        $eq: "Yusuf"
-      }
-    }
-  }
+        $eq: "Yusuf",
+      },
+    },
+  },
 })
 
 console.log("query result, should not be empty:", res2)
-
 
 console.log(await redis.type("user-index"))

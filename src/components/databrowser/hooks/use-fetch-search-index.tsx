@@ -25,7 +25,11 @@ export const useFetchSearchIndex = (indexName: string) => {
     queryKey: [FETCH_SEARCH_INDEX_QUERY_KEY, indexName],
     queryFn: async () => {
       if (!indexName) return
-      const result = await redis.search.index(indexName).describe()
+      const result = await redis.search
+        .index({
+          name: indexName,
+        })
+        .describe()
       return result
     },
     enabled: Boolean(indexName),
