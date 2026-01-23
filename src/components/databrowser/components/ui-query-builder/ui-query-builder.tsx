@@ -7,9 +7,20 @@ import { QueryGroup } from "./query-group"
 import type { FieldInfo, FieldType } from "./types"
 import { useQueryStateSync } from "./use-query-state-sync"
 
-// ============================================================================
-// HELPER: Extract field names and types from schema
-// ============================================================================
+export const UIQueryBuilder = () => {
+  const { valuesSearch } = useTab()
+  const { data: indexDetails } = useFetchSearchIndex(valuesSearch.index)
+  const { queryState, setQueryState } = useQueryStateSync()
+  const fieldInfos = indexDetails?.schema ? extractFieldInfo(indexDetails.schema) : []
+
+  return (
+    <QueryBuilderUIProvider fieldInfos={fieldInfos} setQueryState={setQueryState}>
+      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+        <QueryGroup node={queryState.root} isRoot depth={0} />
+      </div>
+    </QueryBuilderUIProvider>
+  )
+}
 
 const getFieldType = (schemaType: string): FieldType => {
   switch (schemaType) {
@@ -43,35 +54,3 @@ const extractFieldInfo = (schema: SearchIndex["schema"]): FieldInfo[] => {
     type: getFieldType(fieldInfo.type),
   }))
 }
-
-// ============================================================================
-// MAIN COMPONENT
-// ============================================================================
-
-export const UIQueryBuilder = () => {
-  const { valuesSearch } = useTab()
-  const { data: indexDetails } = useFetchSearchIndex(valuesSearch.index)
-
-  // Extract field info (names and types) from schema
-  const fieldInfos = indexDetails?.schema ? extractFieldInfo(indexDetails.schema) : []
-  const fieldNames = fieldInfos.map((f) => f.name)
-
-  // Use the sync hook for query state management
-  const { queryState, setQueryState } = useQueryStateSync()
-
-  return (
-    <QueryBuilderUIProvider
-      fieldNames={fieldNames}
-      fieldInfos={fieldInfos}
-      setQueryState={setQueryState}
-    >
-      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-        <QueryGroup node={queryState.root} isRoot depth={0} />
-      </div>
-    </QueryBuilderUIProvider>
-  )
-}
-
-// Re-export types for convenience
-export type { SearchIndex as IndexSchema } from "../../hooks/use-fetch-search-index"
-export type { FieldCondition as SchemaField } from "./types"

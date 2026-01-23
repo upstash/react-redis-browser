@@ -3,6 +3,92 @@ import { createContext, useCallback, useContext, useMemo, type ReactNode } from 
 import { createInitialQueryState } from "./query-parser"
 import type { FieldInfo, QueryNode, QueryState } from "./types"
 
+type QueryBuilderUIContextValue = {
+  fieldInfos: FieldInfo[]
+  updateNode: (nodeId: string, updates: Partial<QueryNode>) => void
+  deleteNode: (nodeId: string) => void
+  addChildToGroup: (groupId: string, child: QueryNode) => void
+  moveNode: (nodeId: string, newParentId: string, newIndex: number) => void
+}
+
+const QueryBuilderUIContext = createContext<QueryBuilderUIContextValue | null>(null)
+
+type QueryBuilderUIProviderProps = {
+  children: ReactNode
+  fieldInfos: FieldInfo[]
+  setQueryState: (modifier: (state: QueryState) => QueryState) => void
+}
+
+export const QueryBuilderUIProvider = ({
+  children,
+  fieldInfos,
+  setQueryState,
+}: QueryBuilderUIProviderProps) => {
+  const updateNode = useCallback(
+    (nodeId: string, updates: Partial<QueryNode>) => {
+      setQueryState((state) => ({
+        ...state,
+        root: updateNodeInTree(state.root, nodeId, updates),
+      }))
+    },
+    [setQueryState]
+  )
+
+  const deleteNode = useCallback(
+    (nodeId: string) => {
+      setQueryState((state) => {
+        const newRoot = deleteNodeFromTree(state.root, nodeId)
+        return {
+          ...state,
+          root: newRoot || createInitialQueryState().root,
+        }
+      })
+    },
+    [setQueryState]
+  )
+
+  const addChildToGroup = useCallback(
+    (groupId: string, child: QueryNode) => {
+      setQueryState((state) => ({
+        ...state,
+        root: addChildToGroupInTree(state.root, groupId, child),
+      }))
+    },
+    [setQueryState]
+  )
+
+  const moveNode = useCallback(
+    (nodeId: string, newParentId: string, newIndex: number) => {
+      setQueryState((state) => ({
+        ...state,
+        root: moveNodeInTree(state.root, nodeId, newParentId, newIndex),
+      }))
+    },
+    [setQueryState]
+  )
+
+  const value = useMemo(
+    () => ({
+      fieldInfos,
+      updateNode,
+      deleteNode,
+      addChildToGroup,
+      moveNode,
+    }),
+    [fieldInfos, updateNode, deleteNode, addChildToGroup, moveNode]
+  )
+
+  return <QueryBuilderUIContext.Provider value={value}>{children}</QueryBuilderUIContext.Provider>
+}
+
+export const useQueryBuilderUI = (): QueryBuilderUIContextValue => {
+  const context = useContext(QueryBuilderUIContext)
+  if (!context) {
+    throw new Error("useQueryBuilderUI must be used within a QueryBuilderUIProvider")
+  }
+  return context
+}
+
 // ============================================================================
 // TREE OPERATIONS
 // ============================================================================
@@ -90,110 +176,4 @@ const moveNodeInTree = (
 
   const afterRemove = removeNode(root)
   return addNodeToParent(afterRemove)
-}
-
-// ============================================================================
-// CONTEXT TYPES
-// ============================================================================
-
-type QueryBuilderUIContextValue = {
-  fieldNames: string[]
-  fieldInfos: FieldInfo[]
-  updateNode: (nodeId: string, updates: Partial<QueryNode>) => void
-  deleteNode: (nodeId: string) => void
-  addChildToGroup: (groupId: string, child: QueryNode) => void
-  moveNode: (nodeId: string, newParentId: string, newIndex: number) => void
-}
-
-// ============================================================================
-// CONTEXT
-// ============================================================================
-
-const QueryBuilderUIContext = createContext<QueryBuilderUIContextValue | null>(null)
-
-// ============================================================================
-// PROVIDER
-// ============================================================================
-
-type QueryBuilderUIProviderProps = {
-  children: ReactNode
-  fieldNames: string[]
-  fieldInfos?: FieldInfo[]
-  setQueryState: (modifier: (state: QueryState) => QueryState) => void
-}
-
-export const QueryBuilderUIProvider = ({
-  children,
-  fieldNames,
-  fieldInfos,
-  setQueryState,
-}: QueryBuilderUIProviderProps) => {
-  const updateNode = useCallback(
-    (nodeId: string, updates: Partial<QueryNode>) => {
-      setQueryState((state) => ({
-        ...state,
-        root: updateNodeInTree(state.root, nodeId, updates),
-      }))
-    },
-    [setQueryState]
-  )
-
-  const deleteNode = useCallback(
-    (nodeId: string) => {
-      setQueryState((state) => {
-        const newRoot = deleteNodeFromTree(state.root, nodeId)
-        return {
-          ...state,
-          root: newRoot || createInitialQueryState().root,
-        }
-      })
-    },
-    [setQueryState]
-  )
-
-  const addChildToGroup = useCallback(
-    (groupId: string, child: QueryNode) => {
-      setQueryState((state) => ({
-        ...state,
-        root: addChildToGroupInTree(state.root, groupId, child),
-      }))
-    },
-    [setQueryState]
-  )
-
-  const moveNode = useCallback(
-    (nodeId: string, newParentId: string, newIndex: number) => {
-      setQueryState((state) => ({
-        ...state,
-        root: moveNodeInTree(state.root, nodeId, newParentId, newIndex),
-      }))
-    },
-    [setQueryState]
-  )
-
-  const value = useMemo(
-    () => ({
-      fieldNames,
-      fieldInfos: fieldInfos ?? [],
-      updateNode,
-      deleteNode,
-      addChildToGroup,
-      moveNode,
-    }),
-    [fieldNames, fieldInfos, updateNode, deleteNode, addChildToGroup, moveNode]
-  )
-
-  return <QueryBuilderUIContext.Provider value={value}>{children}</QueryBuilderUIContext.Provider>
-}
-
-// ============================================================================
-// HOOK
-// ============================================================================
-
-export const useQueryBuilderUI = (): QueryBuilderUIContextValue => {
-  const context = useContext(QueryBuilderUIContext)
-  if (!context) {
-    throw new Error("useQueryBuilderUI must be used within a QueryBuilderUIProvider")
-  }
-  return context
 }

@@ -24,10 +24,6 @@ import { QueryCondition } from "./query-condition"
 import { createEmptyCondition, createEmptyGroup } from "./query-parser"
 import { type GroupOperator, type QueryNode } from "./types"
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
 type QueryGroupProps = {
   node: QueryNode
   isRoot?: boolean
@@ -39,7 +35,6 @@ type InnerGroupProps = {
   isRoot?: boolean
   depth: number
   activeOverId?: string | null
-  isDragActive: boolean
   droppingId: string | null
   dragHandleProps?: DragHandleProps
 }
@@ -53,12 +48,11 @@ const InnerGroup = ({
   isRoot = false,
   depth,
   activeOverId,
-  isDragActive,
   droppingId,
   dragHandleProps,
 }: InnerGroupProps) => {
-  const { fieldNames, updateNode, deleteNode, addChildToGroup } = useQueryBuilderUI()
-  const [menuOpen, setMenuOpen] = useState(false)
+  const { fieldInfos, updateNode, deleteNode, addChildToGroup } = useQueryBuilderUI()
+  const fieldNames = fieldInfos.map((f) => f.name)
 
   const handleOperatorChange = (value: GroupOperator) => {
     updateNode(node.id, { groupOperator: value })
@@ -76,21 +70,6 @@ const InnerGroup = ({
 
   const handleDeleteGroup = () => {
     deleteNode(node.id)
-  }
-
-  const handleToggleNot = () => {
-    updateNode(node.id, { not: !node.not })
-  }
-
-  const handleToggleBoost = () => {
-    updateNode(node.id, { boost: node.boost ? undefined : 2 })
-  }
-
-  const handleBoostChange = (value: string) => {
-    const numValue = Number(value)
-    if (!Number.isNaN(numValue)) {
-      updateNode(node.id, { boost: numValue })
-    }
   }
 
   return (
@@ -136,43 +115,24 @@ const InnerGroup = ({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Boost badge */}
-        {node.boost !== undefined && (
-          <BoostBadge boost={node.boost} onBoostChange={handleBoostChange} />
-        )}
+        {node.boost !== undefined && <BoostBadge node={node} />}
 
-        {/* Not badge */}
         {node.not && <NotBadge />}
 
-        {/* Actions (settings menu) - visible on hover, hidden for root */}
+        {/* Actions (settings menu & delete) - visible on hover */}
         {!isRoot && (
           <div
-            className={`flex items-center gap-1 transition-opacity ${
-              menuOpen ? "opacity-100" : "opacity-0 group-hover/group:opacity-100"
-            }`}
+            className={`flex -translate-x-[2px] items-center gap-1 opacity-0 transition-all duration-100 group-hover/group:translate-x-0 group-hover/group:opacity-100 has-[[data-state=open]]:translate-x-0 has-[[data-state=open]]:opacity-100`}
           >
-            <NodeActionsMenu
-              boost={node.boost}
-              not={node.not}
-              onToggleBoost={handleToggleBoost}
-              onToggleNot={handleToggleNot}
-              open={menuOpen}
-              onOpenChange={setMenuOpen}
-            />
+            <NodeActionsMenu node={node} />
+            <button
+              type="button"
+              onClick={handleDeleteGroup}
+              className={`flex h-[26px] w-[26px] items-center justify-center rounded-md border border-zinc-300 text-zinc-500 transition-colors hover:text-red-500`}
+            >
+              <IconX size={16} />
+            </button>
           </div>
-        )}
-
-        {/* Delete button for non-root groups */}
-        {!isRoot && (
-          <button
-            type="button"
-            onClick={handleDeleteGroup}
-            className={`flex h-[26px] w-[26px] items-center justify-center rounded-md border border-zinc-300 text-zinc-500 transition-opacity hover:text-red-500 ${
-              menuOpen ? "opacity-100" : "opacity-0 group-hover/group:opacity-100"
-            }`}
-          >
-            <IconX size={16} />
-          </button>
         )}
       </div>
 
@@ -191,7 +151,7 @@ const InnerGroup = ({
                 />
 
                 {/* The item itself */}
-                <DraggableItem id={child.id} isDragActive={isDragActive} droppingId={droppingId}>
+                <DraggableItem id={child.id} droppingId={droppingId}>
                   {child.type === "condition" ? (
                     <QueryCondition node={child} />
                   ) : (
@@ -199,7 +159,6 @@ const InnerGroup = ({
                       node={child}
                       depth={depth + 1}
                       activeOverId={activeOverId}
-                      isDragActive={isDragActive}
                       droppingId={droppingId}
                     />
                   )}
@@ -225,12 +184,9 @@ const InnerGroup = ({
 
 export const QueryGroup = ({ node, isRoot = false, depth }: QueryGroupProps) => {
   const [activeOverId, setActiveOverId] = useState<string | null>(null)
-  const [isDragActive, setIsDragActive] = useState(false)
   const [droppingId, setDroppingId] = useState<string | null>(null)
 
-  if (node.type !== "group") {
-    return null
-  }
+  if (node.type !== "group") return
 
   // Only the root should have the DndContext
   if (!isRoot) {
@@ -240,7 +196,6 @@ export const QueryGroup = ({ node, isRoot = false, depth }: QueryGroupProps) => 
         isRoot={isRoot}
         depth={depth}
         activeOverId={activeOverId}
-        isDragActive={isDragActive}
         droppingId={droppingId}
       />
     )
@@ -250,7 +205,6 @@ export const QueryGroup = ({ node, isRoot = false, depth }: QueryGroupProps) => 
     <QueryDndProvider
       rootNode={node}
       setActiveOverId={setActiveOverId}
-      setIsDragActive={setIsDragActive}
       setDroppingId={setDroppingId}
     >
       <InnerGroup
@@ -258,7 +212,6 @@ export const QueryGroup = ({ node, isRoot = false, depth }: QueryGroupProps) => 
         isRoot={isRoot}
         depth={depth}
         activeOverId={activeOverId}
-        isDragActive={isDragActive}
         droppingId={droppingId}
       />
     </QueryDndProvider>

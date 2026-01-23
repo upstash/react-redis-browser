@@ -15,61 +15,17 @@ import { QueryDragOverlay } from "./drag-overlay"
 import { useQueryBuilderUI } from "./query-builder-context"
 import type { QueryNode } from "./types"
 
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-export const findNodeById = (root: QueryNode, id: string): QueryNode | null => {
-  if (root.id === id) return root
-  if (root.type === "group") {
-    for (const child of root.children) {
-      const found = findNodeById(child, id)
-      if (found) return found
-    }
-  }
-  return null
-}
-
-export const findParentGroup = (
-  root: QueryNode,
-  targetId: string
-): (QueryNode & { type: "group" }) | null => {
-  if (root.type !== "group") return null
-
-  for (const child of root.children) {
-    if (child.id === targetId) {
-      return root
-    }
-    if (child.type === "group") {
-      const found = findParentGroup(child, targetId)
-      if (found) return found
-    }
-  }
-
-  return null
-}
-
-// ============================================================================
-// TYPES
-// ============================================================================
-
 type QueryDndProviderProps = {
   children: ReactNode
   rootNode: QueryNode & { type: "group" }
   setActiveOverId: (id: string | null) => void
-  setIsDragActive: (active: boolean) => void
   setDroppingId: (id: string | null) => void
 }
-
-// ============================================================================
-// DND PROVIDER COMPONENT
-// ============================================================================
 
 export const QueryDndProvider = ({
   children,
   rootNode,
   setActiveOverId,
-  setIsDragActive,
   setDroppingId,
 }: QueryDndProviderProps) => {
   const { moveNode } = useQueryBuilderUI()
@@ -86,7 +42,6 @@ export const QueryDndProvider = ({
   const handleDragStart = (event: DragStartEvent) => {
     setDroppingId(null) // Clear any previous dropping state
     setActiveId(event.active.id)
-    setIsDragActive(true)
   }
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -103,7 +58,6 @@ export const QueryDndProvider = ({
     }
 
     setActiveId(null)
-    setIsDragActive(false)
     setActiveOverId(null)
 
     if (!over) return
@@ -181,4 +135,34 @@ export const QueryDndProvider = ({
       />
     </DndContext>
   )
+}
+
+const findNodeById = (root: QueryNode, id: string): QueryNode | null => {
+  if (root.id === id) return root
+  if (root.type === "group") {
+    for (const child of root.children) {
+      const found = findNodeById(child, id)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+const findParentGroup = (
+  root: QueryNode,
+  targetId: string
+): (QueryNode & { type: "group" }) | null => {
+  if (root.type !== "group") return null
+
+  for (const child of root.children) {
+    if (child.id === targetId) {
+      return root
+    }
+    if (child.type === "group") {
+      const found = findParentGroup(child, targetId)
+      if (found) return found
+    }
+  }
+
+  return null
 }

@@ -5,23 +5,13 @@ import { BoostBadge, NotBadge } from "./condition-common"
 import { QueryCondition } from "./query-condition"
 import type { QueryNode } from "./types"
 
-// ============================================================================
-// TYPES
-// ============================================================================
-
-type QueryDragOverlayProps = {
-  activeNode: QueryNode | null
-  onDropAnimationComplete: () => void
-}
-
-// ============================================================================
-// DRAG OVERLAY COMPONENT
-// ============================================================================
-
 export const QueryDragOverlay = ({
   activeNode,
   onDropAnimationComplete,
-}: QueryDragOverlayProps) => {
+}: {
+  activeNode: QueryNode | null
+  onDropAnimationComplete: () => void
+}) => {
   return (
     <DndKitDragOverlay
       dropAnimation={{
@@ -80,10 +70,8 @@ export const QueryDragOverlay = ({
               </svg>
             </div>
 
-            {/* Boost badge */}
-            {activeNode.boost !== undefined && <BoostBadge boost={activeNode.boost} static />}
+            {activeNode.boost !== undefined && <BoostBadge node={activeNode} static />}
 
-            {/* Not badge */}
             {activeNode.not && <NotBadge />}
           </div>
         </div>

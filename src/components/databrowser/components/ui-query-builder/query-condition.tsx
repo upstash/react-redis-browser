@@ -45,10 +45,12 @@ export const QueryCondition = ({
   isDragging = false,
   dragHandleProps,
 }: QueryConditionProps) => {
-  const { fieldNames, fieldInfos, updateNode, deleteNode } = useQueryBuilderUI()
-  const [menuOpen, setMenuOpen] = useState(false)
+  const { fieldInfos, updateNode, deleteNode } = useQueryBuilderUI()
 
   const { condition } = node
+
+  // Derive field names from fieldInfos
+  const fieldNames = fieldInfos.map((f) => f.name)
 
   // Local state for the value input to allow free editing without immediate parsing
   const [localValue, setLocalValue] = useState<string>(() => formatValueForDisplay(condition.value))
@@ -61,7 +63,7 @@ export const QueryCondition = ({
   }
 
   // Get the current field's type for operator filtering
-  const currentFieldInfo = fieldInfos?.find((f) => f.name === condition.field)
+  const currentFieldInfo = fieldInfos.find((f) => f.name === condition.field)
   const currentFieldType = currentFieldInfo?.type ?? "unknown"
 
   // Normalize boolean values - if the field is boolean and the value is not a valid boolean, set it to true
@@ -161,29 +163,6 @@ export const QueryCondition = ({
 
   const handleValueFocus = () => {
     setIsValueFocused(true)
-  }
-
-  const handleToggleNot = () => {
-    updateNode(node.id, { ...node, not: !node.not })
-  }
-
-  const handleToggleBoost = () => {
-    // Boost is now on the node level (works for both conditions and groups)
-    updateNode(node.id, {
-      ...node,
-      boost: node.boost ? undefined : 2,
-    })
-  }
-
-  const handleBoostChange = (value: string) => {
-    const numValue = Number(value)
-    if (!Number.isNaN(numValue)) {
-      // Boost is now on the node level, and can be negative (for demotion)
-      updateNode(node.id, {
-        ...node,
-        boost: numValue,
-      })
-    }
   }
 
   const handleFuzzyDistanceChange = (value: string) => {
@@ -302,30 +281,19 @@ export const QueryCondition = ({
         </Select>
       )}
 
-      {node.boost !== undefined && (
-        <BoostBadge boost={node.boost} onBoostChange={handleBoostChange} />
-      )}
+      {node.boost !== undefined && <BoostBadge node={node} />}
 
       {node.not && <NotBadge />}
 
       {/* Actions */}
       <div
-        className={`flex items-center gap-1 transition-opacity ${
+        className={`flex items-center gap-1 transition-all duration-100 ${
           isDragging
             ? "opacity-0"
-            : menuOpen
-              ? "opacity-100"
-              : "opacity-0 group-hover/condition:opacity-100"
+            : "-translate-x-[2px] opacity-0 group-hover/condition:translate-x-0 group-hover/condition:opacity-100 has-[[data-state=open]]:translate-x-0 has-[[data-state=open]]:opacity-100"
         }`}
       >
-        <NodeActionsMenu
-          boost={node.boost}
-          not={node.not}
-          onToggleBoost={handleToggleBoost}
-          onToggleNot={handleToggleNot}
-          open={menuOpen}
-          onOpenChange={setMenuOpen}
-        />
+        <NodeActionsMenu node={node} />
 
         <button
           type="button"
