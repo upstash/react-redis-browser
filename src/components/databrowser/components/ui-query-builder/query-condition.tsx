@@ -66,19 +66,37 @@ export const QueryCondition = ({
   const currentFieldInfo = fieldInfos.find((f) => f.name === condition.field)
   const currentFieldType = currentFieldInfo?.type ?? "unknown"
 
-  // Normalize boolean values - if the field is boolean and the value is not a valid boolean, set it to true
+  // Normalize values based on field type changes
   useEffect(() => {
     if (currentFieldType === "boolean") {
-      const isValidBoolean =
-        condition.value === true ||
-        condition.value === false ||
-        condition.value === "true" ||
-        condition.value === "false"
-
-      if (!isValidBoolean) {
+      // Convert string "true"/"false" to actual booleans
+      if (condition.value === "true") {
         updateNode(node.id, {
           ...node,
           condition: { ...condition, value: true },
+        })
+        return
+      }
+      if (condition.value === "false") {
+        updateNode(node.id, {
+          ...node,
+          condition: { ...condition, value: false },
+        })
+        return
+      }
+      // If the value is not a valid boolean at all, set it to true
+      if (condition.value !== true && condition.value !== false) {
+        updateNode(node.id, {
+          ...node,
+          condition: { ...condition, value: true },
+        })
+      }
+    } else {
+      // If the field is NOT boolean but the value is still a boolean, convert it to string
+      if (typeof condition.value === "boolean") {
+        updateNode(node.id, {
+          ...node,
+          condition: { ...condition, value: condition.value ? "true" : "false" },
         })
       }
     }
@@ -93,11 +111,29 @@ export const QueryCondition = ({
     const validOperators = getOperatorsForFieldType(newFieldType)
     const isOperatorValid = validOperators.includes(condition.operator)
 
+    // Convert values when changing field types
+    let newValue = condition.value
+    if (newFieldType === "boolean") {
+      // Convert string "true"/"false" to boolean when switching to boolean field
+      if (condition.value === "true") {
+        newValue = true
+      } else if (condition.value === "false") {
+        newValue = false
+      } else if (typeof condition.value !== "boolean") {
+        // Set default to true for non-boolean values
+        newValue = true
+      }
+    } else if (typeof condition.value === "boolean") {
+      // Convert boolean to string when switching away from boolean field
+      newValue = condition.value ? "true" : "false"
+    }
+
     updateNode(node.id, {
       ...node,
       condition: {
         ...condition,
         field: value,
+        value: newValue,
         // Reset to 'eq' if current operator is not valid for the new field type
         ...(isOperatorValid ? {} : { operator: "eq" as FieldOperator }),
       },
