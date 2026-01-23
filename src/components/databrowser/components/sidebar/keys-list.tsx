@@ -36,6 +36,19 @@ export const KeysList = () => {
   )
 }
 
+const keyStyles: Record<string, string> = {
+  string: "border-sky-400 !bg-sky-50 text-sky-900",
+  hash: "border-amber-400 !bg-amber-50 text-amber-900",
+  set: "border-indigo-400 !bg-indigo-50 text-indigo-900",
+  zset: "border-pink-400  !bg-pink-50 text-pink-900",
+  json: "border-purple-400 !bg-purple-50 text-purple-900",
+  list: "border-orange-400 !bg-orange-50 text-orange-900",
+  stream: "border-green-400 !bg-green-50 text-green-900",
+  search: "border-rose-400 !bg-rose-50 text-rose-900",
+}
+
+const defaultKeyStyle = "border-gray-400 !bg-gray-50 text-gray-900"
+
 const KeyItem = ({
   data,
   index,
@@ -80,9 +93,8 @@ const KeyItem = ({
       className={cn(
         "relative flex h-10 w-full items-center justify-start gap-2 rounded-lg px-3 py-0 !ring-0 transition-colors focus-visible:bg-zinc-50",
         "-my-px select-none border border-transparent text-left",
-        isKeySelected
-          ? "border-zinc-300 bg-white font-medium text-zinc-950 shadow-[0_1px_2px_0_rgba(0,0,0,0.10)]"
-          : "shadow-none hover:bg-zinc-200"
+        isKeySelected && "shadow-sm",
+        isKeySelected && (keyStyles[dataType] ?? defaultKeyStyle)
       )}
       onClick={handleClick}
     >

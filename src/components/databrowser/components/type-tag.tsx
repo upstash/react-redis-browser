@@ -6,6 +6,7 @@ import {
   IconHash,
   IconLayersIntersect,
   IconList,
+  IconQuestionMark,
   IconQuote,
   IconSearch,
 } from "@tabler/icons-react"
@@ -13,7 +14,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"
 
-const iconsMap = {
+const iconsMap: Record<string, React.ReactNode> = {
   string: <IconQuote size={15} stroke={1.2} />,
   set: <IconLayersIntersect size={15} stroke={1.2} />,
   hash: <IconHash size={15} stroke={1.2} />,
@@ -35,6 +36,7 @@ const tagVariants = cva("inline-flex shrink-0 items-center rounded-md justify-ce
       list: "bg-orange-200 text-orange-800",
       stream: "bg-green-200 text-green-800",
       search: "bg-rose-200 text-rose-800",
+      default: "bg-gray-200 text-gray-800",
     },
     type: {
       icon: "size-5",
@@ -43,7 +45,7 @@ const tagVariants = cva("inline-flex shrink-0 items-center rounded-md justify-ce
     },
   },
   defaultVariants: {
-    variant: "string",
+    variant: "default",
     type: "icon",
   },
 })
@@ -53,9 +55,14 @@ export interface TypeTagProps
     VariantProps<typeof tagVariants> {}
 
 export function TypeTag({ className, variant, type }: TypeTagProps) {
+  const defaultIcon = <IconQuestionMark size={15} stroke={1.2} />
+  const variantKey = variant && variant in iconsMap ? variant : "default"
+
   return (
-    <span className={cn(tagVariants({ variant, type, className }))}>
-      {type === "icon" ? iconsMap[variant as DataType] : DATA_TYPE_NAMES[variant as DataType]}
+    <span className={cn(tagVariants({ variant: variantKey, type, className }))}>
+      {type === "icon"
+        ? (iconsMap[variant as string] ?? defaultIcon)
+        : (DATA_TYPE_NAMES[variant as DataType] ?? variant ?? "Unknown")}
     </span>
   )
 }

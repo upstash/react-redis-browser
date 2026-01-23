@@ -25,7 +25,7 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
     selectTab,
     setSearch,
   } = useDatabrowserStore()
-  const { search: currentSearch, selectedKeys, setSelectedKey } = useTab()
+  const { search: currentSearch, selectedKeys } = useTab()
 
   return (
     <>
@@ -57,8 +57,7 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
               if (selectedKeys.includes(clickedKey)) {
                 setContextKeys(selectedKeys)
               } else {
-                // If right-clicking on an unselected key, select only that key
-                setSelectedKey(clickedKey)
+                // If right-clicking on an unselected key, only set context for context menu
                 setContextKeys([clickedKey])
               }
             } else {
