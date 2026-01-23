@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { IconGripVertical, IconX } from "@tabler/icons-react"
 
 import {
@@ -64,10 +64,41 @@ export const QueryCondition = ({
   const currentFieldInfo = fieldInfos?.find((f) => f.name === condition.field)
   const currentFieldType = currentFieldInfo?.type ?? "unknown"
 
+  // Normalize boolean values - if the field is boolean and the value is not a valid boolean, set it to true
+  useEffect(() => {
+    if (currentFieldType === "boolean") {
+      const isValidBoolean =
+        condition.value === true ||
+        condition.value === false ||
+        condition.value === "true" ||
+        condition.value === "false"
+
+      if (!isValidBoolean) {
+        updateNode(node.id, {
+          ...node,
+          condition: { ...condition, value: true },
+        })
+      }
+    }
+  }, [currentFieldType, condition.value])
+
   const handleFieldChange = (value: string) => {
+    // Get the new field's type
+    const newFieldInfo = fieldInfos?.find((f) => f.name === value)
+    const newFieldType = newFieldInfo?.type ?? "unknown"
+
+    // Check if current operator is valid for the new field type
+    const validOperators = getOperatorsForFieldType(newFieldType)
+    const isOperatorValid = validOperators.includes(condition.operator)
+
     updateNode(node.id, {
       ...node,
-      condition: { ...condition, field: value },
+      condition: {
+        ...condition,
+        field: value,
+        // Reset to 'eq' if current operator is not valid for the new field type
+        ...(isOperatorValid ? {} : { operator: "eq" as FieldOperator }),
+      },
     })
   }
 
@@ -98,8 +129,7 @@ export const QueryCondition = ({
   const commitValue = (value: string) => {
     let parsedValue: string | number | string[] = value
 
-    // Try to parse as number for comparison operators
-    if (["gt", "gte", "lt", "lte"].includes(condition.operator)) {
+    if (currentFieldType === "number") {
       const numValue = Number(value)
       if (!Number.isNaN(numValue) && value !== "") {
         parsedValue = numValue
@@ -172,7 +202,7 @@ export const QueryCondition = ({
   const filteredOperators = OPERATOR_OPTIONS.filter((op) => allowedOperators.includes(op.value))
 
   return (
-    <div className="group/condition flex items-center gap-1 px-1">
+    <div className="group/condition flex items-center gap-1 px-1 py-1">
       {/* Drag handle - only this element can initiate dragging */}
       <div
         ref={dragHandleProps?.ref as React.Ref<HTMLDivElement>}
@@ -218,9 +248,15 @@ export const QueryCondition = ({
         </Select>
 
         {/* Value input - select for boolean fields, text input for others */}
-        {currentFieldType === "boolean" && condition.operator !== "in" ? (
+        {currentFieldType === "boolean" ? (
           <Select
-            value={typeof condition.value === "boolean" ? String(condition.value) : localValue}
+            value={
+              condition.value === true || condition.value === "true"
+                ? "true"
+                : condition.value === false || condition.value === "false"
+                  ? "false"
+                  : "true" // Default to "true" if value is invalid
+            }
             onValueChange={(value) => {
               const boolValue = value === "true"
               updateNode(node.id, {
@@ -230,7 +266,7 @@ export const QueryCondition = ({
             }}
           >
             <SelectTrigger className="h-[26px] w-20 gap-3 rounded-none rounded-r-md border border-zinc-200 bg-white px-2 text-sm font-normal">
-              <SelectValue placeholder="Select value" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="true">true</SelectItem>
@@ -266,12 +302,10 @@ export const QueryCondition = ({
         </Select>
       )}
 
-      {/* Boost badge */}
       {node.boost !== undefined && (
         <BoostBadge boost={node.boost} onBoostChange={handleBoostChange} />
       )}
 
-      {/* Not badge */}
       {node.not && <NotBadge />}
 
       {/* Actions */}

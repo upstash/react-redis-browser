@@ -35,7 +35,7 @@ export const STRING_OPERATORS: FieldOperator[] = ["eq", "ne", "in", "contains", 
 export const NUMBER_OPERATORS: FieldOperator[] = ["eq", "ne", "gt", "gte", "lt", "lte", "in"]
 
 /** Operators supported for boolean fields */
-export const BOOLEAN_OPERATORS: FieldOperator[] = ["eq", "ne", "in"]
+export const BOOLEAN_OPERATORS: FieldOperator[] = ["eq", "ne"]
 
 /** Operators supported for date fields */
 export const DATE_OPERATORS: FieldOperator[] = ["eq", "ne", "gt", "gte", "lt", "lte", "in"]
