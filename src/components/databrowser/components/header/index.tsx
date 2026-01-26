@@ -1,15 +1,11 @@
+import { useState } from "react"
 import { useTab } from "@/tab-provider"
+import { IconChevronDown, IconCircleCheck, IconCirclePlus, IconSearch } from "@tabler/icons-react"
 
 import { queryClient } from "@/lib/clients"
+import { cn } from "@/lib/utils"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Segmented } from "@/components/ui/segmented"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 
 import {
   FETCH_KEYS_QUERY_KEY,
@@ -20,6 +16,7 @@ import {
 import { FETCH_KEY_TYPE_QUERY_KEY } from "../../hooks/use-fetch-key-type"
 import { useFetchSearchIndexes } from "../../hooks/use-fetch-search-indexes"
 import { AddKeyModal } from "../add-key-modal"
+import { CreateIndexModal } from "../search/create-index-modal"
 import { ReloadButton } from "../sidebar/reload-button"
 import { SearchInput } from "../sidebar/search-input"
 import { DataTypeSelector } from "../sidebar/type-selector"
@@ -76,34 +73,117 @@ const IndexSelector = () => {
   const {
     valuesSearch: { index },
     setValuesSearchIndex,
+    setSelectedKey,
+    setIsValuesSearchSelected,
   } = useTab()
-  const { data } = useFetchSearchIndexes()
+  const { data: indexes } = useFetchSearchIndexes()
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState("")
+
+  const filteredIndexes = indexes?.filter((idx) => idx.toLowerCase().includes(search.toLowerCase()))
+
+  const handleEditIndex = (indexName: string) => {
+    setOpen(false)
+    setIsValuesSearchSelected(false)
+    setSelectedKey(indexName)
+  }
 
   return (
     <div className="flex">
       <div className="flex items-center rounded-l-lg border border-r-0 border-zinc-300 bg-white px-3 text-sm text-zinc-700">
         Index
       </div>
-      <Select
-        value={index}
-        onValueChange={(value) => {
-          setValuesSearchIndex(value)
+      <Popover
+        open={open}
+        onOpenChange={(isOpen) => {
+          setOpen(isOpen)
+          if (!isOpen) setSearch("")
         }}
+        modal={false}
       >
-        <SelectTrigger className="w-auto select-none whitespace-nowrap rounded-l-none border-zinc-300 bg-emerald-50 pr-8 text-sm font-medium text-emerald-800">
-          <SelectValue placeholder="Select an index" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectGroup>
-            {data?.map((index) => (
-              <SelectItem key={index} value={index}>
-                {index}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
+        <PopoverTrigger asChild>
+          <button className="flex min-w-[140px] items-center justify-between gap-2 rounded-r-lg border border-zinc-300 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-800 hover:bg-emerald-100">
+            <span className="truncate">{index || "Select an index"}</span>
+            <IconChevronDown className="size-4 shrink-0 opacity-50" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="p-2" align="center">
+          <div className="flex flex-col gap-2">
+            <CreateIndexButton />
+
+            <div className="h-px bg-zinc-100" />
+
+            {/* Search input */}
+            <div className="flex h-9 items-center rounded-md border border-zinc-300 px-2">
+              <IconSearch className="size-5 text-zinc-400" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search Index"
+                className="flex h-full w-full bg-transparent px-2 py-3 text-sm outline-none placeholder:text-zinc-400"
+              />
+            </div>
+
+            {/* Index list */}
+            <div className="max-h-[200px] overflow-y-auto">
+              {filteredIndexes?.length === 0 && (
+                <div className="py-4 text-center text-sm text-zinc-500">No indexes found</div>
+              )}
+              {filteredIndexes?.map((idx) => (
+                <div
+                  key={idx}
+                  className="flex h-9 items-center rounded-md px-2 transition-colors hover:bg-zinc-100"
+                >
+                  <button
+                    onClick={() => {
+                      setValuesSearchIndex(idx)
+                      setOpen(false)
+                    }}
+                    className="flex flex-1 items-center gap-2 text-left text-sm"
+                  >
+                    <span
+                      className={cn(
+                        "flex size-5 items-center justify-center",
+                        idx === index ? "text-emerald-600" : "text-transparent"
+                      )}
+                    >
+                      <IconCircleCheck className="size-5" />
+                    </span>
+                    <span className="truncate">{idx}</span>
+                  </button>
+                  <button
+                    onClick={() => handleEditIndex(idx)}
+                    className="ml-2 text-sm text-zinc-500 underline hover:text-zinc-700"
+                  >
+                    Edit
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
+  )
+}
+
+const CreateIndexButton = () => {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          setOpen(true)
+        }}
+        className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-sm text-emerald-600 transition-colors hover:bg-zinc-50"
+      >
+        <IconCirclePlus className="size-5" />
+        <span className="underline">Create a new Index</span>
+      </button>
+      <CreateIndexModal open={open} onOpenChange={setOpen} />
+    </>
   )
 }
 

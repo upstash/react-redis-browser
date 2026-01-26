@@ -35,7 +35,7 @@ export const DataDisplay = () => {
           {SIMPLE_DATA_TYPES.includes(type as SimpleDataType) ? (
             <EditorDisplay dataKey={selectedKey} type={type as SimpleDataType} />
           ) : type === "search" ? (
-            <SearchDisplay dataKey={selectedKey} type={type} />
+            <SearchDisplay indexName={selectedKey} />
           ) : (
             <ListDisplay dataKey={selectedKey} type={type as any} />
           )}

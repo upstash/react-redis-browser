@@ -111,21 +111,21 @@ export const QueryCondition = ({
     const validOperators = getOperatorsForFieldType(newFieldType)
     const isOperatorValid = validOperators.includes(condition.operator)
 
-    // Convert values when changing field types
-    let newValue = condition.value
-    if (newFieldType === "boolean") {
-      // Convert string "true"/"false" to boolean when switching to boolean field
-      if (condition.value === "true") {
+    // Reset value when field type changes
+    let newValue: string | number | boolean | string[] = condition.value
+
+    // If the type is changing, reset the value
+    if (currentFieldType !== newFieldType) {
+      if (newFieldType === "boolean") {
+        // Default to true for boolean fields
         newValue = true
-      } else if (condition.value === "false") {
-        newValue = false
-      } else if (typeof condition.value !== "boolean") {
-        // Set default to true for non-boolean values
-        newValue = true
+      } else if (newFieldType === "number") {
+        // Default to 0 for number fields
+        newValue = 0
+      } else {
+        // Default to empty string for other types
+        newValue = ""
       }
-    } else if (typeof condition.value === "boolean") {
-      // Convert boolean to string when switching away from boolean field
-      newValue = condition.value ? "true" : "false"
     }
 
     updateNode(node.id, {

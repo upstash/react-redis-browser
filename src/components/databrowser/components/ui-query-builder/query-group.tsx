@@ -52,19 +52,18 @@ const InnerGroup = ({
   dragHandleProps,
 }: InnerGroupProps) => {
   const { fieldInfos, updateNode, deleteNode, addChildToGroup } = useQueryBuilderUI()
-  const fieldNames = fieldInfos.map((f) => f.name)
 
   const handleOperatorChange = (value: GroupOperator) => {
     updateNode(node.id, { groupOperator: value })
   }
 
   const handleAddCondition = () => {
-    addChildToGroup(node.id, createEmptyCondition(fieldNames[0]))
+    addChildToGroup(node.id, createEmptyCondition(fieldInfos))
   }
 
   const handleAddGroup = () => {
     const newGroup = createEmptyGroup("and")
-    ;(newGroup as QueryNode & { type: "group" }).children = [createEmptyCondition(fieldNames[0])]
+    ;(newGroup as QueryNode & { type: "group" }).children = [createEmptyCondition(fieldInfos)]
     addChildToGroup(node.id, newGroup)
   }
 

@@ -45,7 +45,7 @@ export const EmptyGroupDropZone = ({ groupId, isOver }: EmptyGroupDropZoneProps)
         isOver ? "border-blue-500 bg-blue-50 text-blue-600" : "border-zinc-300 text-zinc-400"
       }`}
     >
-      Drop items here or add a condition
+      Add a condition to start
     </div>
   )
 }

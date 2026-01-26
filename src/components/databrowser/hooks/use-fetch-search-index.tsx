@@ -6,19 +6,13 @@ export const FETCH_SEARCH_INDEX_QUERY_KEY = "fetch-search-index"
 
 type RedisSearchDescribeFunc = ReturnType<Redis["search"]["index"]>["describe"]
 
-// The schema returned from the redis server
-// Example: { name: { type: "TEXT" }, age: { type: "U64" }, ... }
-// type SearchIndexSchema = {
-//     name: string;
-//     dataType: "string" | "hash" | "json";
-//     prefixes: string[];
-//     language?: Language | undefined;
-//     schema: Record<string, DescribeFieldInfo>;
-// }
 export type SearchIndex = Awaited<ReturnType<RedisSearchDescribeFunc>>
 export type SearchIndexSchema = SearchIndex["schema"]
 
-export const useFetchSearchIndex = (indexName: string) => {
+export const useFetchSearchIndex = (
+  indexName?: string,
+  { enabled = true }: { enabled?: boolean } = {}
+) => {
   const { redisNoPipeline: redis } = useRedis()
 
   return useQuery({
@@ -32,6 +26,6 @@ export const useFetchSearchIndex = (indexName: string) => {
         .describe()
       return result
     },
-    enabled: Boolean(indexName),
+    enabled: Boolean(indexName) && enabled,
   })
 }

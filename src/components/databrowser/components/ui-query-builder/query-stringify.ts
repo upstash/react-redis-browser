@@ -59,15 +59,13 @@ const conditionToObject = (node: QueryNode & { type: "condition" }): Record<stri
     [`$${operator}`]: buildOperatorValue(operator, value, fuzzyDistance),
   }
 
-  if (conditionBoost && conditionBoost !== 1 && !node.boost) {
-    fieldCondition.$boost = conditionBoost
+  // Apply boost to the field condition - node.boost takes priority over conditionBoost
+  const finalBoost = node.boost ?? conditionBoost
+  if (finalBoost && finalBoost !== 1) {
+    fieldCondition.$boost = finalBoost
   }
 
   const condition: Record<string, unknown> = { [field]: fieldCondition }
-
-  if (node.boost && node.boost !== 1) {
-    condition.$boost = node.boost
-  }
 
   if (node.not) {
     return { $mustNot: [condition] }
@@ -108,6 +106,11 @@ const groupToObject = (
   isRoot: boolean
 ): Record<string, unknown> => {
   const { groupOperator, children, boost, not } = node
+
+  // Empty root group should return empty object, not $and: []
+  if (isRoot && children.length === 0 && !not && !boost) {
+    return {}
+  }
 
   // Optimization: flatten root AND with single child (no not/boost)
   if (isRoot && groupOperator === "and" && children.length === 1 && !not && !boost) {

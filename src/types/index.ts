@@ -21,7 +21,7 @@ export const DATA_TYPE_NAMES = {
 
 export type DataType = (typeof DATA_TYPES)[number]
 
-export type RedisKey = [string, DataType]
+export type RedisKey = [string, DataType, number?]
 
 export const LIST_DATA_TYPES = ["set", "zset", "list", "hash", "stream"] as const
 export const SIMPLE_DATA_TYPES = ["string", "json"] as const

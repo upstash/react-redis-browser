@@ -52,9 +52,9 @@ export const DisplayHeader = ({
       {/* Key info badges */}
       <div className="flex h-10 items-center gap-1.5 overflow-scroll">
         <TypeTag variant={type} type="badge" />
-        <SizeBadge dataKey={dataKey} />
-        <LengthBadge dataKey={dataKey} type={type} content={content} />
-        <HeaderTTLBadge dataKey={dataKey} />
+        {type !== "search" && <SizeBadge dataKey={dataKey} />}
+        {type !== "search" && <LengthBadge dataKey={dataKey} type={type} content={content} />}
+        {type !== "search" && <HeaderTTLBadge dataKey={dataKey} />}
       </div>
     </div>
   )

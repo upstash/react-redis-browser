@@ -10,6 +10,7 @@ import { parseJSObjectLiteral } from "@/lib/utils"
 import {
   ALL_OPERATORS,
   generateId,
+  type FieldInfo,
   type FieldOperator,
   type GroupOperator,
   type QueryNode,
@@ -237,11 +238,46 @@ export const parseQueryString = (queryString: string): QueryState | null => {
 // FACTORY FUNCTIONS
 // ============================================================================
 
-export const createEmptyCondition = (field?: string): QueryNode & { type: "condition" } => ({
-  id: generateId(),
-  type: "condition",
-  condition: { field: field || "", operator: "eq", value: "" },
-})
+export const createEmptyCondition = (
+  fieldInfos?: FieldInfo[]
+): QueryNode & { type: "condition" } => {
+  // Smart defaults based on schema
+  if (fieldInfos && fieldInfos.length > 0) {
+    // Priority 1: Boolean field with value true
+    const booleanField = fieldInfos.find((f) => f.type === "boolean")
+    if (booleanField) {
+      return {
+        id: generateId(),
+        type: "condition",
+        condition: { field: booleanField.name, operator: "eq", value: true },
+      }
+    }
+
+    // Priority 2: Number field with > 0
+    const numberField = fieldInfos.find((f) => f.type === "number")
+    if (numberField) {
+      return {
+        id: generateId(),
+        type: "condition",
+        condition: { field: numberField.name, operator: "gt", value: 0 },
+      }
+    }
+
+    // Priority 3: First field with empty value
+    return {
+      id: generateId(),
+      type: "condition",
+      condition: { field: fieldInfos[0].name, operator: "eq", value: "" },
+    }
+  }
+
+  // No field infos available
+  return {
+    id: generateId(),
+    type: "condition",
+    condition: { field: "", operator: "eq", value: "" },
+  }
+}
 
 export const createEmptyGroup = (
   operator: GroupOperator = "and"

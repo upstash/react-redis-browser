@@ -21,7 +21,7 @@ const KeysContext = createContext<
 export const FETCH_KEYS_QUERY_KEY = "use-fetch-keys"
 
 const SCAN_COUNTS = [100, 300, 500]
-type ScanResult = { cursor: string; keys: { key: string; type: DataType }[] }
+type ScanResult = { cursor: string; keys: { key: string; type: DataType; score?: number }[] }
 
 export const KeysProvider = ({ children }: PropsWithChildren) => {
   const { active, search, valuesSearch, isValuesSearchSelected } = useTab()
@@ -100,11 +100,13 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
         limit: count,
         offset,
         select: {},
+        withScores: true,
       })
 
     const keys = result.map((doc) => ({
       key: doc.key,
       type: searchIndexDetails.dataType,
+      score: doc.score,
     }))
 
     // If we got fewer results than the limit, we've reached the end
@@ -150,7 +152,7 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     queryFn: async ({ pageParam: lastCursor }) => {
       const [cursor, values] = await scanUntilAvailable(lastCursor)
 
-      const keys: RedisKey[] = values.map((value) => [value.key, value.type])
+      const keys: RedisKey[] = values.map((value) => [value.key, value.type, value.score])
 
       // Save in cache to not send additional requests with useFetchKeyType
       for (const [key, type] of keys) {

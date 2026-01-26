@@ -62,7 +62,7 @@ const KeyItem = ({
 }) => {
   const { selectedKeys, setSelectedKeys, setSelectedKey } = useTab()
 
-  const [dataKey, dataType] = data
+  const [dataKey, dataType, score] = data
   const isKeySelected = selectedKeys.includes(dataKey)
 
   const handleClick = (e: React.MouseEvent) => {
@@ -100,6 +100,9 @@ const KeyItem = ({
     >
       <TypeTag variant={dataType} type="icon" />
       <p className="grow truncate whitespace-nowrap">{dataKey}</p>
+      {score !== undefined && (
+        <span className="shrink-0 text-xs text-zinc-400">{score.toFixed(2)}</span>
+      )}
       {isKeySelected && <IconChevronRight className="shrink-0 text-zinc-500" size={20} />}
     </button>
   )
