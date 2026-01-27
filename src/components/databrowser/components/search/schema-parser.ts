@@ -36,8 +36,11 @@ type ParseResult = { success: true; schema: FlatSchema } | { success: false; err
 
 export function parseSchemaFromEditorValue(editorValue: string): ParseResult {
   try {
+    // Strip comments before parsing
+    const cleanedValue = stripComments(editorValue)
+
     // Extract content inside s.object({ ... })
-    const rootMatch = editorValue.match(/s\.object\s*\(\s*{([\S\s]*)}\s*\)/)
+    const rootMatch = cleanedValue.match(/s\.object\s*\(\s*{([\S\s]*)}\s*\)/)
     if (!rootMatch) {
       return { success: false, error: "Invalid format. Expected s.object({ ... })" }
     }
@@ -49,6 +52,59 @@ export function parseSchemaFromEditorValue(editorValue: string): ParseResult {
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Parse error" }
   }
+}
+
+/**
+ * Strip single-line and block comments from code.
+ * Preserves comments inside string literals.
+ */
+function stripComments(code: string): string {
+  let result = ""
+  let i = 0
+  let inString = false
+  let stringChar = ""
+
+  while (i < code.length) {
+    const char = code[i]
+    const next = code[i + 1]
+    const prev = code[i - 1]
+
+    // Handle string boundaries
+    if ((char === '"' || char === "'") && prev !== "\\") {
+      if (!inString) {
+        inString = true
+        stringChar = char
+      } else if (char === stringChar) {
+        inString = false
+      }
+      result += char
+      i++
+      continue
+    }
+
+    // Skip single-line comments (not in string)
+    if (!inString && char === "/" && next === "/") {
+      while (i < code.length && code[i] !== "\n") {
+        i++
+      }
+      continue
+    }
+
+    // Skip block comments (not in string)
+    if (!inString && char === "/" && next === "*") {
+      i += 2
+      while (i < code.length - 1 && !(code[i] === "*" && code[i + 1] === "/")) {
+        i++
+      }
+      i += 2
+      continue
+    }
+
+    result += char
+    i++
+  }
+
+  return result
 }
 
 /**
@@ -173,6 +229,45 @@ function extractObjectContent(str: string): string | null {
 }
 
 /**
+ * Extract the string value from a .from("...") or .from('...') call
+ * Handles escaped quotes and mixed quote types properly
+ */
+function extractFromValue(str: string): string | null {
+  const fromIndex = str.indexOf(".from(")
+  if (fromIndex === -1) return null
+
+  const start = fromIndex + 6 // length of ".from("
+  if (start >= str.length) return null
+
+  const quoteChar = str[start]
+  if (quoteChar !== '"' && quoteChar !== "'") return null
+
+  let result = ""
+  let i = start + 1
+
+  while (i < str.length) {
+    const char = str[i]
+
+    // Check for escaped quote
+    if (char === "\\" && i + 1 < str.length && str[i + 1] === quoteChar) {
+      result += quoteChar
+      i += 2
+      continue
+    }
+
+    // Check for closing quote
+    if (char === quoteChar) {
+      return result
+    }
+
+    result += char
+    i++
+  }
+
+  return null
+}
+
+/**
  * Parse a field builder like s.string().noTokenize()
  */
 function parseFieldBuilder(str: string): FieldValue | null {
@@ -182,15 +277,15 @@ function parseFieldBuilder(str: string): FieldValue | null {
   if (str.startsWith("s.string()")) {
     const noTokenize = str.includes(".noTokenize()")
     const noStem = str.includes(".noStem()")
-    const fromMatch = str.match(/\.from\(["']([^"']+)["']\)/)
+    const fromValue = extractFromValue(str)
 
-    if (!noTokenize && !noStem && !fromMatch) return "TEXT"
+    if (!noTokenize && !noStem && fromValue === null) return "TEXT"
 
     return {
       type: "TEXT",
       ...(noTokenize && { noTokenize: true }),
       ...(noStem && { noStem: true }),
-      ...(fromMatch && { from: fromMatch[1] }),
+      ...(fromValue !== null && { from: fromValue }),
     }
   }
 
@@ -198,38 +293,38 @@ function parseFieldBuilder(str: string): FieldValue | null {
   if (str.startsWith("s.number(")) {
     const typeMatch = str.match(/s\.number\(\s*["']?(U64|I64|F64)?["']?\s*\)/)
     const numType = typeMatch?.[1] || "F64"
-    const fromMatch = str.match(/\.from\(["']([^"']+)["']\)/)
+    const fromValue = extractFromValue(str)
 
-    if (!fromMatch) return { type: numType, fast: true }
+    if (fromValue === null) return { type: numType, fast: true }
 
-    return { type: numType, fast: true, from: fromMatch[1] }
+    return { type: numType, fast: true, from: fromValue }
   }
 
   // s.boolean()
   if (str.startsWith("s.boolean()")) {
     const fast = str.includes(".fast()")
-    const fromMatch = str.match(/\.from\(["']([^"']+)["']\)/)
+    const fromValue = extractFromValue(str)
 
-    if (!fast && !fromMatch) return "BOOL"
+    if (!fast && fromValue === null) return "BOOL"
 
     return {
       type: "BOOL",
       ...(fast && { fast: true }),
-      ...(fromMatch && { from: fromMatch[1] }),
+      ...(fromValue !== null && { from: fromValue }),
     }
   }
 
   // s.date()
   if (str.startsWith("s.date()")) {
     const fast = str.includes(".fast()")
-    const fromMatch = str.match(/\.from\(["']([^"']+)["']\)/)
+    const fromValue = extractFromValue(str)
 
-    if (!fast && !fromMatch) return "DATE"
+    if (!fast && fromValue === null) return "DATE"
 
     return {
       type: "DATE",
       ...(fast && { fast: true }),
-      ...(fromMatch && { from: fromMatch[1] }),
+      ...(fromValue !== null && { from: fromValue }),
     }
   }
 
