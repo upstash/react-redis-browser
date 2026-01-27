@@ -36,7 +36,7 @@ export const useUpsertSearchIndexSchema = () => {
       await redis.search.index({ name: indexName }).drop()
 
       // Recreate with the new schema but same settings
-       
+
       await redis.search.createIndex({
         name: indexName,
         dataType: dataType as any,

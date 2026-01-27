@@ -7,11 +7,11 @@ import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
+import { InfiniteScroll } from "../../../common/infinite-scroll"
 import { useEditListItem } from "../../hooks"
 import { useFetchListItems } from "../../hooks/use-fetch-list-items"
+import { DeleteKeyModal } from "../delete-key-modal"
 import { ItemContextMenu } from "../item-context-menu"
-import { InfiniteScroll } from "../sidebar/infinite-scroll"
-import { DeleteAlertDialog } from "./delete-alert-dialog"
 import { DisplayHeader } from "./display-header"
 import { ListEditDisplay } from "./display-list-edit"
 import { HashFieldTTLInfo } from "./hash/hash-field-ttl-info"
@@ -114,7 +114,7 @@ export const ListItems = ({
                 {type === "hash" && (
                   <HashFieldTTLInfo dataKey={dataKey} field={key} fields={fields} />
                 )}
-                <DeleteAlertDialog
+                <DeleteKeyModal
                   deletionType="item"
                   onDeleteConfirm={(e) => {
                     e.stopPropagation()
@@ -135,7 +135,7 @@ export const ListItems = ({
                   >
                     <IconTrash className="size-4 text-zinc-500" />
                   </Button>
-                </DeleteAlertDialog>
+                </DeleteKeyModal>
               </div>
             </td>
           )}

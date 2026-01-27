@@ -1,6 +1,6 @@
+import { InfiniteScroll } from "../../../common/infinite-scroll"
 import { useKeys } from "../../hooks/use-keys"
 import { Empty } from "./empty"
-import { InfiniteScroll } from "./infinite-scroll"
 import { KeysList } from "./keys-list"
 import { LoadingSkeleton } from "./skeleton-buttons"
 

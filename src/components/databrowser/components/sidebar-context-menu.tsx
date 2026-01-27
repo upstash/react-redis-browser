@@ -13,7 +13,7 @@ import {
 import { toast } from "@/components/ui/use-toast"
 
 import { useDeleteKey } from "../hooks"
-import { DeleteAlertDialog } from "./display/delete-alert-dialog"
+import { DeleteKeyModal } from "./delete-key-modal"
 
 export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
   const { mutate: deleteKey } = useDeleteKey()
@@ -29,7 +29,7 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
 
   return (
     <>
-      <DeleteAlertDialog
+      <DeleteKeyModal
         deletionType="key"
         count={contextKeys.length}
         open={isAlertOpen}

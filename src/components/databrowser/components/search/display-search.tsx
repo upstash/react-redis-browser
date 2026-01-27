@@ -14,11 +14,11 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 
 import { useFetchSearchIndex } from "../../hooks/use-fetch-search-index"
-import { useUpsertSearchIndexSchema } from "../../hooks/use-update-search-index-schema"
-import { SCHEMA_DEFAULT, SchemaEditor } from "../search/schema-editor"
-import { schemaToEditorValue } from "../search/schema-parser"
+import { useUpsertSearchIndexSchema } from "../../hooks/use-upsert-search-index-schema"
+import { DisplayHeader } from "../display/display-header"
 import { TypeTag } from "../type-tag"
-import { DisplayHeader } from "./display-header"
+import { SCHEMA_DEFAULT, SchemaEditor } from "./schema-editor"
+import { schemaToEditorValue } from "./schema-parser"
 
 type FormValues = {
   indexName: string

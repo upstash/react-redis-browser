@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
-import { SearchDisplay } from "../display/display-search"
+import { SearchDisplay } from "./display-search"
 
 export const CreateIndexModal = ({
   open,

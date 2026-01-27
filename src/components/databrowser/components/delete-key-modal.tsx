@@ -12,7 +12,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-export function DeleteAlertDialog({
+export function DeleteKeyModal({
   children,
   onDeleteConfirm,
   open,

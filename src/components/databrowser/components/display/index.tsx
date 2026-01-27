@@ -4,8 +4,8 @@ import { useTab } from "@/tab-provider"
 import { DATA_TYPES, SIMPLE_DATA_TYPES, type SimpleDataType } from "@/types"
 
 import { useKeys, useKeyType } from "../../hooks/use-keys"
+import { SearchDisplay } from "../search/display-search"
 import { ListDisplay } from "./display-list"
-import { SearchDisplay } from "./display-search"
 import { EditorDisplay } from "./display-simple"
 
 export const DataDisplay = () => {

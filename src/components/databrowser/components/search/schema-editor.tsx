@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 
-import { EditorWithTypes } from "./editor-with-types"
+import { EditorWithTypes } from "../../../common/editor-with-types"
 import { generateSchemaTypeDefinitions } from "./generate-schema-type-definitions"
 
 type SchemaEditorProps = {

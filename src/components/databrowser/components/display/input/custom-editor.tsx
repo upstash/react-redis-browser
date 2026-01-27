@@ -4,7 +4,7 @@ import { useTab } from "@/tab-provider"
 import { Editor, useMonaco } from "@monaco-editor/react"
 
 import { cn, isTest } from "@/lib/utils"
-import { CopyButton } from "@/components/databrowser/copy-button"
+import { CopyButton } from "@/components/common/copy-button"
 
 type CustomEditorProps = {
   language: string

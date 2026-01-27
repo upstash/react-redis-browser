@@ -13,7 +13,7 @@ import {
 import { toast } from "@/components/ui/use-toast"
 
 import { useEditListItem } from "../hooks"
-import { DeleteAlertDialog } from "./display/delete-alert-dialog"
+import { DeleteKeyModal } from "./delete-key-modal"
 import type { ItemData } from "./display/display-list"
 
 export const ItemContextMenu = ({
@@ -31,7 +31,7 @@ export const ItemContextMenu = ({
 
   return (
     <>
-      <DeleteAlertDialog
+      <DeleteKeyModal
         deletionType="item"
         open={isAlertOpen}
         onOpenChange={setAlertOpen}

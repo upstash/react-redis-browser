@@ -2,7 +2,7 @@ import { useMemo } from "react"
 
 import type { SearchIndex } from "@/components/databrowser/hooks/use-fetch-search-index"
 
-import { EditorWithTypes } from "./editor-with-types"
+import { EditorWithTypes } from "../../../common/editor-with-types"
 import { generateTypeDefinitions } from "./generate-query-type-definitions"
 
 type QueryEditorProps = {

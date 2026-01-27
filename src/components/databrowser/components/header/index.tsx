@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Segmented } from "@/components/ui/segmented"
 
+import { ReloadButton } from "../../../common/reload-button"
 import {
   FETCH_KEYS_QUERY_KEY,
   FETCH_LIST_ITEMS_QUERY_KEY,
@@ -17,7 +18,6 @@ import { FETCH_KEY_TYPE_QUERY_KEY } from "../../hooks/use-fetch-key-type"
 import { useFetchSearchIndexes } from "../../hooks/use-fetch-search-indexes"
 import { AddKeyModal } from "../add-key-modal"
 import { CreateIndexModal } from "../search/create-index-modal"
-import { ReloadButton } from "../sidebar/reload-button"
 import { SearchInput } from "../sidebar/search-input"
 import { DataTypeSelector } from "../sidebar/type-selector"
 
@@ -102,7 +102,7 @@ const IndexSelector = () => {
         modal={false}
       >
         <PopoverTrigger asChild>
-          <button className="flex min-w-[140px] items-center justify-between gap-2 rounded-r-lg border border-zinc-300 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-800 hover:bg-emerald-100">
+          <button className="flex min-w-[140px] items-center justify-between gap-2 rounded-r-lg border border-zinc-300 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-100">
             <span className="truncate">{index || "Select an index"}</span>
             <IconChevronDown className="size-4 shrink-0 opacity-50" />
           </button>
