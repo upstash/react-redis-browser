@@ -293,11 +293,17 @@ function parseFieldBuilder(str: string): FieldValue | null {
   if (str.startsWith("s.number(")) {
     const typeMatch = str.match(/s\.number\(\s*["']?(U64|I64|F64)?["']?\s*\)/)
     const numType = typeMatch?.[1] || "F64"
+    const fast = str.includes(".fast()")
     const fromValue = extractFromValue(str)
 
-    if (fromValue === null) return { type: numType, fast: true }
+    // Simple case: just the type, no modifiers
+    if (!fast && fromValue === null) return numType
 
-    return { type: numType, fast: true, from: fromValue }
+    return {
+      type: numType,
+      ...(fast && { fast: true }),
+      ...(fromValue !== null && { from: fromValue }),
+    }
   }
 
   // s.boolean()
@@ -444,6 +450,7 @@ function fieldToBuilder(value: unknown): string {
     case "I64":
     case "F64": {
       builder = `s.number("${type}")`
+      if (v.fast) builder += ".fast()"
       break
     }
     case "BOOL": {

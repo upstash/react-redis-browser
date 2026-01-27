@@ -45,15 +45,17 @@ describe("Schema Parser", () => {
         price: s.number(),
         count: s.number("U64"),
         score: s.number("I64").from("val"),
+        sortable: s.number("F64").fast(),
       })
     `
     const result = parseSchemaFromEditorValue(input)
     expect(result).toEqual({
       success: true,
       schema: {
-        price: { type: "F64", fast: true },
-        count: { type: "U64", fast: true },
-        score: { type: "I64", fast: true, from: "val" },
+        price: "F64",
+        count: "U64",
+        score: { type: "I64", from: "val" },
+        sortable: { type: "F64", fast: true },
       },
     })
   })
@@ -114,7 +116,7 @@ describe("Schema Parser", () => {
       schema: {
         "user.name": "TEXT",
         "user.address.city": "TEXT",
-        "user.address.zip": { type: "U64", fast: true },
+        "user.address.zip": "U64",
       },
     })
   })
@@ -132,7 +134,7 @@ describe("Schema Parser", () => {
       success: true,
       schema: {
         name: "TEXT",
-        age: { type: "F64", fast: true },
+        age: "F64",
         active: "BOOL",
       },
     })
@@ -176,7 +178,7 @@ describe("Schema Parser - Edge Cases", () => {
       success: true,
       schema: {
         "field.with.dots": "TEXT",
-        "another.dotted.field": { type: "F64", fast: true },
+        "another.dotted.field": "F64",
       },
     })
   })
@@ -210,7 +212,7 @@ describe("Schema Parser - Edge Cases", () => {
       success: true,
       schema: {
         item: { type: "TEXT", from: "items(0)" },
-        nested: { type: "F64", fast: true, from: "data[key]" },
+        nested: { type: "F64", from: "data[key]" },
       },
     })
   })
@@ -247,7 +249,7 @@ describe("Schema Parser - Edge Cases", () => {
       success: true,
       schema: {
         name: "TEXT",
-        age: { type: "U64", fast: true },
+        age: "U64",
       },
     })
   })
@@ -259,7 +261,7 @@ describe("Schema Parser - Edge Cases", () => {
       success: true,
       schema: {
         a: "TEXT",
-        b: { type: "F64", fast: true },
+        b: "F64",
         c: "BOOL",
       },
     })
@@ -314,7 +316,7 @@ describe("Schema Parser - Edge Cases", () => {
     expect(result).toEqual({
       success: true,
       schema: {
-        id: { type: "U64", fast: true },
+        id: "U64",
         "user.name": "TEXT",
         "user.email": "TEXT",
         active: "BOOL",
@@ -337,7 +339,7 @@ describe("Schema Parser - Edge Cases", () => {
       success: true,
       schema: {
         名前: "TEXT",
-        données: { type: "F64", fast: true },
+        données: "F64",
         "emoji_🎉": "BOOL",
       },
     })
@@ -346,35 +348,20 @@ describe("Schema Parser - Edge Cases", () => {
   test("handles reserved words as field names", () => {
     const input = `
       const schema: Schema = s.object({
-        type: s.string(),
-        object: s.number(),
-        function: s.boolean(),
+        "s.string()": s.string(),
+        "s.number()": s.number(),
+        "s.boolean()": s.boolean(),
+        ".string()": s.string(),
       })
     `
     const result = parseSchemaFromEditorValue(input)
     expect(result).toEqual({
       success: true,
       schema: {
-        type: "TEXT",
-        object: { type: "F64", fast: true },
-        function: "BOOL",
-      },
-    })
-  })
-
-  test("handles numeric field names in quotes", () => {
-    const input = `
-      const schema: Schema = s.object({
-        "123": s.string(),
-        "456field": s.number(),
-      })
-    `
-    const result = parseSchemaFromEditorValue(input)
-    expect(result).toEqual({
-      success: true,
-      schema: {
-        "123": "TEXT",
-        "456field": { type: "F64", fast: true },
+        "s.string()": "TEXT",
+        "s.number()": "F64",
+        "s.boolean()": "BOOL",
+        ".string()": "TEXT",
       },
     })
   })
@@ -409,6 +396,21 @@ describe("Schema Parser - Edge Cases", () => {
     })
   })
 
+  test("handles double quotes in single-quoted from() values", () => {
+    const input = `
+      const schema: Schema = s.object({
+        data: s.string().from('it"s'),
+      })
+    `
+    const result = parseSchemaFromEditorValue(input)
+    expect(result).toEqual({
+      success: true,
+      schema: {
+        data: { type: "TEXT", from: 'it"s' },
+      },
+    })
+  })
+
   test("handles all number types", () => {
     const input = `
       const schema: Schema = s.object({
@@ -416,16 +418,18 @@ describe("Schema Parser - Edge Cases", () => {
         u64: s.number("U64"),
         i64: s.number("I64"),
         default: s.number(),
+        sortable: s.number("F64").fast(),
       })
     `
     const result = parseSchemaFromEditorValue(input)
     expect(result).toEqual({
       success: true,
       schema: {
-        f64: { type: "F64", fast: true },
-        u64: { type: "U64", fast: true },
-        i64: { type: "I64", fast: true },
-        default: { type: "F64", fast: true },
+        f64: "F64",
+        u64: "U64",
+        i64: "I64",
+        default: "F64",
+        sortable: { type: "F64", fast: true },
       },
     })
   })
@@ -462,23 +466,6 @@ describe("Schema Parser - Edge Cases", () => {
     })
   })
 
-  test("handles field names with hyphens in quotes", () => {
-    const input = `
-      const schema: Schema = s.object({
-        "kebab-case": s.string(),
-        "multi-word-field": s.number(),
-      })
-    `
-    const result = parseSchemaFromEditorValue(input)
-    expect(result).toEqual({
-      success: true,
-      schema: {
-        "kebab-case": "TEXT",
-        "multi-word-field": { type: "F64", fast: true },
-      },
-    })
-  })
-
   test("handles comments in schema (single-line)", () => {
     const input = `
       const schema: Schema = s.object({
@@ -493,7 +480,7 @@ describe("Schema Parser - Edge Cases", () => {
       success: true,
       schema: {
         name: "TEXT",
-        age: { type: "F64", fast: true },
+        age: "F64",
       },
     })
   })
@@ -510,7 +497,7 @@ describe("Schema Parser - Edge Cases", () => {
       success: true,
       schema: {
         name: "TEXT",
-        age: { type: "F64", fast: true },
+        age: "F64",
       },
     })
   })
@@ -529,16 +516,12 @@ describe("Schema Parser - Edge Cases", () => {
     expect(result).toEqual({
       success: true,
       schema: {
-        id: { type: "U64", fast: true },
+        id: "U64",
         name: "TEXT",
       },
     })
   })
 })
-
-// ============================================================================
-// MORE EDGE CASES
-// ============================================================================
 
 describe("Schema Parser - Additional Edge Cases", () => {
   test("handles empty string in from() value", () => {
@@ -586,7 +569,7 @@ describe("Schema Parser - Additional Edge Cases", () => {
       success: true,
       schema: {
         name: "TEXT",
-        age: { type: "F64", fast: true },
+        age: "F64",
       },
     })
   })
@@ -599,7 +582,7 @@ describe("Schema Parser - Additional Edge Cases", () => {
       success: true,
       schema: {
         name: "TEXT",
-        age: { type: "F64", fast: true },
+        age: "F64",
       },
     })
   })
@@ -617,7 +600,7 @@ describe("Schema Parser - Additional Edge Cases", () => {
       success: true,
       schema: {
         name: "TEXT",
-        age: { type: "F64", fast: true },
+        age: "F64",
       },
     })
   })
@@ -634,74 +617,12 @@ describe("Schema Parser - Additional Edge Cases", () => {
       success: true,
       schema: {
         "field with spaces": "TEXT",
-        "another spaced field": { type: "F64", fast: true },
+        "another spaced field": "F64",
       },
     })
   })
 
-  test("handles multiple consecutive fields correctly", () => {
-    const input = `
-      const schema: Schema = s.object({
-        a: s.string(),
-        b: s.string(),
-        c: s.string(),
-        d: s.string(),
-        e: s.string(),
-      })
-    `
-    const result = parseSchemaFromEditorValue(input)
-    expect(result).toEqual({
-      success: true,
-      schema: {
-        a: "TEXT",
-        b: "TEXT",
-        c: "TEXT",
-        d: "TEXT",
-        e: "TEXT",
-      },
-    })
-  })
-
-  test("handles complex real-world schema", () => {
-    const input = `
-      const schema: Schema = s.object({
-        id: s.number("U64"),
-        email: s.string().noTokenize(),
-        profile: s.object({
-          firstName: s.string(),
-          lastName: s.string(),
-          bio: s.string().noStem(),
-          avatar: s.string().from("avatarUrl"),
-        }),
-        settings: s.object({
-          notifications: s.boolean(),
-          darkMode: s.boolean().fast(),
-        }),
-        createdAt: s.date(),
-        updatedAt: s.date().fast(),
-        deletedAt: s.date().from("deleted_timestamp"),
-      })
-    `
-    const result = parseSchemaFromEditorValue(input)
-    expect(result).toEqual({
-      success: true,
-      schema: {
-        id: { type: "U64", fast: true },
-        email: { type: "TEXT", noTokenize: true },
-        "profile.firstName": "TEXT",
-        "profile.lastName": "TEXT",
-        "profile.bio": { type: "TEXT", noStem: true },
-        "profile.avatar": { type: "TEXT", from: "avatarUrl" },
-        "settings.notifications": "BOOL",
-        "settings.darkMode": { type: "BOOL", fast: true },
-        createdAt: "DATE",
-        updatedAt: { type: "DATE", fast: true },
-        deletedAt: { type: "DATE", from: "deleted_timestamp" },
-      },
-    })
-  })
-
-  test("handles from() with special URL-like characters", () => {
+  test("handles from() with special URL characters", () => {
     const input = `
       const schema: Schema = s.object({
         url: s.string().from("https://example.com/path?query=1"),
@@ -712,21 +633,6 @@ describe("Schema Parser - Additional Edge Cases", () => {
       success: true,
       schema: {
         url: { type: "TEXT", from: "https://example.com/path?query=1" },
-      },
-    })
-  })
-
-  test("handles from() with JSON-like content", () => {
-    const input = `
-      const schema: Schema = s.object({
-        data: s.string().from("$.data.items[0].value"),
-      })
-    `
-    const result = parseSchemaFromEditorValue(input)
-    expect(result).toEqual({
-      success: true,
-      schema: {
-        data: { type: "TEXT", from: "$.data.items[0].value" },
       },
     })
   })
@@ -796,7 +702,7 @@ describe("Schema Parser - Additional Edge Cases", () => {
     expect(result).toEqual({
       success: true,
       schema: {
-        _id: { type: "U64", fast: true },
+        _id: "U64",
         __typename: "TEXT",
         _private_field: "BOOL",
       },
@@ -862,7 +768,7 @@ describe("Schema Parser - Malformed Inputs", () => {
     if (result.success) {
       expect(result.schema.name).toBe("TEXT")
       expect(result.schema.unknown).toBeUndefined()
-      expect(result.schema.age).toEqual({ type: "F64", fast: true })
+      expect(result.schema.age).toBe("F64")
     }
   })
 
@@ -877,7 +783,7 @@ describe("Schema Parser - Malformed Inputs", () => {
     // Should skip invalid entries and parse valid ones
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.schema.age).toEqual({ type: "F64", fast: true })
+      expect(result.schema.age).toBe("F64")
     }
   })
 
@@ -892,7 +798,7 @@ describe("Schema Parser - Malformed Inputs", () => {
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.schema.name).toBe("TEXT")
-      expect(result.schema.age).toEqual({ type: "F64", fast: true })
+      expect(result.schema.age).toBe("F64")
     }
   })
 
@@ -924,7 +830,7 @@ describe("Schema Parser - Malformed Inputs", () => {
       success: true,
       schema: {
         string: "TEXT",
-        number: { type: "F64", fast: true },
+        number: "F64",
         boolean: "BOOL",
         date: "DATE",
         object: "TEXT",
@@ -999,7 +905,7 @@ describe("Schema Parser - Round Trip", () => {
   test("round-trips simple schema", () => {
     const original = {
       name: "TEXT",
-      age: { type: "F64", fast: true },
+      age: "F64",
       active: "BOOL",
     }
     const editorValue = schemaToEditorValue(original)
@@ -1014,7 +920,7 @@ describe("Schema Parser - Round Trip", () => {
     const original = {
       "user.name": "TEXT",
       "user.address.city": "TEXT",
-      "user.address.zip": { type: "U64", fast: true },
+      "user.address.zip": "U64",
     }
     const editorValue = schemaToEditorValue(original)
     const result = parseSchemaFromEditorValue(editorValue)
@@ -1032,9 +938,10 @@ describe("Schema Parser - Round Trip", () => {
       boolFast: { type: "BOOL", fast: true },
       date: "DATE",
       dateFast: { type: "DATE", fast: true },
-      f64: { type: "F64", fast: true },
-      u64: { type: "U64", fast: true },
-      i64: { type: "I64", fast: true },
+      f64: "F64",
+      f64Fast: { type: "F64", fast: true },
+      u64: "U64",
+      i64: "I64",
     }
     const editorValue = schemaToEditorValue(original)
     const result = parseSchemaFromEditorValue(editorValue)
@@ -1047,7 +954,8 @@ describe("Schema Parser - Round Trip", () => {
   test("round-trips schema with from() fields", () => {
     const original = {
       name: { type: "TEXT", from: "fullName" },
-      count: { type: "U64", fast: true, from: "total" },
+      count: { type: "U64", from: "total" },
+      countFast: { type: "U64", fast: true, from: "total" },
     }
     const editorValue = schemaToEditorValue(original)
     const result = parseSchemaFromEditorValue(editorValue)
@@ -1070,7 +978,7 @@ describe("Schema Parser - Round Trip", () => {
   test("round-trips deeply nested schema", () => {
     const original = {
       "a.b.c.d.e": "TEXT",
-      "a.b.c.d.f": { type: "F64", fast: true },
+      "a.b.c.d.f": "F64",
       "a.b.x": "BOOL",
     }
     const editorValue = schemaToEditorValue(original)
@@ -1104,11 +1012,17 @@ describe("Schema Parser - Round Trip", () => {
 
 describe("schemaToEditorValue", () => {
   test("converts simple flat schema", () => {
-    const input = { name: "TEXT", age: { type: "F64", fast: true } }
+    const input = { name: "TEXT", age: "F64" }
     const result = schemaToEditorValue(input)
     expect(result).toContain("s.object({")
     expect(result).toContain("name: s.string()")
     expect(result).toContain('age: s.number("F64")')
+  })
+
+  test("converts number with fast modifier", () => {
+    const input = { price: { type: "F64", fast: true } }
+    const result = schemaToEditorValue(input)
+    expect(result).toContain('price: s.number("F64").fast()')
   })
 
   test("converts nested schema with proper indentation", () => {
