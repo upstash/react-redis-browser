@@ -13,11 +13,18 @@ type EditorWithTypesProps = {
   defaultValue: string
   filePath: string
   testLabel: string
+  showFunctions?: boolean
 }
 
 export const EditorWithTypes = (props: EditorWithTypesProps) => {
   return isTest ? <TestEditor {...props} /> : <MonacoEditorWithTypes {...props} />
 }
+
+const LoadingSpinner = () => (
+  <div className="flex h-full w-full items-center justify-center">
+    <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600" />
+  </div>
+)
 
 const MonacoEditorWithTypes = ({
   value,
@@ -27,24 +34,48 @@ const MonacoEditorWithTypes = ({
   validateValue,
   defaultValue,
   filePath,
+  showFunctions,
 }: EditorWithTypesProps) => {
   const monaco = useMonaco()
   const editorRef = useRef<unknown>(null)
+  const extraLibRef = useRef<{ dispose: () => void } | null>(null)
   const theme = useTheme()
 
-  const extraLibRef = useRef<{ dispose: () => void } | null>(null)
-
-  // Update type definitions
+  // Update type definitions when they change
   useEffect(() => {
     if (!monaco) return
 
-    if (extraLibRef.current) extraLibRef.current.dispose()
+    // Dispose previous extraLib if it exists
+    extraLibRef.current?.dispose()
 
     extraLibRef.current = monaco.languages.typescript.typescriptDefaults.addExtraLib(
       typeDefinitions,
       `file:///${filePath.replace(".ts", "-types.d.ts")}`
     )
+
+    // Force Monaco to re-validate by triggering a no-op edit on the model
+    // This is a workaround for Monaco not auto-refreshing after addExtraLib
+    // See: https://github.com/microsoft/monaco-editor/issues/208
+    requestAnimationFrame(() => {
+      // @ts-expect-error editor type not fully typed
+      const model = editorRef.current?.getModel?.()
+      if (model) {
+        const currentValue = model.getValue()
+        model.setValue(currentValue)
+      }
+    })
   }, [monaco, typeDefinitions, filePath])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      extraLibRef.current?.dispose()
+      if (monaco) {
+        const model = monaco.editor.getModel(monaco.Uri.parse(filePath))
+        model?.dispose()
+      }
+    }
+  }, [monaco, filePath])
 
   // Prevent deleting the required prefix/suffix
   const handleChange = (newValue: string = "") => {
@@ -67,7 +98,7 @@ const MonacoEditorWithTypes = ({
     <div className={cn("group/editor relative")} style={{ height }}>
       <Editor
         theme={theme === "dark" ? "vs-dark" : "light"}
-        loading={undefined}
+        loading={<LoadingSpinner />}
         beforeMount={handleBeforeMount}
         onMount={(editor) => {
           editorRef.current = editor
@@ -104,7 +135,7 @@ const MonacoEditorWithTypes = ({
           padding: { top: 8, bottom: 8 },
           quickSuggestions: true,
           suggest: {
-            showFunctions: true,
+            showFunctions: showFunctions ?? false,
             showVariables: false,
             showConstants: false,
             showClasses: false,
@@ -115,6 +146,7 @@ const MonacoEditorWithTypes = ({
           suggestOnTriggerCharacters: true,
           acceptSuggestionOnEnter: "on",
           tabCompletion: "on",
+          tabSize: 2,
           wordBasedSuggestions: "off",
           // Disable navigation features
           gotoLocation: {

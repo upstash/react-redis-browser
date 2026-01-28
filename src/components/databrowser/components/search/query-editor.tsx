@@ -30,7 +30,7 @@ export const QueryEditor = ({ value, onChange, height, schema }: QueryEditorProp
       typeDefinitions={typeDefinitions}
       validateValue={isQueryStringValid}
       defaultValue={QUERY_DEFAULT}
-      filePath="query.ts"
+      filePath={`query-types.ts`}
       testLabel="query-editor"
     />
   )

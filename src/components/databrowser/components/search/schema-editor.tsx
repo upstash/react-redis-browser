@@ -30,6 +30,7 @@ export const SchemaEditor = ({ value, onChange, height }: SchemaEditorProps) => 
       defaultValue={SCHEMA_DEFAULT}
       filePath="schema.ts"
       testLabel="schema-editor"
+      showFunctions
     />
   )
 }
