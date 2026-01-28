@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { SimpleTooltip } from "@/components/ui/tooltip"
 
 import { BoostBadge, NodeActionsMenu, NotBadge } from "./condition-common"
 import { useQueryBuilderUI } from "./query-builder-context"
@@ -65,6 +66,40 @@ export const QueryCondition = ({
   // Get the current field's type for operator filtering
   const currentFieldInfo = fieldInfos.find((f) => f.name === condition.field)
   const currentFieldType = currentFieldInfo?.type ?? "unknown"
+
+  // Check if the current field is unknown (not in schema)
+  const isUnknownField = condition.field && !fieldNames.includes(condition.field)
+
+  // Check if value type matches the field type
+  const getValueTypeError = (): string | undefined => {
+    if (isUnknownField || currentFieldType === "unknown" || currentFieldType === "string") {
+      return undefined
+    }
+
+    const value = condition.value
+
+    if (currentFieldType === "number") {
+      if (Array.isArray(value)) {
+        // For 'in' operator with number field, check if all values are valid numbers
+        const invalidValues = value.filter((v) => {
+          const num = Number(v)
+          return Number.isNaN(num) || v === ""
+        })
+        if (invalidValues.length > 0) {
+          return `Invalid number value${invalidValues.length > 1 ? "s" : ""}: ${invalidValues.join(", ")}`
+        }
+      } else if (typeof value === "string" && value !== "") {
+        const num = Number(value)
+        if (Number.isNaN(num)) {
+          return `"${value}" is not a valid number`
+        }
+      }
+    }
+
+    return undefined
+  }
+
+  const valueTypeError = getValueTypeError()
 
   // Normalize values based on field type changes
   useEffect(() => {
@@ -216,6 +251,15 @@ export const QueryCondition = ({
   const allowedOperators = getOperatorsForFieldType(currentFieldType)
   const filteredOperators = OPERATOR_OPTIONS.filter((op) => allowedOperators.includes(op.value))
 
+  // Check if the current operator is invalid for the field type
+  const isInvalidOperator =
+    !isUnknownField &&
+    currentFieldType !== "unknown" &&
+    !allowedOperators.includes(condition.operator)
+  const operatorError = isInvalidOperator
+    ? `"${condition.operator}" is not valid for ${currentFieldType} fields`
+    : undefined
+
   return (
     <div className="group/condition flex items-center gap-1 px-1 py-1">
       {/* Drag handle - only this element can initiate dragging */}
@@ -232,28 +276,59 @@ export const QueryCondition = ({
       <div className="flex">
         {/* Field selector */}
         <Select value={condition.field} onValueChange={handleFieldChange}>
-          <SelectTrigger className="h-[26px] w-32 gap-3 rounded-none rounded-l-md border-r-0 border-zinc-200 bg-white px-2 text-sm font-normal">
-            <SelectValue placeholder="Select field" />
-          </SelectTrigger>
+          <SimpleTooltip
+            content={isUnknownField ? "This field is not defined in the schema" : undefined}
+            variant="error"
+          >
+            <SelectTrigger
+              className={`h-[26px] w-32 gap-3 rounded-none rounded-l-md border-r-0 border-zinc-200 bg-white px-2 text-sm font-normal ${
+                isUnknownField ? "text-red-500" : ""
+              }`}
+            >
+              <SelectValue placeholder="Select field" />
+            </SelectTrigger>
+          </SimpleTooltip>
           <SelectContent>
-            {fieldNames.length > 0 ? (
-              fieldNames.map((field) => (
-                <SelectItem key={field} value={field}>
-                  {field}
-                </SelectItem>
-              ))
-            ) : (
-              <div className="px-2 py-1.5 text-sm text-zinc-500">No fields available</div>
+            {/* Show unknown field first if it exists */}
+            {isUnknownField && (
+              <SelectItem key={condition.field} value={condition.field} className="text-red-500">
+                {condition.field}
+              </SelectItem>
             )}
+            {fieldNames.length > 0
+              ? fieldNames.map((field) => (
+                  <SelectItem key={field} value={field}>
+                    {field}
+                  </SelectItem>
+                ))
+              : !isUnknownField && (
+                  <div className="px-2 py-1.5 text-sm text-zinc-500">No fields available</div>
+                )}
           </SelectContent>
         </Select>
 
         {/* Operator selector - filtered by field type */}
         <Select value={condition.operator} onValueChange={handleOperatorChange}>
-          <SelectTrigger className="h-[26px] w-24 gap-3 rounded-none border-r-0 border-zinc-200 px-2 text-sm font-normal">
-            <SelectValue />
-          </SelectTrigger>
+          <SimpleTooltip content={operatorError || valueTypeError} variant="error">
+            <SelectTrigger
+              className={`h-[26px] w-24 gap-3 rounded-none border-r-0 border-zinc-200 px-2 text-sm font-normal ${
+                operatorError || valueTypeError ? "text-red-500" : ""
+              }`}
+            >
+              <SelectValue />
+            </SelectTrigger>
+          </SimpleTooltip>
           <SelectContent>
+            {/* Show invalid operator first if it exists */}
+            {isInvalidOperator && (
+              <SelectItem
+                key={condition.operator}
+                value={condition.operator}
+                className="text-red-500"
+              >
+                {condition.operator}
+              </SelectItem>
+            )}
             {filteredOperators.map((op) => (
               <SelectItem key={op.value} value={op.value}>
                 {op.label}
@@ -296,7 +371,9 @@ export const QueryCondition = ({
             onBlur={handleValueBlur}
             onFocus={handleValueFocus}
             placeholder={condition.operator === "in" ? "value1, value2, ..." : "value"}
-            className="h-[26px] min-w-0 flex-1 rounded-none rounded-r-md border border-zinc-200 bg-white px-2 text-sm transition-colors focus:border-zinc-400 focus:outline-none"
+            className={`h-[26px] min-w-0 flex-1 rounded-none rounded-r-md border border-zinc-200 bg-white px-2 text-sm transition-colors focus:border-zinc-400 focus:outline-none ${
+              valueTypeError ? "text-red-500" : ""
+            }`}
           />
         )}
       </div>

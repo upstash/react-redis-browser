@@ -31,16 +31,23 @@ TooltipContent.displayName = TooltipPrimitive.Content.displayName
 export const SimpleTooltip = ({
   content,
   children,
+  variant = "default",
 }: {
   content?: string
   children: React.ReactNode
+  variant?: "default" | "error"
 }) => {
   if (!content) return <>{children}</>
 
   return (
-    <Tooltip delayDuration={400}>
+    <Tooltip delayDuration={100}>
       <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent side="top">{content}</TooltipContent>
+      <TooltipContent
+        side="top"
+        className={variant === "error" ? "bg-white text-red-500 shadow-md" : undefined}
+      >
+        {content}
+      </TooltipContent>
     </Tooltip>
   )
 }
