@@ -45,7 +45,6 @@ describe("Schema Parser", () => {
         price: s.number(),
         count: s.number("U64"),
         score: s.number("I64").from("val"),
-        sortable: s.number("F64").fast(),
       })
     `
     const result = parseSchemaFromEditorValue(input)
@@ -55,7 +54,6 @@ describe("Schema Parser", () => {
         price: "F64",
         count: "U64",
         score: { type: "I64", from: "val" },
-        sortable: { type: "F64", fast: true },
       },
     })
   })
@@ -418,7 +416,7 @@ describe("Schema Parser - Edge Cases", () => {
         u64: s.number("U64"),
         i64: s.number("I64"),
         default: s.number(),
-        sortable: s.number("F64").fast(),
+        aliased: s.number("F64").from("source"),
       })
     `
     const result = parseSchemaFromEditorValue(input)
@@ -429,7 +427,7 @@ describe("Schema Parser - Edge Cases", () => {
         u64: "U64",
         i64: "I64",
         default: "F64",
-        sortable: { type: "F64", fast: true },
+        aliased: { type: "F64", from: "source" },
       },
     })
   })
@@ -939,7 +937,7 @@ describe("Schema Parser - Round Trip", () => {
       date: "DATE",
       dateFast: { type: "DATE", fast: true },
       f64: "F64",
-      f64Fast: { type: "F64", fast: true },
+      f64From: { type: "F64", from: "source" },
       u64: "U64",
       i64: "I64",
     }
@@ -955,7 +953,7 @@ describe("Schema Parser - Round Trip", () => {
     const original = {
       name: { type: "TEXT", from: "fullName" },
       count: { type: "U64", from: "total" },
-      countFast: { type: "U64", fast: true, from: "total" },
+      active: { type: "BOOL", fast: true, from: "isActive" },
     }
     const editorValue = schemaToEditorValue(original)
     const result = parseSchemaFromEditorValue(editorValue)
@@ -1019,10 +1017,10 @@ describe("schemaToEditorValue", () => {
     expect(result).toContain('age: s.number("F64")')
   })
 
-  test("converts number with fast modifier", () => {
-    const input = { price: { type: "F64", fast: true } }
+  test("converts number with from modifier", () => {
+    const input = { price: { type: "F64", from: "amount" } }
     const result = schemaToEditorValue(input)
-    expect(result).toContain('price: s.number("F64").fast()')
+    expect(result).toContain('price: s.number("F64").from("amount")')
   })
 
   test("converts nested schema with proper indentation", () => {
