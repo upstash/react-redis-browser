@@ -131,6 +131,11 @@ const MonacoEditorWithTypes = ({
           automaticLayout: true,
           scrollBeyondLastLine: false,
           renderLineHighlight: "line",
+          renderLineHighlightOnlyWhenFocus: true,
+          selectionHighlight: false,
+          // @ts-expect-error "off" does not work
+          occurrencesHighlight: false,
+          hover: { enabled: true },
           unusualLineTerminators: "auto",
           padding: { top: 8, bottom: 8 },
           quickSuggestions: true,
