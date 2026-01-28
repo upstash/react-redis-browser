@@ -21,7 +21,69 @@ import {
 // PARSING: String → QueryState
 // ============================================================================
 
+export type ParseResult = { success: true; state: QueryState } | { success: false; error: string }
+
 const isOperatorKey = (key: string): boolean => key.startsWith("$")
+
+/**
+ * Check if an object contains both $must and $should at the same level,
+ * which is not supported in UI query builder.
+ * Only catches { $must: ..., $should: ... } pattern, NOT $and/$or combinations.
+ */
+const hasMustShouldCombinationInObject = (obj: unknown): boolean => {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false
+
+  // Only error if BOTH $must AND $should are present at this level
+  if ("$must" in obj && "$should" in obj) return true
+
+  return Object.values(obj).some(
+    (value) =>
+      hasMustShouldCombinationInObject(value) ||
+      (Array.isArray(value) && value.some((item) => hasMustShouldCombinationInObject(item)))
+  )
+}
+
+/**
+ * Check if a query string contains both $must and $should,
+ * which is not supported in the UI query builder.
+ */
+export const hasMustShouldCombination = (queryString: string): boolean => {
+  if (!queryString || queryString.trim() === "" || queryString.trim() === "{}") {
+    return false
+  }
+
+  try {
+    const obj = parseJSObjectLiteral<Record<string, unknown>>(queryString)
+    if (!obj) return false
+    return hasMustShouldCombinationInObject(obj)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Normalize operator keys: $must → $and, $should → $or
+ */
+const normalizeOperators = (obj: unknown): unknown => {
+  if (!obj || typeof obj !== "object") return obj
+
+  if (Array.isArray(obj)) {
+    return obj.map((element) => normalizeOperators(element))
+  }
+
+  const record = obj as Record<string, unknown>
+  const result: Record<string, unknown> = {}
+
+  for (const [key, value] of Object.entries(record)) {
+    let normalizedKey = key
+    if (key === "$must") normalizedKey = "$and"
+    if (key === "$should") normalizedKey = "$or"
+
+    result[normalizedKey] = normalizeOperators(value)
+  }
+
+  return result
+}
 
 /** Check if an object has $operator keys (like $eq, $in, $fuzzy) */
 const isFieldConditionObject = (obj: unknown): obj is Record<string, unknown> => {
@@ -202,36 +264,52 @@ const objectToQueryNode = (obj: Record<string, unknown>): QueryNode | null => {
 
 /**
  * Parse a query string into a QueryState object
+ * Returns null if parsing fails
  */
 export const parseQueryString = (queryString: string): QueryState | null => {
+  const result = parseQueryStringWithError(queryString)
+  return result.success ? result.state : null
+}
+
+/**
+ * Parse a query string with detailed error information
+ * Use this when you need to know why parsing failed
+ */
+export const parseQueryStringWithError = (queryString: string): ParseResult => {
   if (!queryString || queryString.trim() === "" || queryString.trim() === "{}") {
-    return createInitialQueryState()
+    return { success: true, state: createInitialQueryState() }
   }
 
   try {
     const obj = parseJSObjectLiteral<Record<string, unknown>>(queryString)
-    if (!obj) return null
+    if (!obj) return { success: false, error: "Invalid query syntax" }
 
-    const root = objectToQueryNode(obj)
+    // Normalize $must → $and, $should → $or
+    const normalizedObj = normalizeOperators(obj) as Record<string, unknown>
+
+    const root = objectToQueryNode(normalizedObj)
     if (root) {
       // Ensure root is always a group
       if (root.type === "condition") {
         return {
-          root: {
-            id: generateId(),
-            type: "group",
-            groupOperator: "and",
-            children: [root],
+          success: true,
+          state: {
+            root: {
+              id: generateId(),
+              type: "group",
+              groupOperator: "and",
+              children: [root],
+            },
           },
         }
       }
-      return { root }
+      return { success: true, state: { root } }
     }
   } catch {
     // Failed to parse
   }
 
-  return null
+  return { success: false, error: "Failed to parse query" }
 }
 
 // ============================================================================
@@ -293,9 +371,6 @@ export const createInitialQueryState = (): QueryState => ({
     id: generateId(),
     type: "group",
     groupOperator: "and",
-    children: [createEmptyCondition()],
+    children: [],
   },
 })
-
-// Re-export stringify for convenience
-export { stringifyQueryState } from "./query-stringify"

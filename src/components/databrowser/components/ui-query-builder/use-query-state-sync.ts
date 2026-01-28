@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTab } from "@/tab-provider"
 
-import { createInitialQueryState, parseQueryString, stringifyQueryState } from "./query-parser"
+import { createInitialQueryState, parseQueryString } from "./query-parser"
+import { stringifyQueryState } from "./query-stringify"
 import { type QueryState } from "./types"
-
-// ============================================================================
-// HOOK: useQueryStateSync
-// ============================================================================
 
 /**
  * Hook that manages query state synchronization with zustand store.
@@ -17,8 +14,7 @@ export const useQueryStateSync = () => {
 
   // Local state for the query - this is our source of truth for rendering
   const [queryState, setQueryStateInternal] = useState<QueryState>(() => {
-    const parsed = parseQueryString(valuesSearch.query)
-    return parsed || createInitialQueryState()
+    return parseQueryString(valuesSearch.query) ?? createInitialQueryState()
   })
 
   // Track our own updates to avoid re-parsing on our changes

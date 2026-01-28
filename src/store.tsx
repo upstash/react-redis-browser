@@ -45,7 +45,7 @@ export const DatabrowserProvider = ({
           setItem: (_name, value) => storage.set(JSON.stringify(value)),
           removeItem: () => {},
         },
-        version: 6,
+        version: 7,
         migrate: (originalState, version) => {
           const state = originalState as DatabrowserStore
 
@@ -78,6 +78,14 @@ export const DatabrowserProvider = ({
                 },
               ] as const
             })
+          }
+
+          if (version <= 6) {
+            // Reset valuesSearch to new structure
+            state.tabs = state.tabs.map(([id, data]) => [
+              id,
+              { ...data, valuesSearch: { index: "", queries: {} } },
+            ])
           }
 
           return state
@@ -117,7 +125,9 @@ export type SearchFilter = {
 
 export type ValuesSearchFilter = {
   index: string
-  query: string
+
+  // A map of <indexName, queryValue>
+  queries: Record<string, string>
 }
 
 export type SelectedItem = {
@@ -186,7 +196,7 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
       id,
       selectedKeys: [],
       search: { key: "", type: undefined },
-      valuesSearch: { index: "", query: "" },
+      valuesSearch: { index: "", queries: {} },
       isValuesSearchSelected: false,
       pinned: false,
     }
@@ -435,11 +445,15 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
 
       const newTabs = [...old.tabs]
       const [, tabData] = newTabs[tabIndex]
+      const currentIndex = tabData.valuesSearch.index
       newTabs[tabIndex] = [
         tabId,
         {
           ...tabData,
-          valuesSearch: { ...tabData.valuesSearch, query },
+          valuesSearch: {
+            ...tabData.valuesSearch,
+            queries: { ...tabData.valuesSearch.queries, [currentIndex]: query },
+          },
         },
       ]
 

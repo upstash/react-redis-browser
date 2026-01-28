@@ -160,13 +160,6 @@ const queryNodeToObject = (node: QueryNode, isRoot: boolean = false): Record<str
   return {}
 }
 
-// ============================================================================
-// PUBLIC API
-// ============================================================================
-
-/**
- * Stringify a QueryState object to a JS object literal string
- */
 export const stringifyQueryState = (state: QueryState): string => {
   const obj = queryNodeToObject(state.root, true)
   return toJsLiteral(obj)

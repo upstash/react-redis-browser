@@ -46,7 +46,10 @@ export const useTab = () => {
       selectedKeys: tabData.selectedKeys ?? [],
       selectedListItem: tabData.selectedListItem,
       search: tabData.search,
-      valuesSearch: tabData.valuesSearch,
+      valuesSearch: {
+        ...tabData.valuesSearch,
+        query: tabData.valuesSearch.queries[tabData.valuesSearch.index] ?? "",
+      },
       isValuesSearchSelected: tabData.isValuesSearchSelected,
       pinned: tabData.pinned,
 

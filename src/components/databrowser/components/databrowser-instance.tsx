@@ -15,6 +15,7 @@ import { QueryBuilder } from "./query-builder"
 import { SearchEmptyState } from "./search-empty-state"
 import { Sidebar } from "./sidebar"
 import { UIQueryBuilder } from "./ui-query-builder"
+import { hasMustShouldCombination } from "./ui-query-builder/query-parser"
 
 export const PREFIX = "const query: Query = "
 
@@ -25,8 +26,30 @@ type QueryBuilderMode = "builder" | "code"
  * Shows either the query builders (if indexes exist) or empty state (if no indexes).
  */
 const SearchContent = () => {
+  const { valuesSearch } = useTab()
   const { data: indexes, isLoading } = useFetchSearchIndexes()
   const [mode, setMode] = useState<QueryBuilderMode>("builder")
+
+  // Error shown when switching to ui-query-builder
+  const [switchError, setSwitchError] = useState<string | null>(null)
+
+  const handleModeChange = (value: string) => {
+    const newMode = value as QueryBuilderMode
+    if (newMode === "builder") {
+      // Check for unsupported $must + $should combination when switching to builder
+      if (hasMustShouldCombination(valuesSearch.query)) {
+        setSwitchError(
+          "Queries using both $must and $should are not supported in the UI query builder"
+        )
+        // Don't switch mode, stay on code editor
+        return
+      }
+      setSwitchError(null)
+    } else {
+      setSwitchError(null)
+    }
+    setMode(newMode)
+  }
 
   // Don't show anything while loading
   if (isLoading) {
@@ -49,11 +72,12 @@ const SearchContent = () => {
             { key: "code", label: "Code Editor" },
           ]}
           value={mode}
-          onChange={(value) => setMode(value as QueryBuilderMode)}
+          onChange={handleModeChange}
           buttonClassName="h-6"
         />
       </div>
       {mode === "builder" ? <UIQueryBuilder /> : <QueryBuilder />}
+      {switchError && <p className="mt-3 text-sm text-red-500">{switchError}</p>}
     </div>
   )
 }
