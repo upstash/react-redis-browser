@@ -1,18 +1,6 @@
+import { formatUpstashErrorMessage } from "@/lib/utils"
+
 import { useKeys } from "../hooks"
-
-/**
- * Formats an UpstashError message by stripping the "command was: ..." suffix.
- */
-const formatUpstashErrorMessage = (error: Error): string => {
-  if (error.name !== "UpstashError") return error.message
-
-  // Strip "command was: [...]" suffix
-  const commandIndex = error.message.indexOf(", command was:")
-  if (commandIndex !== -1) {
-    return error.message.slice(0, commandIndex)
-  }
-  return error.message
-}
 
 export const HeaderError = () => {
   const { query } = useKeys()

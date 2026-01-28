@@ -1,6 +1,7 @@
 import { useEffect } from "react"
 import { Controller, useForm } from "react-hook-form"
 
+import { formatUpstashErrorMessage } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -213,7 +214,7 @@ export const SearchDisplay = ({
               <div className="w-full break-words text-xs text-red-500">
                 {updateSchema.error.message.startsWith("ERR syntax error")
                   ? "Invalid schema"
-                  : updateSchema.error.message}
+                  : formatUpstashErrorMessage(updateSchema.error)}
               </div>
             )}
 

@@ -11,6 +11,7 @@ export const useUpsertSearchIndexSchema = () => {
   const { redisNoPipeline: redis } = useRedis()
 
   return useMutation({
+    meta: { hideToast: true },
     mutationFn: async ({
       indexName,
       editorValue,

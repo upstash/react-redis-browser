@@ -4,6 +4,8 @@ import { Redis } from "@upstash/redis"
 
 import { toast } from "@/components/ui/use-toast"
 
+import { formatUpstashErrorMessage } from "./utils"
+
 export const redisClient = ({
   credentials,
   pipelining,
@@ -38,7 +40,7 @@ export const redisClient = ({
 }
 
 const handleError = (error: Error) => {
-  let desc = error.message
+  let desc = formatUpstashErrorMessage(error)
 
   // Because the message does not fit in the toast, we only take the
   // first two sentences.
@@ -76,6 +78,9 @@ export const queryClient = new QueryClient({
     },
   }),
   mutationCache: new MutationCache({
-    onError: handleError,
+    onError: (error, _variables, _context, mutation) => {
+      if (mutation.meta?.hideToast) return
+      handleError(error)
+    },
   }),
 })
