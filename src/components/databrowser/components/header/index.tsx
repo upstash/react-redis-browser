@@ -18,6 +18,7 @@ import { FETCH_KEY_TYPE_QUERY_KEY } from "../../hooks/use-fetch-key-type"
 import { useFetchSearchIndexes } from "../../hooks/use-fetch-search-indexes"
 import { AddKeyModal } from "../add-key-modal"
 import { CreateIndexModal } from "../search/create-index-modal"
+import { EditIndexModal } from "../search/edit-index-modal"
 import { SearchInput } from "../sidebar/search-input"
 import { DataTypeSelector } from "../sidebar/type-selector"
 
@@ -73,19 +74,17 @@ const IndexSelector = () => {
   const {
     valuesSearch: { index },
     setValuesSearchIndex,
-    setSelectedKey,
-    setIsValuesSearchSelected,
   } = useTab()
   const { data: indexes } = useFetchSearchIndexes()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
+  const [editingIndex, setEditingIndex] = useState<string | null>(null)
 
   const filteredIndexes = indexes?.filter((idx) => idx.toLowerCase().includes(search.toLowerCase()))
 
   const handleEditIndex = (indexName: string) => {
     setOpen(false)
-    setIsValuesSearchSelected(false)
-    setSelectedKey(indexName)
+    setEditingIndex(indexName)
   }
 
   return (
@@ -152,7 +151,11 @@ const IndexSelector = () => {
                     <span className="truncate">{idx}</span>
                   </button>
                   <button
-                    onClick={() => handleEditIndex(idx)}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      event.preventDefault()
+                      handleEditIndex(idx)
+                    }}
                     className="ml-2 text-sm text-zinc-500 underline hover:text-zinc-700"
                   >
                     Edit
@@ -163,6 +166,12 @@ const IndexSelector = () => {
           </div>
         </PopoverContent>
       </Popover>
+
+      <EditIndexModal
+        open={Boolean(editingIndex)}
+        onOpenChange={(isOpen) => !isOpen && setEditingIndex(null)}
+        indexName={editingIndex}
+      />
     </div>
   )
 }

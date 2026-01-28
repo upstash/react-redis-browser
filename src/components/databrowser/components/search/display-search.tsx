@@ -32,10 +32,12 @@ type FormValues = {
 export const SearchDisplay = ({
   indexName,
   isCreateModal,
+  isEditModal,
   onClose,
 }: {
   indexName?: string
   isCreateModal?: boolean
+  isEditModal?: boolean
   onClose?: () => void
 }) => {
   const {
@@ -83,7 +85,7 @@ export const SearchDisplay = ({
       {
         onSuccess: () => {
           reset()
-          if (isCreateModal && onClose) onClose()
+          if ((isCreateModal || isEditModal) && onClose) onClose()
         },
       }
     )
@@ -96,7 +98,9 @@ export const SearchDisplay = ({
 
   return (
     <div className="flex h-full w-full min-w-0 flex-col gap-2">
-      {!isCreateModal && <DisplayHeader dataKey={effectiveIndexName} type={"search"} />}
+      {!isCreateModal && (
+        <DisplayHeader dataKey={effectiveIndexName} type={"search"} hideTypeTag={isEditModal} />
+      )}
 
       <div className="flex h-full min-w-0 grow flex-col gap-2 rounded-md">
         {!isCreateModal && isLoading ? (
@@ -221,10 +225,10 @@ export const SearchDisplay = ({
             {/* Save/Cancel buttons */}
             <div className="flex shrink-0 items-center gap-2">
               <div className="ml-auto flex gap-2">
-                {(isDirty || isCreateModal) && (
+                {(isDirty || isCreateModal || isEditModal) && (
                   <Button
                     onClick={() => {
-                      if (isCreateModal && onClose) {
+                      if ((isCreateModal || isEditModal) && onClose) {
                         onClose()
                       } else {
                         handleCancel()

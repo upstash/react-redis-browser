@@ -13,10 +13,12 @@ export const DisplayHeader = ({
   dataKey,
   type,
   content,
+  hideTypeTag,
 }: {
   content?: string
   dataKey: string
   type: DataType
+  hideTypeTag?: boolean
 }) => {
   const { setSelectedListItem } = useTab()
 
@@ -50,12 +52,14 @@ export const DisplayHeader = ({
       </div>
 
       {/* Key info badges */}
-      <div className="flex h-10 items-center gap-1.5 overflow-scroll">
-        <TypeTag variant={type} type="badge" />
-        {type !== "search" && <SizeBadge dataKey={dataKey} />}
-        {type !== "search" && <LengthBadge dataKey={dataKey} type={type} content={content} />}
-        {type !== "search" && <HeaderTTLBadge dataKey={dataKey} />}
-      </div>
+      {type === "search" && hideTypeTag ? undefined : (
+        <div className="flex h-10 items-center gap-1.5 overflow-scroll">
+          {!hideTypeTag && <TypeTag variant={type} type="badge" />}
+          {type !== "search" && <SizeBadge dataKey={dataKey} />}
+          {type !== "search" && <LengthBadge dataKey={dataKey} type={type} content={content} />}
+          {type !== "search" && <HeaderTTLBadge dataKey={dataKey} />}
+        </div>
+      )}
     </div>
   )
 }
