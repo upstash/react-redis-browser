@@ -95,7 +95,10 @@ const MonacoEditorWithTypes = ({
   }, [value, editorRef.current, onChange, validateValue, defaultValue])
 
   return (
-    <div className={cn("group/editor relative")} style={{ height }}>
+    <div
+      className={cn("group/editor relative", height === undefined && "h-full")}
+      style={{ height }}
+    >
       <Editor
         theme={theme === "dark" ? "vs-dark" : "light"}
         loading={<LoadingSpinner />}
@@ -195,7 +198,10 @@ const handleBeforeMount: BeforeMount = (monaco: Monaco) => {
 // Dummy for the tests
 const TestEditor = ({ value, onChange, height, testLabel }: EditorWithTypesProps) => {
   return (
-    <div className={cn("group/editor relative")} style={{ height }}>
+    <div
+      className={cn("group/editor relative", height === undefined && "h-full")}
+      style={{ height }}
+    >
       <textarea
         aria-label={testLabel}
         value={value}

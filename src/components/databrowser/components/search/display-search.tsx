@@ -206,7 +206,11 @@ export const SearchDisplay = ({
                     name="editorValue"
                     control={control}
                     render={({ field }) => (
-                      <SchemaEditor value={field.value} onChange={field.onChange} height={300} />
+                      <SchemaEditor
+                        value={field.value}
+                        onChange={field.onChange}
+                        height={isCreateModal || isEditModal ? 300 : undefined}
+                      />
                     )}
                   />
                 </div>
