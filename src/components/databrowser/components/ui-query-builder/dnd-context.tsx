@@ -73,16 +73,26 @@ export const QueryDndProvider = ({
     const currentParent = findParentGroup(rootNode, activeIdStr)
     if (!currentParent) return
 
-    // Parse the drop indicator ID: "drop-{groupId}-{index}"
+    // Parse the drop indicator ID: "drop-{groupId}-{childId|end}"
     if (!overIdStr.startsWith("drop-")) return
 
-    const parts = overIdStr.split("-")
-    if (parts.length < 3) return
+    const firstDash = overIdStr.indexOf("-")
+    const secondDash = overIdStr.indexOf("-", firstDash + 1)
+    if (firstDash === -1 || secondDash === -1) return
 
-    const targetGroupId = parts[1]
-    const targetIndex = Number.parseInt(parts[2], 10)
+    const targetGroupId = overIdStr.slice(firstDash + 1, secondDash)
+    const dropRef = overIdStr.slice(secondDash + 1)
 
-    if (Number.isNaN(targetIndex)) return
+    const targetGroup = findNodeById(rootNode, targetGroupId)
+    if (!targetGroup || targetGroup.type !== "group") return
+
+    // "end" means append; otherwise dropRef is the child ID and we insert before it
+    const targetIndex =
+      dropRef === "end"
+        ? targetGroup.children.length
+        : targetGroup.children.findIndex((c) => c.id === dropRef)
+
+    if (targetIndex === -1) return
 
     // Don't move if dropping in same position
     const currentIndex = currentParent.children.findIndex((c) => c.id === activeIdStr)

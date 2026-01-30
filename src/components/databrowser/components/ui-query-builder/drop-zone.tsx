@@ -36,7 +36,7 @@ type EmptyGroupDropZoneProps = {
 }
 
 export const EmptyGroupDropZone = ({ groupId, isOver }: EmptyGroupDropZoneProps) => {
-  const { setNodeRef } = useDroppable({ id: `drop-${groupId}-0` })
+  const { setNodeRef } = useDroppable({ id: `drop-${groupId}-end` })
 
   return (
     <div

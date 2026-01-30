@@ -14,8 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
-import { BoostBadge, NodeActionsMenu, NotBadge } from "./condition-common"
+import { BoostBadge, NodeActionsMenu } from "./condition-common"
 import { QueryDndProvider } from "./dnd-context"
 import { DraggableItem, type DragHandleProps } from "./draggable-item"
 import { DropIndicator, EmptyGroupDropZone } from "./drop-zone"
@@ -38,6 +39,39 @@ type InnerGroupProps = {
   droppingId: string | null
   dragHandleProps?: DragHandleProps
 }
+
+const ChildRow = ({
+  groupId,
+  child,
+  depth,
+  activeOverId,
+  droppingId,
+}: {
+  groupId: string
+  child: QueryNode
+  depth: number
+  activeOverId?: string | null
+  droppingId: string | null
+}) => (
+  <div>
+    <DropIndicator
+      id={`drop-${groupId}-${child.id}`}
+      isOver={activeOverId === `drop-${groupId}-${child.id}`}
+    />
+    <DraggableItem id={child.id} droppingId={droppingId}>
+      {child.type === "condition" ? (
+        <QueryCondition node={child} />
+      ) : (
+        <InnerGroup
+          node={child}
+          depth={depth + 1}
+          activeOverId={activeOverId}
+          droppingId={droppingId}
+        />
+      )}
+    </DraggableItem>
+  </div>
+)
 
 // ============================================================================
 // INNER GROUP (Non-root)
@@ -74,12 +108,12 @@ const InnerGroup = ({
   return (
     <div>
       {/* Header with operator select - no left padding */}
-      <div className="group/group flex items-center gap-1">
+      <div className="group/group flex items-center gap-1 px-1">
         {/* Drag handle for non-root groups */}
         {!isRoot && (
           <div
             ref={dragHandleProps?.ref as React.Ref<HTMLDivElement>}
-            className="flex cursor-grab items-center text-zinc-400"
+            className="flex cursor-grab items-center px-1 text-zinc-400"
             {...(dragHandleProps?.attributes as React.HTMLAttributes<HTMLDivElement>)}
             {...(dragHandleProps?.listeners as React.HTMLAttributes<HTMLDivElement>)}
           >
@@ -116,8 +150,6 @@ const InnerGroup = ({
 
         {node.boost !== undefined && <BoostBadge node={node} />}
 
-        {node.not && <NotBadge />}
-
         {/* Actions (settings menu & delete) - visible on hover */}
         {!isRoot && (
           <div
@@ -138,37 +170,69 @@ const InnerGroup = ({
       {/* Children with drop indicators - this gets the left border */}
       <div className={`min-h-[20px] ${isRoot ? "" : "ml-2 border-l-2 border-zinc-200 pl-3"}`}>
         {node.children.length === 0 ? (
-          <EmptyGroupDropZone groupId={node.id} isOver={activeOverId === `drop-${node.id}-0`} />
+          <EmptyGroupDropZone groupId={node.id} isOver={activeOverId === `drop-${node.id}-end`} />
         ) : (
           <>
-            {node.children.map((child, index) => (
-              <div key={child.id}>
-                {/* Drop indicator BEFORE this item */}
-                <DropIndicator
-                  id={`drop-${node.id}-${index}`}
-                  isOver={activeOverId === `drop-${node.id}-${index}`}
-                />
+            {node.children.map(
+              (child) =>
+                !child.not && (
+                  <ChildRow
+                    key={child.id}
+                    groupId={node.id}
+                    child={child}
+                    depth={depth}
+                    activeOverId={activeOverId}
+                    droppingId={droppingId}
+                  />
+                )
+            )}
 
-                {/* The item itself */}
-                <DraggableItem id={child.id} droppingId={droppingId}>
-                  {child.type === "condition" ? (
-                    <QueryCondition node={child} />
-                  ) : (
-                    <InnerGroup
-                      node={child}
-                      depth={depth + 1}
-                      activeOverId={activeOverId}
-                      droppingId={droppingId}
-                    />
-                  )}
-                </DraggableItem>
-              </div>
-            ))}
+            {/* MUST NOT divider */}
+            {node.children.some((child) => child.not) && (
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-2 px-1 py-1.5">
+                    <div className="h-px flex-1 bg-amber-300" />
+                    <span className="cursor-default select-none rounded bg-amber-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-amber-800">
+                      Must Not
+                    </span>
+                    <div className="h-px flex-1 bg-amber-300" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p>
+                    Keys matching any of the conditions below are excluded from the results.{" "}
+                    <a
+                      href="https://upstash.com/docs/vector/features/filtering/boolean-operators/must-not"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                    >
+                      Learn more
+                    </a>
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {node.children.map(
+              (child) =>
+                child.not && (
+                  <ChildRow
+                    key={child.id}
+                    groupId={node.id}
+                    child={child}
+                    depth={depth}
+                    activeOverId={activeOverId}
+                    droppingId={droppingId}
+                  />
+                )
+            )}
 
             {/* Drop indicator AFTER the last item */}
             <DropIndicator
-              id={`drop-${node.id}-${node.children.length}`}
-              isOver={activeOverId === `drop-${node.id}-${node.children.length}`}
+              id={`drop-${node.id}-end`}
+              isOver={activeOverId === `drop-${node.id}-end`}
             />
           </>
         )}

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select"
 import { SimpleTooltip } from "@/components/ui/tooltip"
 
-import { BoostBadge, NodeActionsMenu, NotBadge } from "./condition-common"
+import { BoostBadge, NodeActionsMenu } from "./condition-common"
 import { useQueryBuilderUI } from "./query-builder-context"
 import {
   getOperatorsForFieldType,
@@ -395,8 +395,6 @@ export const QueryCondition = ({
       )}
 
       {node.boost !== undefined && <BoostBadge node={node} />}
-
-      {node.not && <NotBadge />}
 
       {/* Actions */}
       <div
