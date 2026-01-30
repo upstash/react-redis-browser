@@ -1,21 +1,6 @@
-/**
- * Query Builder Types
- *
- * These types match the Upstash Search query structure and are used
- * by both the query parser and the UI components.
- */
-
-// ============================================================================
-// OPERATOR TYPES
-// ============================================================================
-
 export type FieldOperator = "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "in" | "contains" | "fuzzy"
 
 export type GroupOperator = "and" | "or"
-
-// ============================================================================
-// FIELD TYPE
-// ============================================================================
 
 export type FieldType = "string" | "number" | "boolean" | "date" | "unknown"
 
@@ -23,10 +8,6 @@ export type FieldInfo = {
   name: string
   type: FieldType
 }
-
-// ============================================================================
-// OPERATOR CONSTANTS
-// ============================================================================
 
 /** Operators supported for string fields */
 export const STRING_OPERATORS: FieldOperator[] = ["eq", "ne", "in", "contains", "fuzzy"]
@@ -88,10 +69,6 @@ export const getOperatorsForFieldType = (fieldType: FieldType): FieldOperator[] 
   }
 }
 
-// ============================================================================
-// CONDITION & NODE TYPES
-// ============================================================================
-
 export type FieldCondition = {
   operator: FieldOperator
   field: string
@@ -125,20 +102,12 @@ export type QueryNode = {
     }
 )
 
-// ============================================================================
-// QUERY STATE
-// ============================================================================
-
 /**
  * The root query state - always starts with a group node
  */
 export interface QueryState {
   root: QueryNode
 }
-
-// ============================================================================
-// UTILITY
-// ============================================================================
 
 /**
  * Generate a unique ID for query nodes

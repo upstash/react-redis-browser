@@ -225,6 +225,25 @@ const parseGroup = (
   return null
 }
 
+/** Add $mustNot entries as negated children to a group */
+const addMustNotChildren = (group: QueryNode & { type: "group" }, mustNotValue: unknown): void => {
+  if (Array.isArray(mustNotValue)) {
+    for (const item of mustNotValue) {
+      const child = objectToQueryNode(item as Record<string, unknown>)
+      if (child) {
+        child.not = true
+        group.children.push(child)
+      }
+    }
+  } else if (typeof mustNotValue === "object" && mustNotValue !== null) {
+    const child = objectToQueryNode(mustNotValue as Record<string, unknown>)
+    if (child) {
+      child.not = true
+      group.children.push(child)
+    }
+  }
+}
+
 /** Parse a raw query object into a QueryNode */
 const objectToQueryNode = (obj: Record<string, unknown>): QueryNode | null => {
   if (!obj || typeof obj !== "object") return null
@@ -232,21 +251,37 @@ const objectToQueryNode = (obj: Record<string, unknown>): QueryNode | null => {
   const keys = Object.keys(obj)
   if (keys.length === 0) return null
 
-  // Handle $mustNot
-  if ("$mustNot" in obj) {
-    return parseMustNot(obj.$mustNot)
-  }
+  const hasGroup = "$and" in obj || "$or" in obj
+  const hasMustNot = "$mustNot" in obj
+  const nonOperatorKeys = keys.filter((key) => !isOperatorKey(key))
 
-  // Handle $and/$or groups
-  if ("$and" in obj || "$or" in obj) {
+  // Handle $and/$or groups (possibly with $mustNot as sibling)
+  if (hasGroup) {
     const operator: GroupOperator = "$and" in obj ? "and" : "or"
     const groupValue = obj["$and"] ?? obj["$or"]
     const boost = "$boost" in obj ? (obj.$boost as number) : undefined
-    return parseGroup(groupValue, operator, boost)
+    const groupNode = parseGroup(groupValue, operator, boost)
+
+    if (groupNode && groupNode.type === "group" && hasMustNot) {
+      addMustNotChildren(groupNode, obj.$mustNot)
+    }
+
+    return groupNode
   }
 
-  // Field conditions
-  const nonOperatorKeys = keys.filter((key) => !isOperatorKey(key))
+  // Handle $mustNot (possibly with field conditions at the same level)
+  if (hasMustNot) {
+    if (nonOperatorKeys.length > 0) {
+      // Field conditions + $mustNot → AND group with negated children
+      const group = parseMultiFieldObject(obj, "and")
+      addMustNotChildren(group, obj.$mustNot)
+      return group
+    }
+    // Standalone $mustNot
+    return parseMustNot(obj.$mustNot)
+  }
+
+  // Field conditions only
   if (nonOperatorKeys.length === 0) return null
 
   const nodeBoost = "$boost" in obj ? (obj.$boost as number) : undefined

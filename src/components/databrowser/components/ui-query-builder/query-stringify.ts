@@ -1,15 +1,4 @@
-/**
- * Query Stringify
- *
- * Converts QueryState objects to JS object literal strings.
- * Uses JSON.stringify for the heavy lifting, then removes unnecessary quotes from keys.
- */
-
 import type { FieldOperator, QueryNode, QueryState } from "./types"
-
-// ============================================================================
-// JSON TO JS LITERAL CONVERSION
-// ============================================================================
 
 /**
  * Convert JSON string to JS object literal string.
@@ -28,10 +17,6 @@ const toJsLiteral = (obj: unknown): string => {
   return jsonToJsLiteral(JSON.stringify(obj, null, 2))
 }
 
-// ============================================================================
-// QUERY NODE TO OBJECT CONVERSION
-// ============================================================================
-
 /** Build the operator value for a condition (handles fuzzy specially) */
 const buildOperatorValue = (
   operator: FieldOperator,
@@ -44,13 +29,13 @@ const buildOperatorValue = (
   return value
 }
 
-/** Convert a condition node to a query object */
+/** Convert a condition node to a query object (not flag is handled by parent group) */
 const conditionToObject = (node: QueryNode & { type: "condition" }): Record<string, unknown> => {
   const { field, operator, value, boost: conditionBoost, fuzzyDistance } = node.condition
   const effectiveBoost = node.boost ?? conditionBoost
 
-  // Shorthand for $eq without boost or not
-  if (operator === "eq" && !effectiveBoost && !node.not) {
+  // Shorthand for $eq without boost
+  if (operator === "eq" && !effectiveBoost) {
     return { [field]: value }
   }
 
@@ -65,13 +50,7 @@ const conditionToObject = (node: QueryNode & { type: "condition" }): Record<stri
     fieldCondition.$boost = finalBoost
   }
 
-  const condition: Record<string, unknown> = { [field]: fieldCondition }
-
-  if (node.not) {
-    return { $mustNot: [condition] }
-  }
-
-  return condition
+  return { [field]: fieldCondition }
 }
 
 /** Check if all children are simple $eq conditions that can be merged */
@@ -107,19 +86,45 @@ const groupToObject = (
 ): Record<string, unknown> => {
   const { groupOperator, children, boost, not } = node
 
+  // Separate children into normal and negated ($mustNot)
+  const normalChildren = children.filter((c) => !c.not)
+  const negatedChildren = children.filter((c) => c.not)
+
   // Empty root group should return empty object, not $and: []
   if (isRoot && children.length === 0 && !not && !boost) {
     return {}
   }
 
-  // Optimization: flatten root AND with single child (no not/boost)
-  if (isRoot && groupOperator === "and" && children.length === 1 && !not && !boost) {
-    return queryNodeToObject(children[0], false)
+  // If the group itself is negated, convert without not and wrap in $mustNot
+  if (not) {
+    const withoutNot = { ...node, not: undefined } as QueryNode & { type: "group" }
+    const inner = groupToObject(withoutNot, false)
+    // OR group with not and no negated children → flatten to $mustNot array
+    if (groupOperator === "or" && !boost && negatedChildren.length === 0) {
+      const childObjects = normalChildren.map((child) => queryNodeToObject(child, false))
+      return { $mustNot: childObjects }
+    }
+    return { $mustNot: [inner] }
   }
 
-  // Optimization: merge simple $eq conditions
-  if (children.length > 0 && !not && canMergeChildren(children)) {
-    const merged = mergeConditions(children, boost)
+  // Optimization: flatten root AND with single normal child (no negated, no boost)
+  if (
+    isRoot &&
+    groupOperator === "and" &&
+    normalChildren.length === 1 &&
+    negatedChildren.length === 0 &&
+    !boost
+  ) {
+    return queryNodeToObject(normalChildren[0], false)
+  }
+
+  // Optimization: merge simple $eq conditions (only when no negated children)
+  if (
+    normalChildren.length > 0 &&
+    negatedChildren.length === 0 &&
+    canMergeChildren(normalChildren)
+  ) {
+    const merged = mergeConditions(normalChildren, boost)
     if (isRoot && groupOperator === "and") {
       return merged
     }
@@ -130,23 +135,25 @@ const groupToObject = (
     return result
   }
 
-  // Standard format: { $and: [...] } or { $or: [...] }
-  const childObjects = children.map((child) => queryNodeToObject(child, false))
-  const group: Record<string, unknown> = { [`$${groupOperator}`]: childObjects }
+  // Standard format: $and/$or for normal children, $mustNot as sibling for negated children
+  const result: Record<string, unknown> = {}
+
+  if (normalChildren.length > 0) {
+    result[`$${groupOperator}`] = normalChildren.map((child) => queryNodeToObject(child, false))
+  }
+
+  if (negatedChildren.length > 0) {
+    result.$mustNot = negatedChildren.map((child) => {
+      const withoutNot = { ...child, not: undefined }
+      return queryNodeToObject(withoutNot, false)
+    })
+  }
 
   if (boost && boost !== 1) {
-    group.$boost = boost
+    result.$boost = boost
   }
 
-  if (not) {
-    // OR group with not → flatten to $mustNot array
-    if (groupOperator === "or" && !boost) {
-      return { $mustNot: childObjects }
-    }
-    return { $mustNot: [group] }
-  }
-
-  return group
+  return result
 }
 
 /** Convert a QueryNode to a raw query object */
