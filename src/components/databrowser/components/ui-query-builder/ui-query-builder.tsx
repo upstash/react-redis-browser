@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useTab } from "@/tab-provider"
 
 import type { SearchIndex } from "../../hooks/use-fetch-search-index"
@@ -23,10 +23,47 @@ export const UIQueryBuilder = () => {
     setQueryState((state) => normalizeQueryState(state, fieldInfos))
   }, [fieldInfos, setQueryState])
 
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const [hasTopShadow, setHasTopShadow] = useState(false)
+  const [hasBottomShadow, setHasBottomShadow] = useState(false)
+
+  const recomputeShadows = useCallback(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const { scrollTop, scrollHeight, clientHeight } = el
+    setHasTopShadow(scrollTop > 0)
+    setHasBottomShadow(scrollTop + clientHeight < scrollHeight - 1)
+  }, [])
+
+  useEffect(() => {
+    recomputeShadows()
+    const el = scrollRef.current
+    if (!el) return
+    const obs = new ResizeObserver(() => recomputeShadows())
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [recomputeShadows])
+
   return (
     <QueryBuilderUIProvider fieldInfos={fieldInfos} setQueryState={setQueryState}>
-      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
-        <QueryGroup node={queryState.root} isRoot depth={0} />
+      <div className="relative max-h-[300px] rounded-lg border border-zinc-200 bg-zinc-50">
+        <div
+          className={`scroll-shadow-top pointer-events-none absolute left-0 top-0 z-10 h-6 w-full rounded-t-lg transition-opacity duration-200 ${
+            hasTopShadow ? "opacity-100" : "opacity-0"
+          }`}
+        />
+        <div
+          className={`scroll-shadow-bottom pointer-events-none absolute bottom-0 left-0 z-10 h-6 w-full rounded-b-lg transition-opacity duration-200 ${
+            hasBottomShadow ? "opacity-100" : "opacity-0"
+          }`}
+        />
+        <div
+          ref={scrollRef}
+          onScroll={recomputeShadows}
+          className="max-h-[300px] overflow-y-auto p-4"
+        >
+          <QueryGroup node={queryState.root} isRoot depth={0} />
+        </div>
       </div>
     </QueryBuilderUIProvider>
   )

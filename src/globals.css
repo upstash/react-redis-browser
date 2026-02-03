@@ -481,6 +481,15 @@
   background: linear-gradient(to left, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0));
 }
 
+/* Vertical scroll shadows */
+.scroll-shadow-top {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0));
+}
+
+.scroll-shadow-bottom {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0));
+}
+
 /* Set 2 stroke for all tabler icons */
 svg.tabler-icon {
   stroke-width: 2 !important;
