@@ -7,7 +7,7 @@ import { parseSchemaFromEditorValue } from "../components/search/schema-parser"
 import { FETCH_SEARCH_INDEX_QUERY_KEY } from "./use-fetch-search-index"
 import { FETCH_SEARCH_INDEXES_QUERY_KEY } from "./use-fetch-search-indexes"
 
-export const useUpsertSearchIndexSchema = () => {
+export const useCreateSearchIndexSchema = () => {
   const { redisNoPipeline: redis } = useRedis()
 
   return useMutation({
@@ -33,11 +33,7 @@ export const useUpsertSearchIndexSchema = () => {
       const result = parseSchemaFromEditorValue(editorValue)
       if (!result.success) throw new Error(result.error)
 
-      // Drop the existing index
-      await redis.search.index({ name: indexName }).drop()
-
-      // Recreate with the new schema but same settings
-
+      // Create the index with the new schema
       await redis.search.createIndex({
         name: indexName,
         dataType: dataType as any,

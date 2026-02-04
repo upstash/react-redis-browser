@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 
 import { formatUpstashErrorMessage } from "@/lib/utils"
@@ -14,10 +14,11 @@ import {
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 
+import { useCreateSearchIndexSchema } from "../../hooks/use-create-search-index-schema"
 import { useFetchSearchIndex } from "../../hooks/use-fetch-search-index"
-import { useUpsertSearchIndexSchema } from "../../hooks/use-upsert-search-index-schema"
 import { DisplayHeader } from "../display/display-header"
 import { TypeTag } from "../type-tag"
+import { SaveSchemaModal } from "./save-schema-modal"
 import { SCHEMA_DEFAULT, SchemaEditor } from "./schema-editor"
 import { schemaToEditorValue } from "./schema-parser"
 
@@ -60,10 +61,12 @@ export const SearchDisplay = ({
   const currentIndexName = watch("indexName")
   const effectiveIndexName = isCreateModal ? currentIndexName : (indexName ?? "")
 
+  const [pendingFormValues, setPendingFormValues] = useState<FormValues | undefined>()
+
   const { data, isLoading } = useFetchSearchIndex(indexName, {
     enabled: !isCreateModal,
   })
-  const updateSchema = useUpsertSearchIndexSchema()
+  const createSchema = useCreateSearchIndexSchema()
 
   useEffect(() => {
     if (!data) return
@@ -77,22 +80,26 @@ export const SearchDisplay = ({
   }, [data, reset, indexName])
 
   const onSubmit = (values: FormValues) => {
-    updateSchema.mutate(
-      {
-        ...values,
-        indexName: isCreateModal ? values.indexName : indexName!,
-      },
-      {
-        onSuccess: () => {
-          reset()
-          if ((isCreateModal || isEditModal) && onClose) onClose()
+    if (isCreateModal) {
+      createSchema.mutate(
+        {
+          ...values,
+          indexName: values.indexName,
         },
-      }
-    )
+        {
+          onSuccess: () => {
+            reset()
+            if (onClose) onClose()
+          },
+        }
+      )
+    } else {
+      setPendingFormValues({ ...values, indexName: indexName! })
+    }
   }
 
   const handleCancel = () => {
-    updateSchema.reset()
+    createSchema.reset()
     reset()
   }
 
@@ -217,12 +224,12 @@ export const SearchDisplay = ({
               </div>
             </div>
 
-            {/* Mutation error display */}
-            {updateSchema.error && (
+            {/* Mutation error display - only for create modal */}
+            {isCreateModal && createSchema.error && (
               <div className="w-full break-words text-xs text-red-500">
-                {updateSchema.error.message.startsWith("ERR syntax error")
+                {createSchema.error.message.startsWith("ERR syntax error")
                   ? "Invalid schema"
-                  : formatUpstashErrorMessage(updateSchema.error)}
+                  : formatUpstashErrorMessage(createSchema.error)}
               </div>
             )}
 
@@ -243,12 +250,21 @@ export const SearchDisplay = ({
                   </Button>
                 )}
                 <Button variant="primary" onClick={handleSubmit(onSubmit)}>
-                  <Spinner isLoading={updateSchema.isPending} isLoadingText={"Saving"}>
-                    {isCreateModal ? "Create" : "Save"}
+                  <Spinner isLoading={createSchema.isPending} isLoadingText={"Saving"}>
+                    {isCreateModal ? "Create" : "Save..."}
                   </Spinner>
                 </Button>
               </div>
             </div>
+
+            <SaveSchemaModal
+              values={pendingFormValues}
+              onClose={() => {
+                setPendingFormValues(undefined)
+                reset()
+                if (isEditModal && onClose) onClose()
+              }}
+            />
           </div>
         )}
       </div>
