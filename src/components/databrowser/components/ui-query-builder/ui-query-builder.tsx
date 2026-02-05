@@ -52,7 +52,7 @@ export const UIQueryBuilder = () => {
 
   return (
     <QueryBuilderUIProvider fieldInfos={fieldInfos} setQueryState={setQueryState}>
-      <div className="relative h-full rounded-lg border border-zinc-200 bg-zinc-50">
+      <div className="relative h-full rounded-lg bg-zinc-50">
         <div
           className={`scroll-shadow-top pointer-events-none absolute left-0 top-0 z-10 h-6 w-full rounded-t-lg transition-opacity duration-200 ${
             hasTopShadow ? "opacity-100" : "opacity-0"

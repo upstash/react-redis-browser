@@ -11,7 +11,7 @@ export const QueryBuilder = () => {
   const editorValue = PREFIX + (valuesSearch.query || "{}")
 
   return (
-    <div className="h-full rounded-lg border border-zinc-300 bg-white px-[6px] dark:border-zinc-700">
+    <div className="h-full rounded-lg border border-zinc-300 bg-white px-[6px]">
       <QueryEditor
         value={editorValue}
         onChange={(value) => {

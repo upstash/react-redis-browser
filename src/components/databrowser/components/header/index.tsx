@@ -22,35 +22,37 @@ import { EditIndexModal } from "../search/edit-index-modal"
 import { SearchInput } from "../sidebar/search-input"
 import { DataTypeSelector } from "../sidebar/type-selector"
 
-export const Header = () => {
+export const Header = ({ hideSearchTab = false }: { hideSearchTab?: boolean }) => {
   const { isValuesSearchSelected, setIsValuesSearchSelected } = useTab()
 
   return (
     <div className="flex items-center justify-between gap-1.5">
       <div className="flex grow items-center gap-1.5">
-        <Segmented
-          options={[
-            {
-              key: "keys",
-              label: "Keys",
-            },
-            {
-              key: "values",
-              label: (
-                <div className="flex items-center gap-1">
-                  Search
-                  <div className="flex h-[18px] items-center rounded-md bg-emerald-100 px-[5px] text-[11px] text-emerald-700">
-                    NEW
+        {!hideSearchTab && (
+          <Segmented
+            options={[
+              {
+                key: "keys",
+                label: "Keys",
+              },
+              {
+                key: "values",
+                label: (
+                  <div className="flex items-center gap-1">
+                    Search
+                    <div className="flex h-[18px] items-center rounded-md bg-emerald-100 px-[5px] text-[11px] text-emerald-700">
+                      NEW
+                    </div>
                   </div>
-                </div>
-              ),
-            },
-          ]}
-          value={isValuesSearchSelected ? "values" : "keys"}
-          onChange={(value) => {
-            setIsValuesSearchSelected(value === "values")
-          }}
-        />
+                ),
+              },
+            ]}
+            value={isValuesSearchSelected ? "values" : "keys"}
+            onChange={(value) => {
+              setIsValuesSearchSelected(value === "values")
+            }}
+          />
+        )}
         {isValuesSearchSelected ? (
           <IndexSelector />
         ) : (

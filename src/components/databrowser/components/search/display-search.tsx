@@ -134,15 +134,13 @@ export const SearchDisplay = ({
             )}
 
             {/* Index Config */}
-            <div className="rounded-md border border-zinc-300 bg-white p-3 dark:border-zinc-700 dark:bg-zinc-800">
+            <div className="rounded-md border border-zinc-300 bg-white p-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Config</h3>
+                <h3 className="text-sm font-medium text-zinc-700">Config</h3>
               </div>
               <div className="mt-2 grid grid-cols-4 gap-4 text-sm">
                 <div>
-                  <span className="mb-1.5 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                    Data Type
-                  </span>
+                  <span className="mb-1.5 block text-xs font-medium text-zinc-500">Data Type</span>
                   <Controller
                     name="dataType"
                     control={control}
@@ -163,9 +161,7 @@ export const SearchDisplay = ({
                   />
                 </div>
                 <div>
-                  <span className="mb-1.5 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                    Language
-                  </span>
+                  <span className="mb-1.5 block text-xs font-medium text-zinc-500">Language</span>
                   <Controller
                     name="language"
                     control={control}
@@ -186,9 +182,7 @@ export const SearchDisplay = ({
                   />
                 </div>
                 <div className="col-span-2">
-                  <span className="mb-1.5 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
-                    Prefixes
-                  </span>
+                  <span className="mb-1.5 block text-xs font-medium text-zinc-500">Prefixes</span>
                   <Input
                     {...register("prefixes", { required: "Please enter at least one prefix" })}
                     className="h-8 w-full"
@@ -202,9 +196,9 @@ export const SearchDisplay = ({
             </div>
 
             {/* Schema Section */}
-            <div className="flex min-h-0 flex-1 flex-col rounded-md border border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-800">
-              <div className="flex items-center justify-between border-b border-zinc-200 px-3 py-2 dark:border-zinc-700">
-                <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Schema</h3>
+            <div className="flex min-h-0 flex-1 flex-col rounded-md border border-zinc-300 bg-white">
+              <div className="flex items-center justify-between border-b border-zinc-200 px-3 py-2">
+                <h3 className="text-sm font-medium text-zinc-700">Schema</h3>
               </div>
 
               <div className="min-h-0 flex-1">

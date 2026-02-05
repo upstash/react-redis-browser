@@ -27,6 +27,7 @@ export const RedisBrowser = ({
   url,
   token,
   hideTabs,
+  hideSearchTab,
   storage,
   disableTelemetry,
   onFullScreenClick,
@@ -46,6 +47,13 @@ export const RedisBrowser = ({
   disableTelemetry?: boolean
 
   hideTabs?: boolean
+
+  /**
+   * Whether to hide the Keys/Search segmented tab selector.
+   *
+   * @default false
+   */
+  hideSearchTab?: boolean
 
   /**
    * If defined, the databrowser will have a full screen button in the tab bar.
@@ -97,6 +105,7 @@ export const RedisBrowser = ({
             <TooltipProvider>
               <RedisBrowserRoot
                 hideTabs={hideTabs}
+                hideSearchTab={hideSearchTab}
                 rootRef={rootRef}
                 onFullScreenClick={onFullScreenClick}
               />
@@ -110,10 +119,12 @@ export const RedisBrowser = ({
 
 const RedisBrowserRoot = ({
   hideTabs,
+  hideSearchTab,
   rootRef,
   onFullScreenClick,
 }: {
   hideTabs?: boolean
+  hideSearchTab?: boolean
   rootRef: React.RefObject<HTMLDivElement>
   onFullScreenClick?: () => void
 }) => {
@@ -133,13 +144,13 @@ const RedisBrowserRoot = ({
     >
       <div className="flex h-full flex-col overflow-hidden rounded-[14px] border-[4px] border-zinc-300 text-zinc-700">
         {!hideTabs && <DatabrowserTabs onFullScreenClick={onFullScreenClick} />}
-        <DatabrowserInstances />
+        <DatabrowserInstances hideSearchTab={hideSearchTab} />
       </div>
     </div>
   )
 }
 
-const DatabrowserInstances = () => {
+const DatabrowserInstances = ({ hideSearchTab }: { hideSearchTab?: boolean }) => {
   const { tabs, selectedTab, selectTab, addTab } = useDatabrowserStore()
 
   useEffect(() => {
@@ -151,7 +162,7 @@ const DatabrowserInstances = () => {
 
   return tabs.map(([id]) => (
     <TabIdProvider key={id} value={id as TabId}>
-      <DatabrowserInstance hidden={id !== selectedTab} />
+      <DatabrowserInstance hidden={id !== selectedTab} hideSearchTab={hideSearchTab} />
     </TabIdProvider>
   ))
 }

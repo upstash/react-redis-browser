@@ -21,19 +21,12 @@ export const Segmented = ({
   buttonClassName?: string
 }) => {
   return (
-    <div
-      className={cn(
-        "flex w-fit gap-[2px] rounded-lg bg-zinc-200 p-[2px] text-sm dark:bg-zinc-700",
-        className
-      )}
-    >
+    <div className={cn("flex w-fit gap-[2px] rounded-lg bg-zinc-200 p-[2px] text-sm", className)}>
       {options.map((option) => (
         <button
           className={cn(
             "h-7 rounded-md px-3 transition-all",
-            value === option.key
-              ? "bg-white text-zinc-950 dark:bg-zinc-800 dark:text-zinc-100"
-              : "text-zinc-700 dark:text-zinc-400",
+            value === option.key ? "bg-white text-zinc-950" : "text-zinc-700",
             buttonClassName
           )}
           key={option.key}

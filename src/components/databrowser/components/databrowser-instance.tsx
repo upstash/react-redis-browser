@@ -84,7 +84,13 @@ const SearchContent = () => {
   )
 }
 
-export const DatabrowserInstance = ({ hidden }: { hidden?: boolean }) => {
+export const DatabrowserInstance = ({
+  hidden,
+  hideSearchTab = false,
+}: {
+  hidden?: boolean
+  hideSearchTab?: boolean
+}) => {
   const { isValuesSearchSelected } = useTab()
   return (
     <KeysProvider>
@@ -95,7 +101,7 @@ export const DatabrowserInstance = ({ hidden }: { hidden?: boolean }) => {
         )}
       >
         <div className="space-y-3 py-5">
-          <Header />
+          <Header hideSearchTab={hideSearchTab} />
 
           {isValuesSearchSelected && <SearchContent />}
           <HeaderError />
