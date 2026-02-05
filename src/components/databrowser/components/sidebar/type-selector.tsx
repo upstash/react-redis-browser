@@ -12,7 +12,7 @@ import {
 
 const ALL_TYPES_KEY = "all"
 
-export function DataTypeSelector() {
+export function DataTypeSelector({ hideSearchTab }: { hideSearchTab?: boolean }) {
   const { search, setSearchType } = useTab()
 
   return (
@@ -32,13 +32,18 @@ export function DataTypeSelector() {
 
       <SelectContent>
         <SelectGroup>
-          {[[ALL_TYPES_KEY, "All Types"], ...Object.entries(DATA_TYPE_NAMES)].map(
-            ([key, value]) => (
+          {(() => {
+            let entries: Array<[string, string]> = [
+              [ALL_TYPES_KEY, "All Types"],
+              ...Object.entries(DATA_TYPE_NAMES),
+            ]
+            if (hideSearchTab) entries = entries.filter(([key]) => key !== "search")
+            return entries.map(([key, value]) => (
               <SelectItem value={key} key={key}>
                 {value}
               </SelectItem>
-            )
-          )}
+            ))
+          })()}
         </SelectGroup>
       </SelectContent>
     </Select>

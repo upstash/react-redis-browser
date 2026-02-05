@@ -57,7 +57,7 @@ export const Header = ({ hideSearchTab = false }: { hideSearchTab?: boolean }) =
           <IndexSelector />
         ) : (
           <>
-            <DataTypeSelector />
+            <DataTypeSelector hideSearchTab={hideSearchTab} />
             <SearchInput />
           </>
         )}
