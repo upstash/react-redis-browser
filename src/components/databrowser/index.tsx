@@ -23,11 +23,13 @@ export type RedisBrowserStorage = {
   get: () => string | null
 }
 
+export type TabType = "keys" | "search" | "all"
+
 export const RedisBrowser = ({
   url,
   token,
   hideTabs,
-  hideSearchTab,
+  tabType = "all",
   storage,
   disableTelemetry,
   onFullScreenClick,
@@ -49,11 +51,14 @@ export const RedisBrowser = ({
   hideTabs?: boolean
 
   /**
-   * Whether to hide the Keys/Search segmented tab selector.
+   * Which tab(s) to show in the databrowser.
+   * - "keys": Only show the Keys tab
+   * - "search": Only show the Search tab
+   * - "all": Show both tabs with a segmented selector
    *
-   * @default false
+   * @default "all"
    */
-  hideSearchTab?: boolean
+  tabType?: TabType
 
   /**
    * If defined, the databrowser will have a full screen button in the tab bar.
@@ -105,7 +110,7 @@ export const RedisBrowser = ({
             <TooltipProvider>
               <RedisBrowserRoot
                 hideTabs={hideTabs}
-                hideSearchTab={hideSearchTab}
+                tabType={tabType}
                 rootRef={rootRef}
                 onFullScreenClick={onFullScreenClick}
               />
@@ -119,12 +124,12 @@ export const RedisBrowser = ({
 
 const RedisBrowserRoot = ({
   hideTabs,
-  hideSearchTab,
+  tabType,
   rootRef,
   onFullScreenClick,
 }: {
   hideTabs?: boolean
-  hideSearchTab?: boolean
+  tabType: TabType
   rootRef: React.RefObject<HTMLDivElement>
   onFullScreenClick?: () => void
 }) => {
@@ -144,13 +149,13 @@ const RedisBrowserRoot = ({
     >
       <div className="flex h-full flex-col overflow-hidden rounded-[14px] border-[4px] border-zinc-300 text-zinc-700">
         {!hideTabs && <DatabrowserTabs onFullScreenClick={onFullScreenClick} />}
-        <DatabrowserInstances hideSearchTab={hideSearchTab} />
+        <DatabrowserInstances tabType={tabType} />
       </div>
     </div>
   )
 }
 
-const DatabrowserInstances = ({ hideSearchTab }: { hideSearchTab?: boolean }) => {
+const DatabrowserInstances = ({ tabType }: { tabType: TabType }) => {
   const { tabs, selectedTab, selectTab, addTab } = useDatabrowserStore()
 
   useEffect(() => {
@@ -162,7 +167,7 @@ const DatabrowserInstances = ({ hideSearchTab }: { hideSearchTab?: boolean }) =>
 
   return tabs.map(([id]) => (
     <TabIdProvider key={id} value={id as TabId}>
-      <DatabrowserInstance hidden={id !== selectedTab} hideSearchTab={hideSearchTab} />
+      <DatabrowserInstance hidden={id !== selectedTab} tabType={tabType} />
     </TabIdProvider>
   ))
 }

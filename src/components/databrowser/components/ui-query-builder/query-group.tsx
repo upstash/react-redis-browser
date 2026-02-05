@@ -199,7 +199,7 @@ const InnerGroup = ({
                   <p>
                     Keys matching any of the conditions below are excluded from the results.{" "}
                     <a
-                      href="https://upstash.com/docs/vector/features/filtering/boolean-operators/must-not"
+                      href="https://upstash-search.mintlify.app/redis/search/query-operators/boolean-operators/must-not"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="underline"

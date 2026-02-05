@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Segmented } from "@/components/ui/segmented"
 
+import type { TabType } from "../.."
 import { ReloadButton } from "../../../common/reload-button"
 import {
   FETCH_KEYS_QUERY_KEY,
@@ -22,13 +23,13 @@ import { EditIndexModal } from "../search/edit-index-modal"
 import { SearchInput } from "../sidebar/search-input"
 import { DataTypeSelector } from "../sidebar/type-selector"
 
-export const Header = ({ hideSearchTab = false }: { hideSearchTab?: boolean }) => {
+export const Header = ({ tabType }: { tabType: TabType }) => {
   const { isValuesSearchSelected, setIsValuesSearchSelected } = useTab()
 
   return (
     <div className="flex items-center justify-between gap-1.5">
       <div className="flex grow items-center gap-1.5">
-        {!hideSearchTab && (
+        {tabType === "all" && (
           <Segmented
             options={[
               {
@@ -51,6 +52,9 @@ export const Header = ({ hideSearchTab = false }: { hideSearchTab?: boolean }) =
             onChange={(value) => {
               setIsValuesSearchSelected(value === "values")
             }}
+            className="bg-emerald-800"
+            unselectedClassName="text-emerald-100"
+            selectedClassName="bg-emerald-50 text-emerald-800"
           />
         )}
         {isValuesSearchSelected ? (
@@ -103,7 +107,7 @@ const IndexSelector = () => {
         modal={false}
       >
         <PopoverTrigger asChild>
-          <button className="flex min-w-[140px] items-center justify-between gap-2 rounded-r-lg border border-zinc-300 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-100">
+          <button className="flex min-w-[140px] items-center justify-between gap-2 rounded-r-lg border border-zinc-300 bg-emerald-50 px-3 py-[5px] text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-100">
             <span className="truncate">{index || "Select an index"}</span>
             <IconChevronDown className="size-4 shrink-0 opacity-50" />
           </button>

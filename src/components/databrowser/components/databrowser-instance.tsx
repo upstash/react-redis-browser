@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useTab } from "@/tab-provider"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 
@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import { Segmented } from "@/components/ui/segmented"
 import { Toaster } from "@/components/ui/toaster"
 
+import type { TabType } from ".."
 import { useFetchSearchIndexes } from "../hooks/use-fetch-search-indexes"
 import { KeysProvider } from "../hooks/use-keys"
 import { DataDisplay } from "./display"
@@ -21,27 +22,18 @@ export const PREFIX = "const query: Query = "
 
 type QueryBuilderMode = "builder" | "code"
 
-/**
- * Content shown when on the Search tab.
- * Shows either the query builders (if indexes exist) or empty state (if no indexes).
- */
-const SearchContent = () => {
+const QueryBuilderContent = () => {
   const { valuesSearch } = useTab()
-  const { data: indexes, isLoading } = useFetchSearchIndexes()
   const [mode, setMode] = useState<QueryBuilderMode>("builder")
-
-  // Error shown when switching to ui-query-builder
   const [switchError, setSwitchError] = useState<string | null>(null)
 
   const handleModeChange = (value: string) => {
     const newMode = value as QueryBuilderMode
     if (newMode === "builder") {
-      // Check for unsupported $must + $should combination when switching to builder
       if (hasMustShouldCombination(valuesSearch.query)) {
         setSwitchError(
           "Queries using both $must and $should are not supported in the UI query builder"
         )
-        // Don't switch mode, stay on code editor
         return
       }
       setSwitchError(null)
@@ -51,21 +43,9 @@ const SearchContent = () => {
     setMode(newMode)
   }
 
-  // Don't show anything while loading
-  if (isLoading) {
-    return null
-  }
-
-  // Show empty state if no indexes exist
-  const hasIndexes = indexes && indexes.length > 0
-  if (!hasIndexes) {
-    return <SearchEmptyState />
-  }
-
-  // Show query builders if indexes exist
   return (
     <div>
-      <div className="relative h-[300px] max-h-[600px] min-h-[150px] resize-y overflow-hidden">
+      <div className="relative h-[200px] max-h-[40vh] min-h-[150px] resize-y overflow-hidden">
         <div className="absolute right-4 top-4 z-10">
           <Segmented
             options={[
@@ -84,14 +64,46 @@ const SearchContent = () => {
   )
 }
 
+const SearchContent = () => {
+  const { valuesSearch, setValuesSearchIndex } = useTab()
+  const { data: indexes, isLoading } = useFetchSearchIndexes()
+
+  useEffect(() => {
+    if (!indexes || isLoading) return
+    if (valuesSearch.index && !indexes.includes(valuesSearch.index)) setValuesSearchIndex("")
+  }, [indexes, valuesSearch.index, isLoading, setValuesSearchIndex])
+
+  if (isLoading) {
+    return null
+  }
+
+  const hasIndexes = indexes && indexes.length > 0
+  if (!hasIndexes) return <SearchEmptyState />
+
+  return <QueryBuilderContent />
+}
+
 export const DatabrowserInstance = ({
   hidden,
-  hideSearchTab = false,
+  tabType,
 }: {
   hidden?: boolean
-  hideSearchTab?: boolean
+  tabType: TabType
 }) => {
-  const { isValuesSearchSelected } = useTab()
+  const { isValuesSearchSelected, setIsValuesSearchSelected } = useTab()
+  const { data: indexes, isLoading } = useFetchSearchIndexes()
+
+  // Force the correct tab based on tabType
+  useEffect(() => {
+    if (tabType === "keys" && isValuesSearchSelected) {
+      setIsValuesSearchSelected(false)
+    } else if (tabType === "search" && !isValuesSearchSelected) {
+      setIsValuesSearchSelected(true)
+    }
+  }, [tabType, isValuesSearchSelected, setIsValuesSearchSelected])
+
+  const showEmptyState = isValuesSearchSelected && !isLoading && (!indexes || indexes.length === 0)
+
   return (
     <KeysProvider>
       <div
@@ -101,28 +113,33 @@ export const DatabrowserInstance = ({
         )}
       >
         <div className="space-y-3 py-5">
-          <Header hideSearchTab={hideSearchTab} />
+          <Header tabType={tabType} />
 
-          {isValuesSearchSelected && <SearchContent />}
+          {isValuesSearchSelected && !showEmptyState && <SearchContent />}
           <HeaderError />
         </div>
-        <PanelGroup
-          autoSaveId="persistence"
-          direction="horizontal"
-          className="h-full w-full text-sm antialiased"
-        >
-          <Panel defaultSize={30} minSize={30}>
-            <Sidebar />
-          </Panel>
-          <PanelResizeHandle className="group mx-[2px] flex h-full flex-col items-center justify-center gap-1 rounded-md px-[8px] transition-colors hover:bg-zinc-300/10">
-            <div className="h-[3px] w-[3px] rounded-full bg-zinc-300" />
-            <div className="h-[3px] w-[3px] rounded-full bg-zinc-300" />
-            <div className="h-[3px] w-[3px] rounded-full bg-zinc-300" />
-          </PanelResizeHandle>
-          <Panel minSize={40}>
-            <DataDisplay />
-          </Panel>
-        </PanelGroup>
+
+        {showEmptyState ? (
+          <SearchEmptyState />
+        ) : (
+          <PanelGroup
+            autoSaveId="persistence"
+            direction="horizontal"
+            className="h-full w-full text-sm antialiased"
+          >
+            <Panel defaultSize={30} minSize={30}>
+              <Sidebar />
+            </Panel>
+            <PanelResizeHandle className="group mx-[2px] flex h-full flex-col items-center justify-center gap-1 rounded-md px-[8px] transition-colors hover:bg-zinc-300/10">
+              <div className="h-[3px] w-[3px] rounded-full bg-zinc-300" />
+              <div className="h-[3px] w-[3px] rounded-full bg-zinc-300" />
+              <div className="h-[3px] w-[3px] rounded-full bg-zinc-300" />
+            </PanelResizeHandle>
+            <Panel minSize={40}>
+              <DataDisplay />
+            </Panel>
+          </PanelGroup>
+        )}
         <Toaster />
       </div>
     </KeysProvider>

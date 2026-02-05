@@ -70,7 +70,7 @@ const App = () => {
             {theme === "dark" ? <IconMoon size={20} /> : <IconSun size={20} />}
           </button>
         </div>
-        <div style={{ height: "800px" }}>
+        <div style={{ height: "640px" }}>
           {credentials ? (
             <RedisBrowser
               onFullScreenClick={() => {
