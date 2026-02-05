@@ -1,11 +1,19 @@
 import { useState } from "react"
 import { useTab } from "@/tab-provider"
-import { IconChevronDown, IconCircleCheck, IconCirclePlus, IconSearch } from "@tabler/icons-react"
+import {
+  IconChevronDown,
+  IconCircleCheck,
+  IconCirclePlus,
+  IconPlus,
+  IconSearch,
+} from "@tabler/icons-react"
 
 import { queryClient } from "@/lib/clients"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Segmented } from "@/components/ui/segmented"
+import { SimpleTooltip } from "@/components/ui/tooltip"
 
 import type { TabType } from "../.."
 import { ReloadButton } from "../../../common/reload-button"
@@ -61,7 +69,7 @@ export const Header = ({ tabType }: { tabType: TabType }) => {
           <IndexSelector />
         ) : (
           <>
-            <DataTypeSelector hideSearchTab={hideSearchTab} />
+            <DataTypeSelector />
             <SearchInput />
           </>
         )}
@@ -70,7 +78,7 @@ export const Header = ({ tabType }: { tabType: TabType }) => {
       {/* Actions */}
       <div className="flex items-center gap-1.5">
         <RefreshButton />
-        <AddKeyModal />
+        {isValuesSearchSelected ? <AddIndexButton /> : <AddKeyModal />}
       </div>
     </div>
   )
@@ -197,6 +205,26 @@ const CreateIndexButton = () => {
         <IconCirclePlus className="size-5" />
         <span className="underline">Create a new Index</span>
       </button>
+      <CreateIndexModal open={open} onOpenChange={setOpen} />
+    </>
+  )
+}
+
+const AddIndexButton = () => {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <>
+      <SimpleTooltip content="Add index">
+        <Button
+          variant="primary"
+          onClick={() => setOpen(true)}
+          className="flex h-8 items-center gap-1 rounded-lg pl-2 pr-3 text-sm font-medium"
+        >
+          <IconPlus className="size-5" />
+          Index
+        </Button>
+      </SimpleTooltip>
       <CreateIndexModal open={open} onOpenChange={setOpen} />
     </>
   )
