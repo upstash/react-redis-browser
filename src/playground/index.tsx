@@ -73,6 +73,7 @@ const App = () => {
         <div style={{ height: "640px" }}>
           {credentials ? (
             <RedisBrowser
+              hideSearchTab
               onFullScreenClick={() => {
                 // eslint-disable-next-line no-console
                 console.log("Fullscreen button clicked")

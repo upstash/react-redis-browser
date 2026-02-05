@@ -61,7 +61,7 @@ export const Header = ({ tabType }: { tabType: TabType }) => {
           <IndexSelector />
         ) : (
           <>
-            <DataTypeSelector />
+            <DataTypeSelector hideSearchTab={hideSearchTab} />
             <SearchInput />
           </>
         )}
