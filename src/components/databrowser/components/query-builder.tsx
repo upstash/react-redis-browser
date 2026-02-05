@@ -11,9 +11,8 @@ export const QueryBuilder = () => {
   const editorValue = PREFIX + (valuesSearch.query || "{}")
 
   return (
-    <div className="rounded-lg border border-zinc-300 bg-white px-[6px] dark:border-zinc-700">
+    <div className="h-full rounded-lg border border-zinc-300 bg-white px-[6px] dark:border-zinc-700">
       <QueryEditor
-        height={300}
         value={editorValue}
         onChange={(value) => {
           const queryPart = value.slice(PREFIX.length)

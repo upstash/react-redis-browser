@@ -168,7 +168,7 @@ const InnerGroup = ({
       </div>
 
       {/* Children with drop indicators - this gets the left border */}
-      <div className={`min-h-[20px] ${isRoot ? "" : "ml-2 border-l-2 border-zinc-200 pl-3"}`}>
+      <div className={`min-h-[20px] ${isRoot ? "" : "ml-[15px] border-l-2 border-zinc-200 pl-3"}`}>
         {node.children.length === 0 ? (
           <EmptyGroupDropZone groupId={node.id} isOver={activeOverId === `drop-${node.id}-end`} />
         ) : (
@@ -187,19 +187,15 @@ const InnerGroup = ({
                 )
             )}
 
-            {/* MUST NOT divider */}
+            {/* MUST NOT label */}
             {node.children.some((child) => child.not) && (
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2 px-1 py-1.5">
-                    <div className="h-px flex-1 bg-amber-300" />
-                    <span className="cursor-default select-none rounded bg-amber-50 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-amber-800">
-                      Must Not
-                    </span>
-                    <div className="h-px flex-1 bg-amber-300" />
+                  <div className="ml-2 mt-2 flex h-[26px] w-fit cursor-default select-none items-center rounded-md border border-zinc-300 bg-amber-50 px-2 text-sm font-medium capitalize text-amber-800">
+                    Must Not
                   </div>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="max-w-xs">
+                <TooltipContent side="right" className="max-w-xs">
                   <p>
                     Keys matching any of the conditions below are excluded from the results.{" "}
                     <a

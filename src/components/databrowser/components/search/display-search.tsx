@@ -249,7 +249,7 @@ export const SearchDisplay = ({
                     Cancel
                   </Button>
                 )}
-                <Button variant="primary" onClick={handleSubmit(onSubmit)}>
+                <Button variant="primary" onClick={handleSubmit(onSubmit)} disabled={!isDirty}>
                   <Spinner isLoading={createSchema.isPending} isLoadingText={"Saving"}>
                     {isCreateModal ? "Create" : "Save..."}
                   </Spinner>

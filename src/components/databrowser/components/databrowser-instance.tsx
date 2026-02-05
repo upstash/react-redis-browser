@@ -64,19 +64,21 @@ const SearchContent = () => {
 
   // Show query builders if indexes exist
   return (
-    <div className="relative">
-      <div className="absolute right-4 top-4 z-10">
-        <Segmented
-          options={[
-            { key: "builder", label: "Query Builder" },
-            { key: "code", label: "Code Editor" },
-          ]}
-          value={mode}
-          onChange={handleModeChange}
-          buttonClassName="h-6"
-        />
+    <div>
+      <div className="relative h-[300px] max-h-[600px] min-h-[150px] resize-y overflow-hidden">
+        <div className="absolute right-4 top-4 z-10">
+          <Segmented
+            options={[
+              { key: "builder", label: "Query Builder" },
+              { key: "code", label: "Code Editor" },
+            ]}
+            value={mode}
+            onChange={handleModeChange}
+            buttonClassName="h-6"
+          />
+        </div>
+        {mode === "builder" ? <UIQueryBuilder /> : <QueryBuilder />}
       </div>
-      {mode === "builder" ? <UIQueryBuilder /> : <QueryBuilder />}
       {switchError && <p className="mt-3 text-sm text-red-500">{switchError}</p>}
     </div>
   )

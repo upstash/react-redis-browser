@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 type ScrollAreaProps = React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> & {
   disableRoundedInherit?: boolean
   scrollBarClassName?: string
+  scrollBarForceMount?: true
 }
 
 const ScrollArea = React.forwardRef<
@@ -13,7 +14,15 @@ const ScrollArea = React.forwardRef<
   ScrollAreaProps
 >(
   (
-    { className, scrollBarClassName, children, onScroll, disableRoundedInherit = false, ...props },
+    {
+      className,
+      scrollBarClassName,
+      scrollBarForceMount,
+      children,
+      onScroll,
+      disableRoundedInherit = false,
+      ...props
+    },
     ref
   ) => (
     <ScrollAreaPrimitive.Root
@@ -30,7 +39,7 @@ const ScrollArea = React.forwardRef<
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
-      <ScrollBar className={scrollBarClassName} />
+      <ScrollBar className={scrollBarClassName} forceMount={scrollBarForceMount} />
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   )
@@ -48,7 +57,7 @@ const ScrollBar = React.forwardRef<
     {...props}
   >
     <ScrollAreaPrimitive.ScrollAreaThumb
-      className={cn("relative flex-1 rounded-full bg-zinc-200/70")}
+      className={cn("relative flex-1 rounded-full bg-zinc-400/70")}
     />
   </ScrollAreaPrimitive.ScrollAreaScrollbar>
 ))

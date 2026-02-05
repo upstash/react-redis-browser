@@ -112,6 +112,8 @@ const parseFieldCondition = (field: string, fieldValue: unknown): QueryNode => {
   let operator: FieldOperator = "eq"
   let value: unknown = ""
   let fuzzyDistance: 1 | 2 | undefined
+  let phraseSlop: number | undefined
+  let phrasePrefix: boolean | undefined
   let boost: number | undefined
 
   for (const op of ALL_OPERATORS) {
@@ -125,6 +127,14 @@ const parseFieldCondition = (field: string, fieldValue: unknown): QueryNode => {
         const fuzzyObj = value as { value?: unknown; distance?: number }
         value = fuzzyObj.value ?? ""
         fuzzyDistance = (fuzzyObj.distance as 1 | 2) ?? 1
+      }
+
+      // Handle phrase: { $phrase: "text" } or { $phrase: { value: "text", slop?: n, prefix?: bool } }
+      if (op === "phrase" && typeof value === "object" && value !== null) {
+        const phraseObj = value as { value?: unknown; slop?: number; prefix?: boolean }
+        value = phraseObj.value ?? ""
+        phraseSlop = phraseObj.slop
+        phrasePrefix = phraseObj.prefix
       }
       break
     }
@@ -142,6 +152,8 @@ const parseFieldCondition = (field: string, fieldValue: unknown): QueryNode => {
       operator,
       value: value as string | number | boolean | string[],
       fuzzyDistance,
+      phraseSlop,
+      phrasePrefix,
       boost,
     },
   }

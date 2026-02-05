@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTab } from "@/tab-provider"
 
+import { ScrollArea } from "@/components/ui/scroll-area"
+
 import type { SearchIndex } from "../../hooks/use-fetch-search-index"
 import { useFetchSearchIndex } from "../../hooks/use-fetch-search-index"
 import { QueryBuilderUIProvider } from "./query-builder-context"
@@ -23,12 +25,13 @@ export const UIQueryBuilder = () => {
     setQueryState((state) => normalizeQueryState(state, fieldInfos))
   }, [fieldInfos, setQueryState])
 
-  const scrollRef = useRef<HTMLDivElement | null>(null)
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const viewportRef = useRef<HTMLElement | null>(null)
   const [hasTopShadow, setHasTopShadow] = useState(false)
   const [hasBottomShadow, setHasBottomShadow] = useState(false)
 
   const recomputeShadows = useCallback(() => {
-    const el = scrollRef.current
+    const el = viewportRef.current
     if (!el) return
     const { scrollTop, scrollHeight, clientHeight } = el
     setHasTopShadow(scrollTop > 0)
@@ -36,8 +39,11 @@ export const UIQueryBuilder = () => {
   }, [])
 
   useEffect(() => {
+    viewportRef.current = scrollAreaRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    ) as HTMLElement | null
     recomputeShadows()
-    const el = scrollRef.current
+    const el = viewportRef.current
     if (!el) return
     const obs = new ResizeObserver(() => recomputeShadows())
     obs.observe(el)
@@ -46,7 +52,7 @@ export const UIQueryBuilder = () => {
 
   return (
     <QueryBuilderUIProvider fieldInfos={fieldInfos} setQueryState={setQueryState}>
-      <div className="relative max-h-[300px] rounded-lg border border-zinc-200 bg-zinc-50">
+      <div className="relative h-full rounded-lg border border-zinc-200 bg-zinc-50">
         <div
           className={`scroll-shadow-top pointer-events-none absolute left-0 top-0 z-10 h-6 w-full rounded-t-lg transition-opacity duration-200 ${
             hasTopShadow ? "opacity-100" : "opacity-0"
@@ -57,13 +63,16 @@ export const UIQueryBuilder = () => {
             hasBottomShadow ? "opacity-100" : "opacity-0"
           }`}
         />
-        <div
-          ref={scrollRef}
+        <ScrollArea
+          ref={scrollAreaRef}
           onScroll={recomputeShadows}
-          className="max-h-[300px] overflow-y-auto p-4"
+          className="h-full"
+          scrollBarClassName="py-1"
         >
-          <QueryGroup node={queryState.root} isRoot depth={0} />
-        </div>
+          <div className="p-4">
+            <QueryGroup node={queryState.root} isRoot depth={0} />
+          </div>
+        </ScrollArea>
       </div>
     </QueryBuilderUIProvider>
   )
@@ -95,16 +104,19 @@ const normalizeValue = (
 const normalizeNode = (node: QueryNode, fieldInfos: FieldInfo[]): QueryNode => {
   if (node.type === "condition") {
     const fieldInfo = fieldInfos.find((f) => f.name === node.condition.field)
-    if (fieldInfo) {
-      return {
-        ...node,
-        condition: {
-          ...node.condition,
-          value: normalizeValue(node.condition.value, fieldInfo.type),
-        },
-      }
+    const condition = { ...node.condition }
+
+    if (fieldInfo) condition.value = normalizeValue(condition.value, fieldInfo.type)
+
+    if (condition.phraseSlop !== undefined) {
+      const num = Number(condition.phraseSlop)
+      condition.phraseSlop = Number.isNaN(num) ? undefined : num
     }
-    return node
+    if (condition.phrasePrefix !== undefined) {
+      condition.phrasePrefix = Boolean(condition.phrasePrefix)
+    }
+
+    return { ...node, condition }
   }
 
   if (node.type === "group") {

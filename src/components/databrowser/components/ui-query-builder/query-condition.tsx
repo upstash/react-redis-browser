@@ -50,7 +50,6 @@ export const QueryCondition = ({
 
   const { condition } = node
 
-  // Derive field names from fieldInfos
   const fieldNames = fieldInfos.map((f) => f.name)
 
   // Local state for the value input to allow free editing without immediate parsing
@@ -185,11 +184,24 @@ export const QueryCondition = ({
       updates.fuzzyDistance = undefined
     }
 
+    // Handle phrase operator special case
+    if (value !== "phrase") {
+      updates.phraseSlop = undefined
+      updates.phrasePrefix = undefined
+    }
+
     // Handle in operator - convert value to array
     if (value === "in" && !Array.isArray(condition.value)) {
-      updates.value = condition.value ? [String(condition.value)] : []
+      if (currentFieldType === "boolean") {
+        updates.value = [String(condition.value)]
+      } else {
+        updates.value = condition.value ? [String(condition.value)] : []
+      }
     } else if (value !== "in" && Array.isArray(condition.value)) {
-      updates.value = condition.value[0] || ""
+      updates.value =
+        currentFieldType === "boolean"
+          ? Boolean(condition.value.includes("true"))
+          : condition.value[0] || ""
     }
 
     updateNode(node.id, {
@@ -244,6 +256,66 @@ export const QueryCondition = ({
     })
   }
 
+  const phraseMode = condition.phrasePrefix
+    ? "prefix"
+    : condition.phraseSlop === undefined
+      ? "exact"
+      : "slop"
+
+  const handlePhraseModeChange = (mode: string) => {
+    const updates: Partial<typeof condition> = {}
+    switch (mode) {
+      case "exact": {
+        updates.phraseSlop = undefined
+        updates.phrasePrefix = undefined
+        break
+      }
+      case "slop": {
+        updates.phraseSlop = condition.phraseSlop ?? 1
+        updates.phrasePrefix = undefined
+        break
+      }
+      case "prefix": {
+        updates.phraseSlop = undefined
+        updates.phrasePrefix = true
+        break
+      }
+      // No default
+    }
+    updateNode(node.id, {
+      ...node,
+      condition: { ...condition, ...updates },
+    })
+  }
+
+  const [localSlop, setLocalSlop] = useState(String(condition.phraseSlop ?? 1))
+  const [isSlopFocused, setIsSlopFocused] = useState(false)
+
+  // Sync local slop when it changes externally (and input is not focused)
+  const slopStr = String(condition.phraseSlop ?? 1)
+  if (!isSlopFocused && localSlop !== slopStr) {
+    setLocalSlop(slopStr)
+  }
+
+  const handlePhraseSlopChange = (value: string) => {
+    setLocalSlop(value)
+    const slop = Number(value)
+    if (!Number.isNaN(slop) && value !== "" && slop >= 0) {
+      updateNode(node.id, {
+        ...node,
+        condition: { ...condition, phraseSlop: slop },
+      })
+    }
+  }
+
+  const handlePhraseSlopBlur = () => {
+    setIsSlopFocused(false)
+    const slop = Number(localSlop)
+    if (Number.isNaN(slop) || localSlop === "") {
+      setLocalSlop(String(condition.phraseSlop ?? 1))
+    }
+  }
+
   const handleDelete = () => {
     deleteNode(node.id)
   }
@@ -261,7 +333,7 @@ export const QueryCondition = ({
     : undefined
 
   return (
-    <div className="group/condition flex items-center gap-1 px-1 py-1">
+    <div className="group/condition flex items-center gap-1 px-1">
       {/* Drag handle - only this element can initiate dragging */}
       <div
         ref={dragHandleProps?.ref as React.Ref<HTMLDivElement>}
@@ -338,7 +410,46 @@ export const QueryCondition = ({
         </Select>
 
         {/* Value input - select for boolean fields, text input for others */}
-        {currentFieldType === "boolean" ? (
+        {currentFieldType === "boolean" && condition.operator === "in" ? (
+          <div className="flex h-[26px] items-center gap-2 rounded-none rounded-r-md border border-zinc-200 bg-white px-2 text-sm">
+            <label className="flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={Array.isArray(condition.value) && condition.value.includes("true")}
+                onChange={(e) => {
+                  const current = Array.isArray(condition.value) ? condition.value : []
+                  const next = e.target.checked
+                    ? [...current.filter((v) => v !== "true"), "true"]
+                    : current.filter((v) => v !== "true")
+                  updateNode(node.id, {
+                    ...node,
+                    condition: { ...condition, value: next },
+                  })
+                }}
+                className="h-3 w-3"
+              />
+              <span>true</span>
+            </label>
+            <label className="flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={Array.isArray(condition.value) && condition.value.includes("false")}
+                onChange={(e) => {
+                  const current = Array.isArray(condition.value) ? condition.value : []
+                  const next = e.target.checked
+                    ? [...current.filter((v) => v !== "false"), "false"]
+                    : current.filter((v) => v !== "false")
+                  updateNode(node.id, {
+                    ...node,
+                    condition: { ...condition, value: next },
+                  })
+                }}
+                className="h-3 w-3"
+              />
+              <span>false</span>
+            </label>
+          </div>
+        ) : currentFieldType === "boolean" ? (
           <Select
             value={
               condition.value === true || condition.value === "true"
@@ -392,6 +503,33 @@ export const QueryCondition = ({
             <SelectItem value="2">2</SelectItem>
           </SelectContent>
         </Select>
+      )}
+
+      {/* Phrase options selector */}
+      {condition.operator === "phrase" && (
+        <>
+          <Select value={phraseMode} onValueChange={handlePhraseModeChange}>
+            <SelectTrigger className="h-[26px] w-20 gap-3 border-zinc-200 bg-white px-2 text-sm font-normal">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="exact">exact</SelectItem>
+              <SelectItem value="slop">slop</SelectItem>
+              <SelectItem value="prefix">prefix</SelectItem>
+            </SelectContent>
+          </Select>
+          {phraseMode === "slop" && (
+            <input
+              type="number"
+              min={0}
+              value={localSlop}
+              onChange={(e) => handlePhraseSlopChange(e.target.value)}
+              onFocus={() => setIsSlopFocused(true)}
+              onBlur={handlePhraseSlopBlur}
+              className="h-[26px] w-10 appearance-none rounded-md border border-zinc-200 bg-white px-2 text-sm focus:border-zinc-400 focus:outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            />
+          )}
+        </>
       )}
 
       {node.boost !== undefined && <BoostBadge node={node} />}

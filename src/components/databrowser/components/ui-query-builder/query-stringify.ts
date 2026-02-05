@@ -17,21 +17,39 @@ const toJsLiteral = (obj: unknown): string => {
   return jsonToJsLiteral(JSON.stringify(obj, null, 2))
 }
 
-/** Build the operator value for a condition (handles fuzzy specially) */
+/** Build the operator value for a condition (handles fuzzy and phrase specially) */
 const buildOperatorValue = (
   operator: FieldOperator,
   value: unknown,
-  fuzzyDistance?: 1 | 2
+  fuzzyDistance?: 1 | 2,
+  phraseSlop?: number,
+  phrasePrefix?: boolean
 ): unknown => {
   if (operator === "fuzzy" && fuzzyDistance) {
     return { value, distance: fuzzyDistance }
+  }
+  if (operator === "phrase") {
+    if (phraseSlop !== undefined) {
+      return { value, slop: phraseSlop }
+    }
+    if (phrasePrefix) {
+      return { value, prefix: true }
+    }
   }
   return value
 }
 
 /** Convert a condition node to a query object (not flag is handled by parent group) */
 const conditionToObject = (node: QueryNode & { type: "condition" }): Record<string, unknown> => {
-  const { field, operator, value, boost: conditionBoost, fuzzyDistance } = node.condition
+  const {
+    field,
+    operator,
+    value,
+    boost: conditionBoost,
+    fuzzyDistance,
+    phraseSlop,
+    phrasePrefix,
+  } = node.condition
   const effectiveBoost = node.boost ?? conditionBoost
 
   // Shorthand for $eq without boost
@@ -41,7 +59,7 @@ const conditionToObject = (node: QueryNode & { type: "condition" }): Record<stri
 
   // Full format
   const fieldCondition: Record<string, unknown> = {
-    [`$${operator}`]: buildOperatorValue(operator, value, fuzzyDistance),
+    [`$${operator}`]: buildOperatorValue(operator, value, fuzzyDistance, phraseSlop, phrasePrefix),
   }
 
   // Apply boost to the field condition - node.boost takes priority over conditionBoost

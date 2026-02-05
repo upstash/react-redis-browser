@@ -1,4 +1,15 @@
-export type FieldOperator = "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "in" | "contains" | "fuzzy"
+export type FieldOperator =
+  | "eq"
+  | "ne"
+  | "gt"
+  | "gte"
+  | "lt"
+  | "lte"
+  | "in"
+  | "phrase"
+  | "regex"
+  | "fuzzy"
+  | "smart"
 
 export type GroupOperator = "and" | "or"
 
@@ -10,13 +21,21 @@ export type FieldInfo = {
 }
 
 /** Operators supported for string fields */
-export const STRING_OPERATORS: FieldOperator[] = ["eq", "ne", "in", "contains", "fuzzy"]
+export const STRING_OPERATORS: FieldOperator[] = [
+  "eq",
+  "ne",
+  "in",
+  "phrase",
+  "regex",
+  "fuzzy",
+  "smart",
+]
 
 /** Operators supported for number fields */
 export const NUMBER_OPERATORS: FieldOperator[] = ["eq", "ne", "gt", "gte", "lt", "lte", "in"]
 
 /** Operators supported for boolean fields */
-export const BOOLEAN_OPERATORS: FieldOperator[] = ["eq", "ne"]
+export const BOOLEAN_OPERATORS: FieldOperator[] = ["eq", "ne", "in"]
 
 /** Operators supported for date fields */
 export const DATE_OPERATORS: FieldOperator[] = ["eq", "ne", "gt", "gte", "lt", "lte", "in"]
@@ -30,8 +49,10 @@ export const ALL_OPERATORS: FieldOperator[] = [
   "lt",
   "lte",
   "in",
-  "contains",
+  "phrase",
+  "regex",
   "fuzzy",
+  "smart",
 ]
 
 /** Operator options with labels for UI display */
@@ -43,8 +64,10 @@ export const OPERATOR_OPTIONS: { value: FieldOperator; label: string }[] = [
   { value: "lt", label: "lt" },
   { value: "lte", label: "lte" },
   { value: "in", label: "in" },
-  { value: "contains", label: "contains" },
+  { value: "phrase", label: "phrase" },
+  { value: "regex", label: "regex" },
   { value: "fuzzy", label: "fuzzy" },
+  { value: "smart", label: "smart" },
 ]
 
 /** Get the operators available for a given field type */
@@ -75,6 +98,10 @@ export type FieldCondition = {
   value: string | number | boolean | string[]
   /** Only used when operator is "fuzzy" */
   fuzzyDistance?: 1 | 2
+  /** Only used when operator is "phrase" — slop distance for word proximity */
+  phraseSlop?: number
+  /** Only used when operator is "phrase" — enables prefix matching on the last term */
+  phrasePrefix?: boolean
   /** Optional boost multiplier for relevance scoring */
   boost?: number
 }
