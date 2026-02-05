@@ -91,7 +91,9 @@ export const DatabrowserInstance = ({
   tabType: TabType
 }) => {
   const { isValuesSearchSelected, setIsValuesSearchSelected } = useTab()
-  const { data: indexes, isLoading } = useFetchSearchIndexes()
+  const { data: indexes, isLoading } = useFetchSearchIndexes({
+    enabled: tabType === "search",
+  })
 
   // Force the correct tab based on tabType
   useEffect(() => {
