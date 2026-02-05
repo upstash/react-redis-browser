@@ -12,8 +12,13 @@ import {
 
 const ALL_TYPES_KEY = "all"
 
-export function DataTypeSelector() {
+export function DataTypeSelector({ allowSearch }: { allowSearch: boolean }) {
   const { search, setSearchType } = useTab()
+
+  const entries: Array<[string, string]> = [
+    [ALL_TYPES_KEY, "All Types"],
+    ...Object.entries(DATA_TYPE_NAMES).filter(([key]) => allowSearch || key !== "search"),
+  ]
 
   return (
     <Select
@@ -32,17 +37,11 @@ export function DataTypeSelector() {
 
       <SelectContent>
         <SelectGroup>
-          {(() => {
-            const entries: Array<[string, string]> = [
-              [ALL_TYPES_KEY, "All Types"],
-              ...Object.entries(DATA_TYPE_NAMES),
-            ]
-            return entries.map(([key, value]) => (
-              <SelectItem value={key} key={key}>
-                {value}
-              </SelectItem>
-            ))
-          })()}
+          {entries.map(([key, value]) => (
+            <SelectItem value={key} key={key}>
+              {value}
+            </SelectItem>
+          ))}
         </SelectGroup>
       </SelectContent>
     </Select>

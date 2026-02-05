@@ -86,9 +86,11 @@ const SearchContent = () => {
 export const DatabrowserInstance = ({
   hidden,
   tabType,
+  allowSearch,
 }: {
   hidden?: boolean
   tabType: TabType
+  allowSearch: boolean
 }) => {
   const { isValuesSearchSelected, setIsValuesSearchSelected } = useTab()
   const { data: indexes, isLoading } = useFetchSearchIndexes({
@@ -115,7 +117,7 @@ export const DatabrowserInstance = ({
         )}
       >
         <div className="space-y-3 py-5">
-          <Header tabType={tabType} />
+          <Header tabType={tabType} allowSearch={allowSearch} />
 
           {isValuesSearchSelected && !showEmptyState && <SearchContent />}
           <HeaderError />

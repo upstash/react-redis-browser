@@ -84,6 +84,7 @@ const App = () => {
               token={credentials.token}
               url={credentials.url}
               theme={theme}
+              allowSearch
             />
           ) : (
             <CredentialsForm />

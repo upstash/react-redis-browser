@@ -26,7 +26,8 @@ type ScanResult = { cursor: string; keys: { key: string; type: DataType; score?:
 export const KeysProvider = ({ children }: PropsWithChildren) => {
   const { active, search, valuesSearch, isValuesSearchSelected } = useTab()
   const { data: searchIndexDetails, isLoading: isIndexDetailsLoading } = useFetchSearchIndex(
-    valuesSearch.index
+    valuesSearch.index,
+    { enabled: isValuesSearchSelected }
   )
 
   const { redisNoPipeline: redis } = useRedis()

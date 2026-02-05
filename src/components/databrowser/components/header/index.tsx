@@ -31,7 +31,7 @@ import { EditIndexModal } from "../search/edit-index-modal"
 import { SearchInput } from "../sidebar/search-input"
 import { DataTypeSelector } from "../sidebar/type-selector"
 
-export const Header = ({ tabType }: { tabType: TabType }) => {
+export const Header = ({ tabType, allowSearch }: { tabType: TabType; allowSearch: boolean }) => {
   const { isValuesSearchSelected, setIsValuesSearchSelected } = useTab()
 
   return (
@@ -69,7 +69,7 @@ export const Header = ({ tabType }: { tabType: TabType }) => {
           <IndexSelector />
         ) : (
           <>
-            <DataTypeSelector />
+            <DataTypeSelector allowSearch={allowSearch} />
             <SearchInput />
           </>
         )}
