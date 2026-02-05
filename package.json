@@ -8,6 +8,10 @@
   "publishConfig": {
     "access": "public"
   },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:upstash/react-redis-browser.git"
+  },
   "bugs": {
     "url": "https://github.com/upstash/react-redis-browser/issues"
   },
