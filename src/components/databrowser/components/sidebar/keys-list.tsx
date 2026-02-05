@@ -27,7 +27,7 @@ export const KeysList = () => {
               lastClickedIndexRef={lastClickedIndexRef}
             />
             {i !== keys.length - 1 && (
-              <div className="-z-10 mx-[13px] h-px bg-zinc-200 dark:bg-zinc-200" />
+              <div className="-z-10 mx-[13px] h-px bg-zinc-200 dark:bg-zinc-300" />
             )}
           </Fragment>
         ))}

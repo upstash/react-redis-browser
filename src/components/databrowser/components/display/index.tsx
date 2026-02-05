@@ -15,7 +15,7 @@ export const DataDisplay = () => {
   const type = useKeyType(selectedKey)
 
   return (
-    <div className="h-full rounded-xl bg-zinc-100 p-5">
+    <div className="h-full rounded-xl bg-zinc-100 p-5 dark:bg-zinc-200">
       {!selectedKey ? (
         <div />
       ) : !type ? (

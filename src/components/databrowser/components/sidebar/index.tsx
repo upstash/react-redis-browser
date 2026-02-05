@@ -16,7 +16,7 @@ export function Sidebar() {
         <InfiniteScroll
           query={query}
           disableRoundedInherit
-          className="min-h-0 rounded-xl bg-zinc-100 px-2 py-5 pr-4"
+          className="min-h-0 rounded-xl bg-zinc-100 px-2 py-5 pr-4 dark:bg-zinc-200"
           scrollBarClassName="py-5"
         >
           <KeysList />
