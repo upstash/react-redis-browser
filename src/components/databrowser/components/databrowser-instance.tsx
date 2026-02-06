@@ -65,13 +65,7 @@ const QueryBuilderContent = () => {
 }
 
 const SearchContent = () => {
-  const { valuesSearch, setValuesSearchIndex } = useTab()
   const { data: indexes, isLoading } = useFetchSearchIndexes()
-
-  useEffect(() => {
-    if (!indexes || isLoading) return
-    if (valuesSearch.index && !indexes.includes(valuesSearch.index)) setValuesSearchIndex("")
-  }, [indexes, valuesSearch.index, isLoading, setValuesSearchIndex])
 
   if (isLoading) {
     return null

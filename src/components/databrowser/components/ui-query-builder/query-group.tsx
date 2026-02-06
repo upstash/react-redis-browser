@@ -137,7 +137,8 @@ const InnerGroup = ({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              className="flex h-[26px] w-[26px] items-center justify-center rounded-md border border-zinc-300 text-zinc-500 transition-colors hover:text-zinc-700"
+              disabled={fieldInfos.length === 0}
+              className="flex h-[26px] w-[26px] items-center justify-center rounded-md border border-zinc-300 text-zinc-500 transition-colors hover:text-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <IconPlus size={16} />
             </button>

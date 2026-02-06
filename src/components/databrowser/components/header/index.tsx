@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useTab } from "@/tab-provider"
 import {
   IconChevronDown,
@@ -28,8 +28,8 @@ import { useFetchSearchIndexes } from "../../hooks/use-fetch-search-indexes"
 import { AddKeyModal } from "../add-key-modal"
 import { CreateIndexModal } from "../search/create-index-modal"
 import { EditIndexModal } from "../search/edit-index-modal"
-import { SearchInput } from "../sidebar/search-input"
-import { DataTypeSelector } from "../sidebar/type-selector"
+import { SearchInput } from "./search-input"
+import { DataTypeSelector } from "./type-selector"
 
 export const Header = ({ tabType, allowSearch }: { tabType: TabType; allowSearch: boolean }) => {
   const { isValuesSearchSelected, setIsValuesSearchSelected } = useTab()
@@ -89,8 +89,16 @@ const IndexSelector = () => {
     valuesSearch: { index },
     setValuesSearchIndex,
   } = useTab()
-  const { data: indexes } = useFetchSearchIndexes()
+  const { data: indexes, isLoading } = useFetchSearchIndexes()
   const [open, setOpen] = useState(false)
+
+  // Clear the selected index if it no longer exists (e.g. deleted externally)
+  useEffect(() => {
+    if (!indexes || isLoading) return
+    if (index && !indexes.includes(index)) {
+      setValuesSearchIndex("")
+    }
+  }, [indexes, index, isLoading, setValuesSearchIndex])
   const [search, setSearch] = useState("")
   const [editingIndex, setEditingIndex] = useState<string | null>(null)
 
