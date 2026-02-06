@@ -24,7 +24,7 @@ export const ListEditDisplay = ({
   item: SelectedItem
 }) => {
   return (
-    <div className="grow rounded-md bg-zinc-100">
+    <div className="grow rounded-md">
       <ListEditForm key={item.key} item={item} type={type} dataKey={dataKey} />
     </div>
   )
@@ -151,7 +151,7 @@ const NumberFormItem = ({ name, label }: { name: string; label: string }) => {
         name={name}
         render={({ field }) => (
           <input
-            className="plain-input rounded-md border border-zinc-300 px-3 py-1 shadow-sm"
+            className="plain-input rounded-md border border-zinc-300 bg-white px-3 py-1 shadow-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             type="number"
             {...field}
           />

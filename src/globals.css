@@ -531,10 +531,6 @@ svg.tabler-icon {
   --vscode-focusBorder: #0000 !important;
 }
 
-/* ============================================================================
-   DRAG OVERLAY ANIMATIONS (Query Builder)
-   ============================================================================ */
-
 .dropping .drag-overlay-bg {
   animation: fadeOutBg 200ms ease-out forwards;
 }

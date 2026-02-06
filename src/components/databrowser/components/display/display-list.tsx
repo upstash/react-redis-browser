@@ -110,7 +110,7 @@ export const ListItems = ({
                 e.stopPropagation()
               }}
             >
-              <div className="flex items-center justify-end gap-2">
+              <div className="flex items-center justify-end gap-2 pr-2">
                 {type === "hash" && (
                   <HashFieldTTLInfo dataKey={dataKey} field={key} fields={fields} />
                 )}
