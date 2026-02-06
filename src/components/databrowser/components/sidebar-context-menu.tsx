@@ -1,8 +1,8 @@
 import { useState, type PropsWithChildren } from "react"
-import { IconCopy, IconExternalLink, IconTrash } from "@tabler/icons-react"
 import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
 import { ContextMenuSeparator } from "@radix-ui/react-context-menu"
+import { IconCopy, IconExternalLink, IconTrash } from "@tabler/icons-react"
 
 import {
   ContextMenu,
@@ -13,18 +13,23 @@ import {
 import { toast } from "@/components/ui/use-toast"
 
 import { useDeleteKey } from "../hooks"
-import { DeleteAlertDialog } from "./display/delete-alert-dialog"
+import { DeleteKeyModal } from "./delete-key-modal"
 
 export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
   const { mutate: deleteKey } = useDeleteKey()
   const [isAlertOpen, setAlertOpen] = useState(false)
   const [contextKeys, setContextKeys] = useState<string[]>([])
-  const { addTab, setSelectedKey: setSelectedKeyGlobal, selectTab, setSearch } = useDatabrowserStore()
+  const {
+    addTab,
+    setSelectedKey: setSelectedKeyGlobal,
+    selectTab,
+    setSearch,
+  } = useDatabrowserStore()
   const { search: currentSearch, selectedKeys } = useTab()
 
   return (
     <>
-      <DeleteAlertDialog
+      <DeleteKeyModal
         deletionType="key"
         count={contextKeys.length}
         open={isAlertOpen}

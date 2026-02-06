@@ -1,9 +1,9 @@
 import { Fragment, useRef } from "react"
 import { useTab } from "@/tab-provider"
 import type { RedisKey } from "@/types"
+import { IconChevronRight } from "@tabler/icons-react"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import { TypeTag } from "@/components/databrowser/components/type-tag"
 
 import { useKeys } from "../../hooks/use-keys"
@@ -27,7 +27,7 @@ export const KeysList = () => {
               lastClickedIndexRef={lastClickedIndexRef}
             />
             {i !== keys.length - 1 && (
-              <div className="-z-10 mx-2 h-px bg-zinc-100 dark:bg-zinc-200" />
+              <div className="-z-10 mx-[13px] h-px bg-zinc-200 dark:bg-zinc-300" />
             )}
           </Fragment>
         ))}
@@ -44,6 +44,7 @@ const keyStyles: Record<string, string> = {
   json: "border-purple-400 !bg-purple-50 text-purple-900",
   list: "border-orange-400 !bg-orange-50 text-orange-900",
   stream: "border-green-400 !bg-green-50 text-green-900",
+  search: "border-rose-400 !bg-rose-50 text-rose-900",
 }
 
 const defaultKeyStyle = "border-gray-400 !bg-gray-50 text-gray-900"
@@ -61,7 +62,7 @@ const KeyItem = ({
 }) => {
   const { selectedKeys, setSelectedKeys, setSelectedKey } = useTab()
 
-  const [dataKey, dataType] = data
+  const [dataKey, dataType, score] = data
   const isKeySelected = selectedKeys.includes(dataKey)
 
   const handleClick = (e: React.MouseEvent) => {
@@ -87,11 +88,10 @@ const KeyItem = ({
   }
 
   return (
-    <Button
+    <button
       data-key={dataKey}
-      variant={isKeySelected ? "default" : "ghost"}
       className={cn(
-        "relative flex h-10 w-full items-center justify-start gap-2 px-3 py-0 !ring-0 focus-visible:bg-zinc-50",
+        "relative flex h-10 w-full items-center justify-start gap-2 rounded-lg px-3 py-0 !ring-0 transition-colors focus-visible:bg-zinc-50",
         "-my-px select-none border border-transparent text-left",
         isKeySelected && "shadow-sm",
         isKeySelected && (keyStyles[dataType] ?? defaultKeyStyle)
@@ -99,7 +99,11 @@ const KeyItem = ({
       onClick={handleClick}
     >
       <TypeTag variant={dataType} type="icon" />
-      <p className="truncate whitespace-nowrap">{dataKey}</p>
-    </Button>
+      <p className="grow truncate whitespace-nowrap">{dataKey}</p>
+      {score !== undefined && (
+        <span className="shrink-0 text-xs text-zinc-400">{score.toFixed(2)}</span>
+      )}
+      {isKeySelected && <IconChevronRight className="shrink-0 text-zinc-500" size={20} />}
+    </button>
   )
 }

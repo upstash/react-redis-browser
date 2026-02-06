@@ -4,7 +4,7 @@ import { useTab } from "@/tab-provider"
 import { Editor, useMonaco } from "@monaco-editor/react"
 
 import { cn, isTest } from "@/lib/utils"
-import { CopyButton } from "@/components/databrowser/copy-button"
+import { CopyButton } from "@/components/common/copy-button"
 
 type CustomEditorProps = {
   language: string
@@ -80,7 +80,11 @@ const MonacoEditor = ({
         lineDecorationsWidth: 0,
         automaticLayout: true,
         scrollBeyondLastLine: false,
-        renderLineHighlight: "none",
+        renderLineHighlight: "line",
+        renderLineHighlightOnlyWhenFocus: true,
+        // @ts-expect-error "off" does not work
+        occurrencesHighlight: false,
+        hover: { enabled: true },
         unusualLineTerminators: "auto",
         padding: { top: 0, bottom: 0 },
       }}

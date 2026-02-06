@@ -45,9 +45,9 @@ export const TTLBadge = ({
         <Skeleton className="ml-1 h-3 w-10 rounded-md opacity-50" />
       ) : (
         <TTLPopover ttl={ttl} setTTL={setTTL} isPending={isPending}>
-          <div className="flex gap-[2px]">
-            {ttl === TTL_INFINITE ? "Forever" : formatTime(ttl)}
-            <IconChevronDown className="mt-[1px] text-zinc-400" size={12} />
+          <div className="flex items-center gap-[2px]">
+            {ttl === TTL_INFINITE ? "No" : formatTime(ttl)}
+            <IconChevronDown className="shrink-0 text-zinc-400" size={16} />
           </div>
         </TTLPopover>
       )}

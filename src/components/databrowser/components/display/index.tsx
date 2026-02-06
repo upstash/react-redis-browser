@@ -1,10 +1,12 @@
 /* eslint-disable unicorn/no-negated-condition */
 
+import { useTab } from "@/tab-provider"
 import { DATA_TYPES, SIMPLE_DATA_TYPES, type SimpleDataType } from "@/types"
+
 import { useKeys, useKeyType } from "../../hooks/use-keys"
+import { SearchDisplay } from "../search/display-search"
 import { ListDisplay } from "./display-list"
 import { EditorDisplay } from "./display-simple"
-import { useTab } from "@/tab-provider"
 
 export const DataDisplay = () => {
   const { selectedKey } = useTab()
@@ -13,7 +15,7 @@ export const DataDisplay = () => {
   const type = useKeyType(selectedKey)
 
   return (
-    <div className="h-full p-4">
+    <div className="h-full rounded-xl bg-zinc-100 p-5 dark:bg-zinc-200">
       {!selectedKey ? (
         <div />
       ) : !type ? (
@@ -32,8 +34,10 @@ export const DataDisplay = () => {
         <>
           {SIMPLE_DATA_TYPES.includes(type as SimpleDataType) ? (
             <EditorDisplay dataKey={selectedKey} type={type as SimpleDataType} />
+          ) : type === "search" ? (
+            <SearchDisplay indexName={selectedKey} />
           ) : (
-            <ListDisplay dataKey={selectedKey} type={type as Exclude<typeof type, SimpleDataType>} />
+            <ListDisplay dataKey={selectedKey} type={type as any} />
           )}
         </>
       )}

@@ -26,6 +26,9 @@ export const useFetchKeyLength = ({ dataKey, type }: { dataKey: string; type: Da
         case "stream": {
           return await redis.xlen(dataKey)
         }
+        case "search": {
+          return null
+        }
         // No default
       }
       return null

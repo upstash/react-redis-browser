@@ -1,8 +1,8 @@
 import { useState } from "react"
+import { IconLoader2, IconRefresh } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
 import { SimpleTooltip } from "@/components/ui/tooltip"
-import { IconLoader2, IconRefresh } from "@tabler/icons-react"
 
 export const ReloadButton = ({
   onClick,
@@ -26,14 +26,14 @@ export const ReloadButton = ({
       <SimpleTooltip content="Refresh">
         <Button
           variant="outline"
-          size="icon-sm"
+          size="icon"
           onClick={handleClick}
           disabled={isLoading || isLoadingProp}
         >
           {isLoading ? (
-            <IconLoader2 className="animate-spin text-zinc-500" size={16} />
+            <IconLoader2 className="size-5 animate-spin text-zinc-500" />
           ) : (
-            <IconRefresh className="text-zinc-500 dark:text-zinc-600" size={16} />
+            <IconRefresh className="size-5 text-zinc-500 dark:text-zinc-600" />
           )}
         </Button>
       </SimpleTooltip>

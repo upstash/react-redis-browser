@@ -1,10 +1,14 @@
 import { createContext, useContext, useMemo, type PropsWithChildren } from "react"
 import { useRedis } from "@/redis-context"
+import { useTab } from "@/tab-provider"
 import type { DataType, RedisKey } from "@/types"
 import { useInfiniteQuery, type UseInfiniteQueryResult } from "@tanstack/react-query"
-import { useTab } from "@/tab-provider"
+
 import { queryClient } from "@/lib/clients"
+import { parseJSObjectLiteral } from "@/lib/utils"
+
 import { FETCH_KEY_TYPE_QUERY_KEY } from "./use-fetch-key-type"
+import { useFetchSearchIndex } from "./use-fetch-search-index"
 
 const KeysContext = createContext<
   | {
@@ -17,13 +21,31 @@ const KeysContext = createContext<
 export const FETCH_KEYS_QUERY_KEY = "use-fetch-keys"
 
 const SCAN_COUNTS = [100, 300, 500]
+type ScanResult = { cursor: string; keys: { key: string; type: DataType; score?: number }[] }
 
 export const KeysProvider = ({ children }: PropsWithChildren) => {
-  const { active, search } = useTab()
+  const { active, search, valuesSearch, isValuesSearchSelected } = useTab()
+  const { data: searchIndexDetails, isLoading: isIndexDetailsLoading } = useFetchSearchIndex(
+    valuesSearch.index,
+    { enabled: isValuesSearchSelected }
+  )
 
   const { redisNoPipeline: redis } = useRedis()
 
-  const performScan = async (count: number, cursor: string) => {
+  const parsedValueQuery = parseJSObjectLiteral(valuesSearch.query)
+
+  const isQueryEnabled =
+    active &&
+    (isValuesSearchSelected ? Boolean(valuesSearch.index) && Boolean(searchIndexDetails) : true)
+
+  // Redis default key scan
+  const redisKeyScan = async ({
+    count,
+    cursor,
+  }: {
+    count: number
+    cursor: string
+  }): Promise<ScanResult> => {
     const args = [cursor]
 
     if (search.key) {
@@ -38,7 +60,68 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
 
     if (!search.type) args.push("WITHTYPE")
 
-    return await redis.exec<[string, string[]]>(["SCAN", ...args])
+    const [newCursor, values] = await redis.exec<[string, string[]]>(["SCAN", ...args])
+
+    // Deserialize keys from the SCAN result
+    const keys: { key: string; type: DataType }[] = []
+    let index = 0
+    while (true) {
+      if (search.type) {
+        if (index >= values.length) break
+        keys.push({ key: values[index], type: search.type as DataType })
+        index += 1
+      } else {
+        if (index + 1 >= values.length) break
+        keys.push({ key: values[index], type: values[index + 1] as DataType })
+        index += 2
+      }
+    }
+
+    return { cursor: newCursor, keys }
+  }
+
+  // Redis search value scan
+  const redisValueScan = async ({
+    count,
+    cursor,
+  }: {
+    count: number
+    cursor: string
+  }): Promise<ScanResult> => {
+    if (!searchIndexDetails) throw new Error("Attempted search while loading the search index")
+
+    const offset = Number.parseInt(cursor, 10) || 0
+
+    const result = await redis.search
+      .index({
+        name: valuesSearch.index,
+      })
+      .query({
+        filter: parsedValueQuery ?? {},
+        limit: count,
+        offset,
+        select: {},
+        withScores: true,
+      })
+
+    const keys = result.map((doc) => ({
+      key: doc.key,
+      type: searchIndexDetails.dataType,
+      score: doc.score,
+    }))
+
+    // If we got fewer results than the limit, we've reached the end
+    const hasMore = keys.length >= count
+    const nextCursor = hasMore ? String(offset + keys.length) : "0"
+
+    return { cursor: nextCursor, keys }
+  }
+
+  const performScan = async (count: number, cursor: string) => {
+    const scanFunction = isValuesSearchSelected ? redisValueScan : redisKeyScan
+
+    const result = await scanFunction({ count, cursor })
+    return [result.cursor, result.keys] as const
   }
 
   /**
@@ -63,29 +146,14 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
   }
 
   const query = useInfiniteQuery({
-    queryKey: [FETCH_KEYS_QUERY_KEY, search],
-    // Only fetch when tab is active
-    enabled: active,
+    queryKey: [FETCH_KEYS_QUERY_KEY, search, valuesSearch, isValuesSearchSelected],
+    enabled: isQueryEnabled,
 
     initialPageParam: "0",
     queryFn: async ({ pageParam: lastCursor }) => {
       const [cursor, values] = await scanUntilAvailable(lastCursor)
 
-      const keys: RedisKey[] = []
-
-      // Deserialize keys
-      let index = 0
-      while (true) {
-        if (search.type) {
-          if (index >= values.length) break
-          keys.push([values[index], search.type as DataType])
-          index += 1
-        } else {
-          if (index + 1 >= values.length) break
-          keys.push([values[index], values[index + 1] as DataType])
-          index += 2
-        }
-      }
+      const keys: RedisKey[] = values.map((value) => [value.key, value.type, value.score])
 
       // Save in cache to not send additional requests with useFetchKeyType
       for (const [key, type] of keys) {
@@ -97,6 +165,9 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
         keys,
         hasNextPage: cursor !== "0",
       }
+    },
+    meta: {
+      hideToast: true,
     },
     select: (data) => data,
     getNextPageParam: ({ cursor }) => cursor,
@@ -123,7 +194,10 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     <KeysContext.Provider
       value={{
         keys,
-        query,
+        query: {
+          ...query,
+          isLoading: query.isLoading || isIndexDetailsLoading,
+        } as UseInfiniteQueryResult,
       }}
     >
       {children}

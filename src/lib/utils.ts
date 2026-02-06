@@ -5,14 +5,24 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatNumberWithCommas(value: number) {
-  return value.toString().replaceAll(/\B(?=(\d{3})+(?!\d))/g, ",")
+export function safeParseJSON<T>(value: string): T | undefined {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return
+  }
 }
 
-export function formatNumber(value: number) {
-  const intl = new Intl.NumberFormat("en-US")
-
-  return intl.format(value)
+/**
+ * Parses a JavaScript object literal string (with unquoted keys) into a JS object.
+ * Adds double quotes around unquoted keys like `$and:` -> `"$and":`
+ */
+export function parseJSObjectLiteral<T>(value: string): T | undefined {
+  // Add double quotes around unquoted keys (handles $ prefixed and regular identifiers)
+  let jsonified = value.replaceAll(/([,{]\s*)(\$?[A-Z_a-z]\w*)\s*:/g, '$1"$2":')
+  // Remove trailing commas before closing braces/brackets (valid in JS, invalid in JSON)
+  jsonified = jsonified.replaceAll(/,\s*([\]}])/g, "$1")
+  return safeParseJSON(jsonified)
 }
 
 const units = {
@@ -50,3 +60,20 @@ export function formatTime(seconds: number) {
 }
 
 export const isTest = typeof window !== "undefined" && (window as any).__PLAYWRIGHT__ === true
+
+/**
+ * Formats an UpstashError message by stripping the "ERR" and "command was: ..." parts.
+ */
+export const formatUpstashErrorMessage = (error: Error): string => {
+  if (error.name !== "UpstashError") return error.message
+  let message = error.message
+
+  // Strip "ERR " prefix
+  if (message.startsWith("ERR ")) message = message.slice(4)
+
+  // Strip "command was: [...]" suffix
+  const commandIndex = message.indexOf(", command was:")
+  if (commandIndex !== -1) message = message.slice(0, commandIndex)
+
+  return message
+}

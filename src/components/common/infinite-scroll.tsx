@@ -1,11 +1,11 @@
 import type { PropsWithChildren } from "react"
+import { useEffect, useRef } from "react"
+import { useTab } from "@/tab-provider"
 import { IconLoader2 } from "@tabler/icons-react"
 import type { UseInfiniteQueryResult } from "@tanstack/react-query"
-import { useEffect, useRef } from "react"
 
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
-import { useTab } from "@/tab-provider"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 export const InfiniteScroll = ({
   query,
@@ -57,10 +57,7 @@ export const InfiniteScroll = ({
       type="always"
       onScroll={handleScroll}
       {...props}
-      className={cn(
-        "block h-full w-full overflow-visible rounded-lg border border-zinc-200 bg-white p-1 pr-3 transition-all",
-        props.className
-      )}
+      className={cn("block h-full w-full overflow-visible transition-all", props.className)}
       ref={scrollRef}
     >
       <div ref={contentRef}>

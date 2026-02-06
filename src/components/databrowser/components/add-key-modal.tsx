@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useTab } from "@/tab-provider"
 import { DATA_TYPES, type DataType } from "@/types"
 import { DialogDescription } from "@radix-ui/react-dialog"
+import { IconPlus } from "@tabler/icons-react"
 import { Controller, useForm } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
@@ -22,10 +23,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
+import { SimpleTooltip } from "@/components/ui/tooltip"
 import { TypeTag } from "@/components/databrowser/components/type-tag"
 import { useAddKey } from "@/components/databrowser/hooks/use-add-key"
-import { SimpleTooltip } from "@/components/ui/tooltip"
-import { IconPlus } from "@tabler/icons-react"
 
 export function AddKeyModal() {
   const { setSelectedKey } = useTab()
@@ -65,8 +65,13 @@ export function AddKeyModal() {
     >
       <SimpleTooltip content="Add key">
         <DialogTrigger asChild>
-          <Button variant="primary" size="icon-sm" data-testid="add-key-button">
-            <IconPlus className="size-4" />
+          <Button
+            variant="primary"
+            data-testid="add-key-button"
+            className="flex h-8 items-center gap-1 rounded-lg pl-2 pr-3 text-sm font-medium"
+          >
+            <IconPlus className="size-5" />
+            Key
           </Button>
         </DialogTrigger>
       </SimpleTooltip>
@@ -91,7 +96,7 @@ export function AddKeyModal() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
-                      {DATA_TYPES.map((type) => (
+                      {DATA_TYPES.filter((t) => t !== "search").map((type) => (
                         <SelectItem key={type} value={type}>
                           <TypeTag variant={type} type="badge" />
                         </SelectItem>

@@ -480,14 +480,24 @@
   background: linear-gradient(to left, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0));
 }
 
-/* Set 1.2 stroke for all tabler icons */
+/* Vertical scroll shadows */
+.scroll-shadow-top {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0));
+}
+
+.scroll-shadow-bottom {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0));
+}
+
+/* Set 2 stroke for all tabler icons */
 svg.tabler-icon {
-  stroke-width: 1.2 !important;
+  stroke-width: 2 !important;
 }
 
 .mtk5 {
-  color: #336554 !important;
+  color: rgb(var(--color-emerald-700)) !important;
 }
+
 .mtk6 {
   color: #a626a4 !important;
 }
@@ -495,6 +505,7 @@ svg.tabler-icon {
 .mtk20 {
   color: #059669 !important;
 }
+
 .mtk8 {
   color: #fcc28c !important;
 }
@@ -518,4 +529,28 @@ svg.tabler-icon {
 
 .monaco-editor {
   --vscode-focusBorder: #0000 !important;
+}
+
+.dropping .drag-overlay-bg {
+  animation: fadeOutBg 200ms ease-out forwards;
+}
+
+@keyframes fadeOutBg {
+  0% {
+    opacity: 1;
+    border-color: rgb(212, 212, 216);
+    box-shadow:
+      0 4px 6px -1px rgb(0 0 0 / 0.1),
+      0 2px 4px -2px rgb(0 0 0 / 0.1);
+    visibility: visible;
+  }
+  99% {
+    visibility: visible;
+  }
+  100% {
+    opacity: 0;
+    border-color: transparent;
+    box-shadow: none;
+    visibility: hidden;
+  }
 }

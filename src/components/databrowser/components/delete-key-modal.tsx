@@ -12,7 +12,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-export function DeleteAlertDialog({
+export function DeleteKeyModal({
   children,
   onDeleteConfirm,
   open,
@@ -41,7 +41,8 @@ export function DeleteAlertDialog({
             {isPlural ? `Delete ${count} ${itemsLabel}` : `Delete ${itemLabel}`}
           </AlertDialogTitle>
           <AlertDialogDescription className="mt-5">
-            Are you sure you want to delete {isPlural ? `these ${count} ${deletionType}s` : `this ${deletionType}`}?<br />
+            Are you sure you want to delete{" "}
+            {isPlural ? `these ${count} ${deletionType}s` : `this ${deletionType}`}?<br />
             This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>

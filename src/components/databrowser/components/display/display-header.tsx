@@ -13,10 +13,12 @@ export const DisplayHeader = ({
   dataKey,
   type,
   content,
+  hideTypeTag,
 }: {
   content?: string
   dataKey: string
   type: DataType
+  hideTypeTag?: boolean
 }) => {
   const { setSelectedListItem } = useTab()
 
@@ -25,18 +27,19 @@ export const DisplayHeader = ({
   }
 
   return (
-    <div className="rounded-lg bg-zinc-100">
-      <div className="flex min-h-10 items-center justify-between gap-4">
-        <h2 className="grow truncate text-base">
+    <div className="rounded-lg">
+      {/* Key title and actions */}
+      <div className="flex h-[26px] items-center justify-between gap-4">
+        <h2 className="grow truncate text-sm">
           {dataKey.trim() === "" ? (
             <span className="ml-1 text-zinc-500">(Empty Key)</span>
           ) : (
-            <span className="font-semibold">{dataKey}</span>
+            <span className="font-medium text-zinc-950">{dataKey}</span>
           )}
         </h2>
 
         <div className="flex items-center gap-1">
-          {type !== "string" && type !== "json" && (
+          {type !== "string" && type !== "json" && type !== "search" && (
             <SimpleTooltip content="Add item">
               <Button onClick={handleAddItem} size="icon-sm" aria-label="Add item">
                 <IconPlus className="size-4 text-zinc-500 dark:text-zinc-600" />
@@ -48,12 +51,15 @@ export const DisplayHeader = ({
         </div>
       </div>
 
-      <div className="flex h-10 flex-wrap items-center gap-1.5">
-        <TypeTag variant={type} type="badge" />
-        <SizeBadge dataKey={dataKey} />
-        <LengthBadge dataKey={dataKey} type={type} content={content} />
-        <HeaderTTLBadge dataKey={dataKey} />
-      </div>
+      {/* Key info badges */}
+      {type === "search" && hideTypeTag ? undefined : (
+        <div className="flex h-10 items-center gap-1.5 overflow-scroll">
+          {!hideTypeTag && <TypeTag variant={type} type="badge" />}
+          {type !== "search" && <SizeBadge dataKey={dataKey} />}
+          {type !== "search" && <LengthBadge dataKey={dataKey} type={type} content={content} />}
+          {type !== "search" && <HeaderTTLBadge dataKey={dataKey} />}
+        </div>
+      )}
     </div>
   )
 }

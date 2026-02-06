@@ -23,14 +23,18 @@ export type RedisBrowserStorage = {
   get: () => string | null
 }
 
+export type TabType = "keys" | "search" | "all"
+
 export const RedisBrowser = ({
   url,
   token,
   hideTabs,
+  tabType = "all",
   storage,
   disableTelemetry,
   onFullScreenClick,
   theme = "light",
+  allowSearch = false,
 }: RedisCredentials & {
   /**
    * Whether to disable telemetry.
@@ -46,6 +50,16 @@ export const RedisBrowser = ({
   disableTelemetry?: boolean
 
   hideTabs?: boolean
+
+  /**
+   * Which tab(s) to show in the databrowser.
+   * - "keys": Only show the Keys tab
+   * - "search": Only show the Search tab
+   * - "all": Show both tabs with a segmented selector
+   *
+   * @default "all"
+   */
+  tabType?: TabType
 
   /**
    * If defined, the databrowser will have a full screen button in the tab bar.
@@ -81,6 +95,15 @@ export const RedisBrowser = ({
    * ```
    */
   theme?: DarkModeOption
+
+  /**
+   * Whether to allow picking the "Search Index" type filter in keys search.
+   *
+   * This option is temporary
+   *
+   * @default true
+   */
+  allowSearch?: boolean
 }) => {
   const credentials = useMemo(() => ({ token, url }), [token, url])
   const rootRef = useRef<HTMLDivElement>(null)
@@ -96,7 +119,9 @@ export const RedisBrowser = ({
           <DatabrowserProvider storage={storage} rootRef={rootRef}>
             <TooltipProvider>
               <RedisBrowserRoot
+                allowSearch={allowSearch}
                 hideTabs={hideTabs}
+                tabType={tabType}
                 rootRef={rootRef}
                 onFullScreenClick={onFullScreenClick}
               />
@@ -110,10 +135,14 @@ export const RedisBrowser = ({
 
 const RedisBrowserRoot = ({
   hideTabs,
+  tabType,
+  allowSearch,
   rootRef,
   onFullScreenClick,
 }: {
   hideTabs?: boolean
+  tabType: TabType
+  allowSearch: boolean
   rootRef: React.RefObject<HTMLDivElement>
   onFullScreenClick?: () => void
 }) => {
@@ -131,15 +160,21 @@ const RedisBrowserRoot = ({
       style={{ height: "100%" }}
       ref={rootRef}
     >
-      <div className="flex h-full flex-col text-zinc-700">
+      <div className="flex h-full flex-col overflow-hidden rounded-[14px] border-[4px] border-zinc-300 text-zinc-700">
         {!hideTabs && <DatabrowserTabs onFullScreenClick={onFullScreenClick} />}
-        <DatabrowserInstances />
+        <DatabrowserInstances tabType={tabType} allowSearch={allowSearch} />
       </div>
     </div>
   )
 }
 
-const DatabrowserInstances = () => {
+const DatabrowserInstances = ({
+  tabType,
+  allowSearch,
+}: {
+  tabType: TabType
+  allowSearch: boolean
+}) => {
   const { tabs, selectedTab, selectTab, addTab } = useDatabrowserStore()
 
   useEffect(() => {
@@ -151,7 +186,11 @@ const DatabrowserInstances = () => {
 
   return tabs.map(([id]) => (
     <TabIdProvider key={id} value={id as TabId}>
-      <DatabrowserInstance hidden={id !== selectedTab} />
+      <DatabrowserInstance
+        hidden={id !== selectedTab}
+        tabType={tabType}
+        allowSearch={allowSearch}
+      />
     </TabIdProvider>
   ))
 }
