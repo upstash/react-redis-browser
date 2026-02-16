@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { useTab } from "@/tab-provider"
 import { Panel, PanelGroup } from "react-resizable-panels"
 
+import type { UseQueryWizard } from "@/types/query-wizard"
 import { cn, formatUpstashErrorMessage } from "@/lib/utils"
 import { ResizeHandle } from "@/components/ui/resize-handle"
 import { Segmented } from "@/components/ui/segmented"
@@ -26,9 +27,8 @@ export const PREFIX = "const query: Query = "
 type QueryBuilderMode = "builder" | "code"
 
 const QueryBuilderContent = () => {
-  const { valuesSearch } = useTab()
+  const { valuesSearch, queryBuilderMode, setQueryBuilderMode } = useTab()
   const { query } = useKeys()
-  const [mode, setMode] = useState<QueryBuilderMode>("builder")
   const [switchError, setSwitchError] = useState<string>()
 
   const handleModeChange = (value: string) => {
@@ -44,7 +44,7 @@ const QueryBuilderContent = () => {
     } else {
       setSwitchError(undefined)
     }
-    setMode(newMode)
+    setQueryBuilderMode(newMode)
   }
 
   const errorMessage =
@@ -58,12 +58,12 @@ const QueryBuilderContent = () => {
             { key: "builder", label: "Query Builder" },
             { key: "code", label: "Code Editor" },
           ]}
-          value={mode}
+          value={queryBuilderMode}
           onChange={handleModeChange}
           buttonClassName="h-6"
         />
       </div>
-      {mode === "builder" ? <UIQueryBuilder /> : <QueryBuilder />}
+      {queryBuilderMode === "builder" ? <UIQueryBuilder /> : <QueryBuilder />}
       <QueryBuilderError error={errorMessage} autoHide={Boolean(switchError)} />
       <DocsLink
         className="absolute bottom-2 right-2 text-sm"
@@ -90,10 +90,12 @@ export const DatabrowserInstance = ({
   hidden,
   tabType,
   allowSearch,
+  useQueryWizard,
 }: {
   hidden?: boolean
   tabType: TabType
   allowSearch: boolean
+  useQueryWizard?: UseQueryWizard
 }) => {
   const { isValuesSearchSelected, setIsValuesSearchSelected } = useTab()
   const { data: indexes, isLoading } = useFetchSearchIndexes({
@@ -120,7 +122,7 @@ export const DatabrowserInstance = ({
         )}
       >
         <div className="space-y-3 py-5">
-          <Header tabType={tabType} allowSearch={allowSearch} />
+          <Header tabType={tabType} allowSearch={allowSearch} useQueryWizard={useQueryWizard} />
           {!isValuesSearchSelected && <HeaderError />}
         </div>
 

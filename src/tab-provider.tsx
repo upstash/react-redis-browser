@@ -32,6 +32,7 @@ export const useTab = () => {
     setValuesSearchIndex,
     setValuesSearchQuery,
     setIsValuesSearchSelected,
+    setQueryBuilderMode,
   } = useDatabrowserStore()
   const tabId = useTabId()
   const tabData = useMemo(() => tabs.find(([id]) => id === tabId)?.[1], [tabs, tabId])
@@ -51,6 +52,7 @@ export const useTab = () => {
         query: tabData.valuesSearch.queries[tabData.valuesSearch.index] ?? "",
       },
       isValuesSearchSelected: tabData.isValuesSearchSelected,
+      queryBuilderMode: tabData.queryBuilderMode ?? "builder",
       pinned: tabData.pinned,
 
       setSelectedKey: (key: string | undefined) => setSelectedKey(tabId, key),
@@ -64,6 +66,7 @@ export const useTab = () => {
       setValuesSearchQuery: (query: string) => setValuesSearchQuery(tabId, query),
       setIsValuesSearchSelected: (isSelected: boolean) =>
         setIsValuesSearchSelected(tabId, isSelected),
+      setQueryBuilderMode: (mode: "builder" | "code") => setQueryBuilderMode(tabId, mode),
     }),
     [selectedTab, tabs, tabId]
   )

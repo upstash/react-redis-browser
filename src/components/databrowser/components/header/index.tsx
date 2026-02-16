@@ -6,8 +6,10 @@ import {
   IconCirclePlus,
   IconPlus,
   IconSearch,
+  IconSparkles,
 } from "@tabler/icons-react"
 
+import type { UseQueryWizard } from "@/types/query-wizard"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -19,11 +21,20 @@ import { useFetchSearchIndexes } from "../../hooks/use-fetch-search-indexes"
 import { AddKeyModal } from "../add-key-modal"
 import { CreateIndexModal } from "../search/create-index-modal"
 import { EditIndexModal } from "../search/edit-index-modal"
+import { QueryAssistantPopover } from "../search/query-assistant-popover"
 import { RefreshButton } from "./refresh-button"
 import { SearchInput } from "./search-input"
 import { DataTypeSelector } from "./type-selector"
 
-export const Header = ({ tabType, allowSearch }: { tabType: TabType; allowSearch: boolean }) => {
+export const Header = ({
+  tabType,
+  allowSearch,
+  useQueryWizard,
+}: {
+  tabType: TabType
+  allowSearch: boolean
+  useQueryWizard?: UseQueryWizard
+}) => {
   const { isValuesSearchSelected, setIsValuesSearchSelected } = useTab()
 
   return (
@@ -69,6 +80,7 @@ export const Header = ({ tabType, allowSearch }: { tabType: TabType; allowSearch
 
       {/* Actions */}
       <div className="flex items-center gap-1.5">
+        {isValuesSearchSelected && <WizardButton useQueryWizard={useQueryWizard} />}
         <RefreshButton />
         {isValuesSearchSelected ? <AddIndexButton /> : <AddKeyModal />}
       </div>
@@ -229,5 +241,24 @@ const AddIndexButton = () => {
       </SimpleTooltip>
       <CreateIndexModal open={open} onOpenChange={setOpen} />
     </>
+  )
+}
+
+const WizardButton = ({ useQueryWizard }: { useQueryWizard?: UseQueryWizard }) => {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <SimpleTooltip content="Query Wizard">
+        <PopoverTrigger asChild>
+          <Button size="icon" aria-label="Query Wizard">
+            <IconSparkles className="size-4 text-zinc-500 dark:text-zinc-600" />
+          </Button>
+        </PopoverTrigger>
+      </SimpleTooltip>
+      <PopoverContent align="end" className="w-96">
+        <QueryAssistantPopover onClose={() => setOpen(false)} useQueryWizard={useQueryWizard} />
+      </PopoverContent>
+    </Popover>
   )
 }

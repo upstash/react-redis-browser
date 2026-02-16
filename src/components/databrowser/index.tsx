@@ -9,6 +9,7 @@ import { TabIdProvider } from "@/tab-provider"
 import { TooltipProvider } from "@radix-ui/react-tooltip"
 import { QueryClientProvider } from "@tanstack/react-query"
 
+import type { UseQueryWizard } from "@/types/query-wizard"
 import { queryClient } from "@/lib/clients"
 import { portalWrapper } from "@/lib/portal-root"
 
@@ -35,6 +36,7 @@ export const RedisBrowser = ({
   onFullScreenClick,
   theme = "light",
   allowSearch = false,
+  useQueryWizard,
 }: RedisCredentials & {
   /**
    * Whether to disable telemetry.
@@ -104,6 +106,34 @@ export const RedisBrowser = ({
    * @default true
    */
   allowSearch?: boolean
+
+  /**
+   * AI Query Wizard function for generating Redis search queries from natural language.
+   * When provided, a wizard button (🪄) appears in the Search tab that allows users to
+   * generate queries using AI.
+   *
+   * The function receives:
+   * - prompt: User's natural language query
+   * - schema: Current index schema
+   * - sampleData: First ~10 items from the database
+   * - searchTypes: Redis search type definitions
+   *
+   * And should return a query object.
+   *
+   * @example
+   * ```tsx
+   * <RedisBrowser
+   *   useQueryWizard={async ({ prompt, schema, sampleData, searchTypes }) => {
+   *     const response = await fetch('/api/generate-query', {
+   *       method: 'POST',
+   *       body: JSON.stringify({ prompt, schema, sampleData, searchTypes }),
+   *     })
+   *     return await response.json()
+   *   }}
+   * />
+   * ```
+   */
+  useQueryWizard?: UseQueryWizard
 }) => {
   const credentials = useMemo(() => ({ token, url }), [token, url])
   const rootRef = useRef<HTMLDivElement>(null)
@@ -124,6 +154,7 @@ export const RedisBrowser = ({
                 tabType={tabType}
                 rootRef={rootRef}
                 onFullScreenClick={onFullScreenClick}
+                useQueryWizard={useQueryWizard}
               />
             </TooltipProvider>
           </DatabrowserProvider>
@@ -139,12 +170,14 @@ const RedisBrowserRoot = ({
   allowSearch,
   rootRef,
   onFullScreenClick,
+  useQueryWizard,
 }: {
   hideTabs?: boolean
   tabType: TabType
   allowSearch: boolean
   rootRef: React.RefObject<HTMLDivElement>
   onFullScreenClick?: () => void
+  useQueryWizard?: UseQueryWizard
 }) => {
   const theme = useTheme()
 
@@ -162,7 +195,11 @@ const RedisBrowserRoot = ({
     >
       <div className="flex h-full flex-col rounded-[14px] border-[4px] border-zinc-300 text-zinc-700">
         {!hideTabs && <DatabrowserTabs onFullScreenClick={onFullScreenClick} />}
-        <DatabrowserInstances tabType={tabType} allowSearch={allowSearch} />
+        <DatabrowserInstances
+          tabType={tabType}
+          allowSearch={allowSearch}
+          useQueryWizard={useQueryWizard}
+        />
       </div>
     </div>
   )
@@ -171,9 +208,11 @@ const RedisBrowserRoot = ({
 const DatabrowserInstances = ({
   tabType,
   allowSearch,
+  useQueryWizard,
 }: {
   tabType: TabType
   allowSearch: boolean
+  useQueryWizard?: UseQueryWizard
 }) => {
   const { tabs, selectedTab, selectTab, addTab } = useDatabrowserStore()
 
@@ -190,6 +229,7 @@ const DatabrowserInstances = ({
         hidden={id !== selectedTab}
         tabType={tabType}
         allowSearch={allowSearch}
+        useQueryWizard={useQueryWizard}
       />
     </TabIdProvider>
   ))

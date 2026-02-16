@@ -45,7 +45,7 @@ export const DatabrowserProvider = ({
           setItem: (_name, value) => storage.set(JSON.stringify(value)),
           removeItem: () => {},
         },
-        version: 7,
+        version: 8,
         migrate: (originalState, version) => {
           const state = originalState as DatabrowserStore
 
@@ -86,6 +86,11 @@ export const DatabrowserProvider = ({
               id,
               { ...data, valuesSearch: { index: "", queries: {} } },
             ])
+          }
+
+          if (version <= 7) {
+            // Add AI consent field
+            state.aiDataSharingConsent = state.aiDataSharingConsent ?? null
           }
 
           return state
@@ -143,6 +148,7 @@ export type TabData = {
   search: SearchFilter
   valuesSearch: ValuesSearchFilter
   isValuesSearchSelected: boolean
+  queryBuilderMode?: "builder" | "code"
   pinned?: boolean
 }
 
@@ -178,9 +184,13 @@ type DatabrowserStore = {
   setValuesSearchIndex: (tabId: TabId, index: string) => void
   setValuesSearchQuery: (tabId: TabId, query: string) => void
   setIsValuesSearchSelected: (tabId: TabId, isSelected: boolean) => void
+  setQueryBuilderMode: (tabId: TabId, mode: "builder" | "code") => void
 
   searchHistory: string[]
   addSearchHistory: (key: string) => void
+
+  aiDataSharingConsent: boolean | null
+  setAiDataSharingConsent: (consent: boolean) => void
 }
 
 export type DatabrowserStoreObject = UseBoundStore<StoreApi<DatabrowserStore>>
@@ -474,8 +484,26 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
     })
   },
 
+  setQueryBuilderMode: (tabId, mode) => {
+    set((old) => {
+      const tabIndex = old.tabs.findIndex(([id]) => id === tabId)
+      if (tabIndex === -1) return old
+
+      const newTabs = [...old.tabs]
+      const [, tabData] = newTabs[tabIndex]
+      newTabs[tabIndex] = [tabId, { ...tabData, queryBuilderMode: mode }]
+
+      return { ...old, tabs: newTabs }
+    })
+  },
+
   searchHistory: [],
   addSearchHistory: (key) => {
     set((old) => ({ ...old, searchHistory: [key, ...old.searchHistory] }))
+  },
+
+  aiDataSharingConsent: null,
+  setAiDataSharingConsent: (consent) => {
+    set({ aiDataSharingConsent: consent })
   },
 })
