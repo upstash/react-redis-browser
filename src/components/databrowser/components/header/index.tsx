@@ -248,21 +248,15 @@ const WizardButton = ({ useQueryWizard }: { useQueryWizard?: UseQueryWizard }) =
   const [open, setOpen] = useState(false)
 
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
+    <Popover open={open} onOpenChange={setOpen}>
       <SimpleTooltip content="Query Wizard">
         <PopoverTrigger asChild>
           <Button size="icon" aria-label="Query Wizard">
-            <IconSparkles className="size-4 text-zinc-500" />
+            <IconSparkles className="size-4 text-zinc-500 dark:text-zinc-600" />
           </Button>
         </PopoverTrigger>
       </SimpleTooltip>
-      <PopoverContent
-        side="bottom"
-        align="end"
-        alignOffset={-124}
-        avoidCollisions={false}
-        className="w-auto p-0"
-      >
+      <PopoverContent align="end" className="w-96">
         <QueryAssistantPopover onClose={() => setOpen(false)} useQueryWizard={useQueryWizard} />
       </PopoverContent>
     </Popover>
