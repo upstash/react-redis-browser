@@ -14,6 +14,7 @@ import { BoostBadge, NodeActionsMenu } from "./condition-common"
 import { useQueryBuilderUI } from "./query-builder-context"
 import {
   getOperatorsForFieldType,
+  OPERATOR_DESCRIPTIONS,
   OPERATOR_OPTIONS,
   type FieldOperator,
   type QueryNode,
@@ -402,7 +403,11 @@ export const QueryCondition = ({
               </SelectItem>
             )}
             {filteredOperators.map((op) => (
-              <SelectItem key={op.value} value={op.value}>
+              <SelectItem
+                key={op.value}
+                value={op.value}
+                description={OPERATOR_DESCRIPTIONS[op.value]}
+              >
                 {op.label}
               </SelectItem>
             ))}
@@ -499,8 +504,15 @@ export const QueryCondition = ({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="1">1</SelectItem>
-            <SelectItem value="2">2</SelectItem>
+            <SelectItem
+              value="1"
+              description="Matches words with 1 character edit (e.g. 'teh' → 'the')"
+            >
+              1
+            </SelectItem>
+            <SelectItem value="2" description="Matches words with up to 2 character edits">
+              2
+            </SelectItem>
           </SelectContent>
         </Select>
       )}
@@ -513,9 +525,21 @@ export const QueryCondition = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="exact">exact</SelectItem>
-              <SelectItem value="slop">slop</SelectItem>
-              <SelectItem value="prefix">prefix</SelectItem>
+              <SelectItem value="exact" description="Terms must appear adjacent to each other">
+                exact
+              </SelectItem>
+              <SelectItem
+                value="slop"
+                description="Allow custom number of intervening words between terms"
+              >
+                slop
+              </SelectItem>
+              <SelectItem
+                value="prefix"
+                description="Last term matches as a prefix (e.g. 'wireless head' → 'headphones')"
+              >
+                prefix
+              </SelectItem>
             </SelectContent>
           </Select>
           {phraseMode === "slop" && (

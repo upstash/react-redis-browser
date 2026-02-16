@@ -1,4 +1,5 @@
 import { useState, type PropsWithChildren } from "react"
+import { useRedis } from "@/redis-context"
 import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
 import { ContextMenuSeparator } from "@radix-ui/react-context-menu"
@@ -16,7 +17,8 @@ import { useDeleteKey } from "../hooks"
 import { DeleteKeyModal } from "./delete-key-modal"
 
 export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
-  const { mutate: deleteKey } = useDeleteKey()
+  const { mutateAsync: deleteKey } = useDeleteKey()
+  const { redisNoPipeline: redis } = useRedis()
   const [isAlertOpen, setAlertOpen] = useState(false)
   const [contextKeys, setContextKeys] = useState<string[]>([])
   const {
@@ -25,7 +27,7 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
     selectTab,
     setSearch,
   } = useDatabrowserStore()
-  const { search: currentSearch, selectedKeys } = useTab()
+  const { search: currentSearch, selectedKeys, isValuesSearchSelected, valuesSearch } = useTab()
 
   return (
     <>
@@ -34,12 +36,16 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
         count={contextKeys.length}
         open={isAlertOpen}
         onOpenChange={setAlertOpen}
-        onDeleteConfirm={(e) => {
+        showReindex={isValuesSearchSelected}
+        onDeleteConfirm={async (e, options) => {
           e.stopPropagation()
           // Delete all selected keys
-          for (const key of contextKeys) {
-            deleteKey(key)
+          await Promise.all(contextKeys.map((key) => deleteKey(key)))
+
+          if (options?.reindex && valuesSearch.index) {
+            await redis.search.index({ name: valuesSearch.index }).waitIndexing()
           }
+
           setAlertOpen(false)
         }}
       />

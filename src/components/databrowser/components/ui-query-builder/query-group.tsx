@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
+import { DocsLink } from "../docs-link"
 import { BoostBadge, NodeActionsMenu } from "./condition-common"
 import { QueryDndProvider } from "./dnd-context"
 import { DraggableItem, type DragHandleProps } from "./draggable-item"
@@ -171,7 +172,11 @@ const InnerGroup = ({
       {/* Children with drop indicators - this gets the left border */}
       <div className={`min-h-[20px] ${isRoot ? "" : "ml-[15px] border-l-2 border-zinc-200 pl-3"}`}>
         {node.children.length === 0 ? (
-          <EmptyGroupDropZone groupId={node.id} isOver={activeOverId === `drop-${node.id}-end`} />
+          <EmptyGroupDropZone
+            groupId={node.id}
+            isOver={activeOverId === `drop-${node.id}-end`}
+            onAddCondition={fieldInfos.length > 0 ? handleAddCondition : undefined}
+          />
         ) : (
           <>
             {node.children.map(
@@ -197,17 +202,10 @@ const InnerGroup = ({
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="max-w-xs">
-                  <p>
-                    Keys matching any of the conditions below are excluded from the results.{" "}
-                    <a
-                      href="https://upstash-search.mintlify.app/redis/search/query-operators/boolean-operators/must-not"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline"
-                    >
-                      Learn more
-                    </a>
-                  </p>
+                  <span>
+                    Keys matching any of the conditions below are excluded from the results.
+                  </span>
+                  <DocsLink href="https://upstash-search.mintlify.app/redis/search/query-operators/boolean-operators/must-not" />
                 </TooltipContent>
               </Tooltip>
             )}

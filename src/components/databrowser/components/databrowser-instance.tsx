@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react"
 import { useTab } from "@/tab-provider"
-import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
+import { Panel, PanelGroup } from "react-resizable-panels"
 
 import { cn } from "@/lib/utils"
+import { ResizeHandle } from "@/components/ui/resize-handle"
 import { Segmented } from "@/components/ui/segmented"
 import { Toaster } from "@/components/ui/toaster"
 
@@ -10,6 +11,7 @@ import type { TabType } from ".."
 import { useFetchSearchIndexes } from "../hooks/use-fetch-search-indexes"
 import { KeysProvider } from "../hooks/use-keys"
 import { DataDisplay } from "./display"
+import { DocsLink } from "./docs-link"
 import { Header } from "./header"
 import { HeaderError } from "./header-error"
 import { QueryBuilder } from "./query-builder"
@@ -44,8 +46,8 @@ const QueryBuilderContent = () => {
   }
 
   return (
-    <div>
-      <div className="relative h-[200px] max-h-[40vh] min-h-[150px] resize-y overflow-hidden">
+    <>
+      <div className="relative h-full overflow-hidden">
         <div className="absolute right-4 top-4 z-10">
           <Segmented
             options={[
@@ -58,9 +60,13 @@ const QueryBuilderContent = () => {
           />
         </div>
         {mode === "builder" ? <UIQueryBuilder /> : <QueryBuilder />}
+        <DocsLink
+          className="absolute bottom-2 right-2 text-sm"
+          href="https://upstash-search.mintlify.app/redis/search/query-operators/boolean-operators/overview"
+        />
       </div>
       {switchError && <p className="mt-3 text-sm text-red-500">{switchError}</p>}
-    </div>
+    </>
   )
 }
 
@@ -112,13 +118,33 @@ export const DatabrowserInstance = ({
       >
         <div className="space-y-3 py-5">
           <Header tabType={tabType} allowSearch={allowSearch} />
-
-          {isValuesSearchSelected && !showEmptyState && <SearchContent />}
           <HeaderError />
         </div>
 
         {showEmptyState ? (
           <SearchEmptyState />
+        ) : isValuesSearchSelected ? (
+          <PanelGroup
+            autoSaveId="search-layout"
+            direction="vertical"
+            className="h-full w-full text-sm antialiased"
+          >
+            <Panel defaultSize={30} minSize={15} maxSize={60}>
+              <SearchContent />
+            </Panel>
+            <ResizeHandle direction="vertical" />
+            <Panel minSize={30}>
+              <PanelGroup autoSaveId="persistence" direction="horizontal" className="h-full w-full">
+                <Panel defaultSize={30} minSize={30}>
+                  <Sidebar />
+                </Panel>
+                <ResizeHandle />
+                <Panel minSize={40}>
+                  <DataDisplay />
+                </Panel>
+              </PanelGroup>
+            </Panel>
+          </PanelGroup>
         ) : (
           <PanelGroup
             autoSaveId="persistence"
@@ -128,11 +154,7 @@ export const DatabrowserInstance = ({
             <Panel defaultSize={30} minSize={30}>
               <Sidebar />
             </Panel>
-            <PanelResizeHandle className="group mx-[2px] flex h-full flex-col items-center justify-center gap-1 rounded-md px-[8px] transition-colors hover:bg-zinc-300/10">
-              <div className="h-[3px] w-[3px] rounded-full bg-zinc-300" />
-              <div className="h-[3px] w-[3px] rounded-full bg-zinc-300" />
-              <div className="h-[3px] w-[3px] rounded-full bg-zinc-300" />
-            </PanelResizeHandle>
+            <ResizeHandle />
             <Panel minSize={40}>
               <DataDisplay />
             </Panel>

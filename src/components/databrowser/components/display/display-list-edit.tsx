@@ -24,7 +24,7 @@ export const ListEditDisplay = ({
   item: SelectedItem
 }) => {
   return (
-    <div className="grow rounded-md">
+    <div className="min-h-0 grow rounded-md">
       <ListEditForm key={item.key} item={item} type={type} dataKey={dataKey} />
     </div>
   )
@@ -80,8 +80,8 @@ const ListEditForm = ({
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={onSubmit} className="flex h-full flex-col gap-2">
-        <div className="flex grow flex-col gap-2">
+      <form onSubmit={onSubmit} className="flex h-full min-h-0 flex-col gap-2">
+        <div className="flex min-h-0 grow flex-col gap-2">
           {type === "zset" && <NumberFormItem name="value" label={valueLabel} />}
 
           {type !== "list" && (
@@ -186,7 +186,7 @@ const FormItem = ({
   })
 
   return (
-    <div className={cn("flex flex-col gap-1", !height && "h-full")}>
+    <div className={cn("flex flex-col gap-1", !height && "h-full min-h-0")}>
       <div className="flex items-center gap-1 text-xs">
         <span className="font-medium text-zinc-700">{label}</span>{" "}
         <span className="text-zinc-300">/</span>
@@ -196,7 +196,7 @@ const FormItem = ({
       <div
         className={cn(
           "overflow-hidden rounded-md border border-zinc-300 bg-white p-2 shadow-sm",
-          !height && "h-full"
+          !height && "h-full min-h-0"
         )}
       >
         {editor}

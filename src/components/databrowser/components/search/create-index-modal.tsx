@@ -17,7 +17,16 @@ export const CreateIndexModal = ({
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent
+        className="max-w-2xl"
+        onEscapeKeyDown={(e) => {
+          // Prevent ESC from closing modal when focused inside the editor
+          const active = document.activeElement
+          if (active?.closest(".monaco-editor") || active?.tagName === "TEXTAREA") {
+            e.preventDefault()
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Create new Index</DialogTitle>
         </DialogHeader>

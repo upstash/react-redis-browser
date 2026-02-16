@@ -1,4 +1,5 @@
 import { useDroppable } from "@dnd-kit/core"
+import { IconPlus } from "@tabler/icons-react"
 
 import { cn } from "@/lib/utils"
 
@@ -33,19 +34,30 @@ export const DropIndicator = ({ id, isOver }: DropIndicatorProps) => {
 type EmptyGroupDropZoneProps = {
   groupId: string
   isOver: boolean
+  onAddCondition?: () => void
 }
 
-export const EmptyGroupDropZone = ({ groupId, isOver }: EmptyGroupDropZoneProps) => {
+export const EmptyGroupDropZone = ({
+  groupId,
+  isOver,
+  onAddCondition,
+}: EmptyGroupDropZoneProps) => {
   const { setNodeRef } = useDroppable({ id: `drop-${groupId}-end` })
 
   return (
-    <div
+    <button
+      type="button"
       ref={setNodeRef}
-      className={`mt-2 flex h-8 items-center justify-center rounded-md border border-dashed text-sm transition-all ${
-        isOver ? "border-blue-500 bg-blue-50 text-blue-600" : "border-zinc-300 text-zinc-400"
-      }`}
+      onClick={onAddCondition}
+      className={cn(
+        "mt-2 flex h-8 w-full items-center justify-center gap-1.5 rounded-md border border-dashed text-sm transition-all",
+        isOver
+          ? "border-blue-500 bg-blue-50 text-blue-600"
+          : "border-zinc-300 text-zinc-400 hover:border-zinc-400 hover:bg-zinc-50 hover:text-zinc-500"
+      )}
     >
-      Add a condition to start
-    </div>
+      <IconPlus size={14} />
+      Add a condition
+    </button>
   )
 }

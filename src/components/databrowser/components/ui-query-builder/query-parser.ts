@@ -94,14 +94,14 @@ const isFieldConditionObject = (obj: unknown): obj is Record<string, unknown> =>
 
 /** Parse a single field condition into a QueryNode */
 const parseFieldCondition = (field: string, fieldValue: unknown): QueryNode => {
-  // Shorthand: { field: "value" } → $eq
+  // Shorthand: { field: "value" } → $smart
   if (!isFieldConditionObject(fieldValue)) {
     return {
       id: generateId(),
       type: "condition",
       condition: {
         field,
-        operator: "eq",
+        operator: "smart",
         value: fieldValue as string | number | boolean | string[],
       },
     }

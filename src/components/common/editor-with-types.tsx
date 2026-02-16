@@ -39,6 +39,8 @@ const MonacoEditorWithTypes = ({
   const monaco = useMonaco()
   const editorRef = useRef<unknown>(null)
   const extraLibRef = useRef<{ dispose: () => void } | null>(null)
+  const valueRef = useRef(value)
+  valueRef.current = value
   const theme = useTheme()
 
   // Update type definitions when they change
@@ -84,15 +86,16 @@ const MonacoEditorWithTypes = ({
     } else if (newValue.trim() === "") {
       onChange(defaultValue)
     } else {
+      // Restore the last valid value using the ref to avoid stale closures
       // @ts-expect-error not typing the editor type
-      editorRef.current?.setValue?.(value)
+      editorRef.current?.setValue?.(valueRef.current)
     }
   }
 
   // If the value is somehow invalid, restore it
   useEffect(() => {
     if (!validateValue(value)) onChange(defaultValue)
-  }, [value, editorRef.current, onChange, validateValue, defaultValue])
+  }, [value, onChange, validateValue, defaultValue])
 
   return (
     <div

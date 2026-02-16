@@ -1,3 +1,5 @@
+import { useRedis } from "@/redis-context"
+import { useTab } from "@/tab-provider"
 import { IconDotsVertical } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
@@ -12,8 +14,18 @@ import { toast } from "@/components/ui/use-toast"
 import { useDeleteKey } from "../../hooks"
 import { DeleteKeyModal } from "../delete-key-modal"
 
-export function KeyActions({ dataKey, content }: { dataKey: string; content?: string }) {
+export function KeyActions({
+  dataKey,
+  content,
+  type,
+}: {
+  dataKey: string
+  content?: string
+  type: string
+}) {
   const { mutateAsync: deleteKey } = useDeleteKey()
+  const { redisNoPipeline: redis } = useRedis()
+  const { isValuesSearchSelected, valuesSearch } = useTab()
 
   return (
     <DropdownMenu modal={false}>
@@ -46,7 +58,16 @@ export function KeyActions({ dataKey, content }: { dataKey: string; content?: st
         >
           Copy key
         </DropdownMenuItem>
-        <DeleteKeyModal deletionType="key" onDeleteConfirm={async () => await deleteKey(dataKey)}>
+        <DeleteKeyModal
+          deletionType="key"
+          showReindex={isValuesSearchSelected && type !== "search"}
+          onDeleteConfirm={async (_e, options) => {
+            await deleteKey(dataKey)
+            if (options?.reindex && valuesSearch.index) {
+              await redis.search.index({ name: valuesSearch.index }).waitIndexing()
+            }
+          }}
+        >
           <DropdownMenuItem
             className="text-red-500 focus:bg-red-500 focus:text-white"
             onSelect={(e) => e.preventDefault()}

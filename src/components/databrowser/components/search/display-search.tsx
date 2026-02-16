@@ -17,6 +17,8 @@ import { Spinner } from "@/components/ui/spinner"
 import { useCreateSearchIndexSchema } from "../../hooks/use-create-search-index-schema"
 import { useFetchSearchIndex } from "../../hooks/use-fetch-search-index"
 import { DisplayHeader } from "../display/display-header"
+import { KeyDeleted } from "../display/key-deleted"
+import { DocsLink } from "../docs-link"
 import { TypeTag } from "../type-tag"
 import { SaveSchemaModal } from "./save-schema-modal"
 import { SCHEMA_DEFAULT, SchemaEditor } from "./schema-editor"
@@ -103,21 +105,21 @@ export const SearchDisplay = ({
     reset()
   }
 
+  if (!isCreateModal && !isLoading && (data === null || data === undefined)) {
+    return <KeyDeleted />
+  }
+
   return (
-    <div className="flex h-full w-full min-w-0 flex-col gap-2">
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-2 overflow-hidden">
       {!isCreateModal && (
         <DisplayHeader dataKey={effectiveIndexName} type={"search"} hideTypeTag={isEditModal} />
       )}
 
-      <div className="flex h-full min-w-0 grow flex-col gap-2 rounded-md">
+      <div className="flex min-h-0 min-w-0 grow flex-col gap-2 rounded-md">
         {!isCreateModal && isLoading ? (
           <Spinner isLoadingText={""} isLoading={true} />
-        ) : !isCreateModal && (data === null || data === undefined) ? (
-          <div className="flex h-full items-center justify-center">
-            <span className="text-zinc-500">No data found</span>
-          </div>
         ) : (
-          <div className="flex h-full w-full flex-col gap-3">
+          <div className="flex min-h-0 w-full flex-1 flex-col gap-3 overflow-hidden">
             {/* Index Name - only shown in create modal */}
             {isCreateModal && (
               <div className="flex flex-col gap-1.5">
@@ -134,7 +136,7 @@ export const SearchDisplay = ({
             )}
 
             {/* Index Config */}
-            <div className="rounded-md border border-zinc-300 bg-white p-3">
+            <div className="shrink-0 rounded-md border border-zinc-300 bg-white p-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium text-zinc-700">Config</h3>
               </div>
@@ -173,7 +175,7 @@ export const SearchDisplay = ({
                         <SelectContent>
                           {LANGUAGES.map((lang) => (
                             <SelectItem key={lang} value={lang}>
-                              {lang}
+                              {lang.charAt(0).toUpperCase() + lang.slice(1)}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -196,12 +198,12 @@ export const SearchDisplay = ({
             </div>
 
             {/* Schema Section */}
-            <div className="flex min-h-0 flex-1 flex-col rounded-md border border-zinc-300 bg-white">
+            <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-zinc-300 bg-white">
               <div className="flex items-center justify-between border-b border-zinc-200 px-3 py-2">
                 <h3 className="text-sm font-medium text-zinc-700">Schema</h3>
               </div>
 
-              <div className="min-h-0 flex-1">
+              <div className="min-h-0 flex-1 overflow-hidden">
                 <div className="h-full px-1">
                   <Controller
                     name="editorValue"
@@ -216,6 +218,10 @@ export const SearchDisplay = ({
                   />
                 </div>
               </div>
+              <DocsLink
+                className="absolute bottom-2 right-2 text-sm"
+                href="https://upstash-search.mintlify.app/redis/search/schema-definition"
+              />
             </div>
 
             {/* Mutation error display - only for create modal */}

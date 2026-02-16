@@ -6,8 +6,7 @@ export const FETCH_SEARCH_INDEX_QUERY_KEY = "fetch-search-index"
 
 type RedisSearchDescribeFunc = ReturnType<Redis["search"]["index"]>["describe"]
 
-export type SearchIndex = Awaited<ReturnType<RedisSearchDescribeFunc>>
-export type SearchIndexSchema = SearchIndex["schema"]
+export type SearchIndex = NonNullable<Awaited<ReturnType<RedisSearchDescribeFunc>>>
 
 export const useFetchSearchIndex = (
   indexName?: string,

@@ -11,7 +11,7 @@ type SchemaEditorProps = {
 
 const SCHEMA_PREFIX = "const schema: Schema = s.object({"
 const SCHEMA_SUFFIX = "})"
-const SCHEMA_DEFAULT = "const schema: Schema = s.object({\n  \n})"
+const SCHEMA_DEFAULT = "const schema: Schema = s.object({\n  name: s.string(),\n})"
 
 const isSchemaStringValid = (value: string) => {
   return value.startsWith(SCHEMA_PREFIX) && value.endsWith(SCHEMA_SUFFIX)

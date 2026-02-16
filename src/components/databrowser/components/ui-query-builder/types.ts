@@ -20,28 +20,23 @@ export type FieldInfo = {
   type: FieldType
 }
 
-/** Operators supported for string fields */
 export const STRING_OPERATORS: FieldOperator[] = [
+  "smart",
   "eq",
   "ne",
   "in",
   "phrase",
   "regex",
   "fuzzy",
-  "smart",
 ]
 
-/** Operators supported for number fields */
-export const NUMBER_OPERATORS: FieldOperator[] = ["eq", "ne", "gt", "gte", "lt", "lte", "in"]
-
-/** Operators supported for boolean fields */
-export const BOOLEAN_OPERATORS: FieldOperator[] = ["eq", "ne", "in"]
-
-/** Operators supported for date fields */
-export const DATE_OPERATORS: FieldOperator[] = ["eq", "ne", "gt", "gte", "lt", "lte", "in"]
+export const NUMBER_OPERATORS: FieldOperator[] = ["eq", "ne", "gt", "gte", "lt", "lte"]
+export const BOOLEAN_OPERATORS: FieldOperator[] = ["eq", "ne"]
+export const DATE_OPERATORS: FieldOperator[] = NUMBER_OPERATORS
 
 /** All available operators */
 export const ALL_OPERATORS: FieldOperator[] = [
+  "smart",
   "eq",
   "ne",
   "gt",
@@ -52,11 +47,26 @@ export const ALL_OPERATORS: FieldOperator[] = [
   "phrase",
   "regex",
   "fuzzy",
-  "smart",
 ]
+
+/** Operator descriptions for tooltips */
+export const OPERATOR_DESCRIPTIONS: Record<FieldOperator, string> = {
+  eq: "Equals",
+  ne: "Not equals",
+  gt: "Greater than",
+  gte: "Greater than or equal",
+  lt: "Less than",
+  lte: "Less than or equal",
+  in: "Matches any of the given values, comma separated",
+  phrase: "Matches an exact phrase",
+  regex: "Matches a regular expression pattern",
+  fuzzy: "Approximate match with custom edit distance",
+  smart: "Default opinionated matching algorithm",
+}
 
 /** Operator options with labels for UI display */
 export const OPERATOR_OPTIONS: { value: FieldOperator; label: string }[] = [
+  { value: "smart", label: "smart" },
   { value: "eq", label: "eq" },
   { value: "ne", label: "ne" },
   { value: "gt", label: "gt" },
@@ -67,7 +77,6 @@ export const OPERATOR_OPTIONS: { value: FieldOperator; label: string }[] = [
   { value: "phrase", label: "phrase" },
   { value: "regex", label: "regex" },
   { value: "fuzzy", label: "fuzzy" },
-  { value: "smart", label: "smart" },
 ]
 
 /** Get the operators available for a given field type */

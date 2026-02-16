@@ -47,7 +47,7 @@ export const DisplayHeader = ({
             </SimpleTooltip>
           )}
 
-          <KeyActions dataKey={dataKey} content={content} />
+          <KeyActions dataKey={dataKey} content={content} type={type} />
         </div>
       </div>
 

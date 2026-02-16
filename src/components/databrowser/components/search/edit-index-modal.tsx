@@ -1,3 +1,5 @@
+import { useEffect } from "react"
+
 import {
   Dialog,
   DialogContent,
@@ -6,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 
+import { useFetchSearchIndex } from "../../hooks/use-fetch-search-index"
 import { SearchDisplay } from "./display-search"
 
 export const EditIndexModal = ({
@@ -15,11 +18,31 @@ export const EditIndexModal = ({
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  indexName: string | null
+  indexName?: string
 }) => {
+  const { data: indexData, isLoading: isIndexLoading } = useFetchSearchIndex(indexName, {
+    enabled: open,
+  })
+
+  // Close modal if index is deleted
+  useEffect(() => {
+    if (open && !isIndexLoading && indexData === null) {
+      onOpenChange(false)
+    }
+  }, [indexData, onOpenChange, isIndexLoading, open])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent
+        className="min-h-[500px] max-w-2xl"
+        onEscapeKeyDown={(e) => {
+          // Prevent ESC from closing modal when focused inside the editor
+          const active = document.activeElement
+          if (active?.closest(".monaco-editor") || active?.tagName === "TEXTAREA") {
+            e.preventDefault()
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Edit Index</DialogTitle>
         </DialogHeader>

@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react"
+import { useRedis } from "@/redis-context"
 import { useTab } from "@/tab-provider"
 import {
   IconChevronDown,
   IconCircleCheck,
   IconCirclePlus,
+  IconLoader2,
   IconPlus,
+  IconRefresh,
   IconSearch,
 } from "@tabler/icons-react"
+import { useMutation } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
 import { cn } from "@/lib/utils"
@@ -78,7 +82,14 @@ export const Header = ({ tabType, allowSearch }: { tabType: TabType; allowSearch
       {/* Actions */}
       <div className="flex items-center gap-1.5">
         <RefreshButton />
-        {isValuesSearchSelected ? <AddIndexButton /> : <AddKeyModal />}
+        {isValuesSearchSelected ? (
+          <>
+            <ReindexButton />
+            <AddIndexButton />
+          </>
+        ) : (
+          <AddKeyModal />
+        )}
       </div>
     </div>
   )
@@ -92,15 +103,17 @@ const IndexSelector = () => {
   const { data: indexes, isLoading } = useFetchSearchIndexes()
   const [open, setOpen] = useState(false)
 
-  // Clear the selected index if it no longer exists (e.g. deleted externally)
+  // Auto-select first index if none is selected, or clear if selected index no longer exists
   useEffect(() => {
     if (!indexes || isLoading) return
     if (index && !indexes.includes(index)) {
       setValuesSearchIndex("")
+    } else if (!index && indexes.length > 0) {
+      setValuesSearchIndex(indexes[0])
     }
   }, [indexes, index, isLoading, setValuesSearchIndex])
   const [search, setSearch] = useState("")
-  const [editingIndex, setEditingIndex] = useState<string | null>(null)
+  const [editingIndex, setEditingIndex] = useState<string | undefined>()
 
   const filteredIndexes = indexes?.filter((idx) => idx.toLowerCase().includes(search.toLowerCase()))
 
@@ -191,7 +204,7 @@ const IndexSelector = () => {
 
       <EditIndexModal
         open={Boolean(editingIndex)}
-        onOpenChange={(isOpen) => !isOpen && setEditingIndex(null)}
+        onOpenChange={(isOpen) => !isOpen && setEditingIndex(undefined)}
         indexName={editingIndex}
       />
     </div>
@@ -218,12 +231,42 @@ const CreateIndexButton = () => {
   )
 }
 
+const ReindexButton = () => {
+  const { redisNoPipeline: redis } = useRedis()
+  const {
+    valuesSearch: { index },
+  } = useTab()
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: async () => {
+      if (!index) return
+      await redis.search.index({ name: index }).waitIndexing()
+    },
+  })
+
+  return (
+    <Button
+      variant="outline"
+      onClick={() => mutate()}
+      disabled={!index || isPending}
+      className="flex h-8 items-center gap-1 rounded-lg px-2 text-sm font-medium"
+    >
+      {isPending ? (
+        <IconLoader2 className="size-4 animate-spin" />
+      ) : (
+        <IconRefresh className="size-4" />
+      )}
+      Reindex
+    </Button>
+  )
+}
+
 const AddIndexButton = () => {
   const [open, setOpen] = useState(false)
 
   return (
     <>
-      <SimpleTooltip content="Add index">
+      <SimpleTooltip content="Create new Index">
         <Button
           variant="primary"
           onClick={() => setOpen(true)}

@@ -15,6 +15,7 @@ import { ItemContextMenu } from "../item-context-menu"
 import { DisplayHeader } from "./display-header"
 import { ListEditDisplay } from "./display-list-edit"
 import { HashFieldTTLInfo } from "./hash/hash-field-ttl-info"
+import { KeyDeleted } from "./key-deleted"
 
 export const headerLabels = {
   list: ["Index", "Content"],
@@ -28,8 +29,14 @@ export const ListDisplay = ({ dataKey, type }: { dataKey: string; type: ListData
   const { selectedListItem } = useTab()
   const query = useFetchListItems({ dataKey, type })
 
+  const isEmpty = query.isFetched && query.data?.pages.every((page) => page.keys.length === 0)
+
+  if (isEmpty) {
+    return <KeyDeleted />
+  }
+
   return (
-    <div className="flex h-full flex-col gap-2">
+    <div className="flex h-full min-h-0 flex-col gap-2 overflow-hidden">
       <DisplayHeader dataKey={dataKey} type={type} />
 
       {selectedListItem && (

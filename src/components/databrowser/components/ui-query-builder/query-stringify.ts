@@ -52,8 +52,8 @@ const conditionToObject = (node: QueryNode & { type: "condition" }): Record<stri
   } = node.condition
   const effectiveBoost = node.boost ?? conditionBoost
 
-  // Shorthand for $eq without boost
-  if (operator === "eq" && !effectiveBoost) {
+  // Shorthand for $smart without boost (default operator)
+  if (operator === "smart" && !effectiveBoost) {
     return { [field]: value }
   }
 
@@ -71,14 +71,14 @@ const conditionToObject = (node: QueryNode & { type: "condition" }): Record<stri
   return { [field]: fieldCondition }
 }
 
-/** Check if all children are simple $eq conditions that can be merged */
+/** Check if all children are simple $smart conditions that can be merged into shorthand */
 const canMergeChildren = (children: QueryNode[]): boolean => {
   return children.every(
     (child) =>
       child.type === "condition" &&
       !child.not &&
       !child.boost &&
-      child.condition.operator === "eq" &&
+      child.condition.operator === "smart" &&
       !child.condition.boost
   )
 }

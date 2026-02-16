@@ -7,7 +7,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
+import { DocsLink } from "../docs-link"
 import { DynamicWidthInput } from "./dynamic-width-input"
 import { useQueryBuilderUI } from "./query-builder-context"
 import type { QueryNode } from "./types"
@@ -55,9 +57,21 @@ export const BoostBadge = ({
 
   return (
     <span className="relative flex h-[26px] items-center overflow-hidden rounded-md border border-zinc-300 text-sm font-medium">
-      <span className={`flex h-full items-center px-2 ${labelBg} ${textColor}`}>
-        {isNegative ? "Demote" : "Boost"}
-      </span>
+      <Tooltip delayDuration={200}>
+        <TooltipTrigger asChild>
+          <span className={`flex h-full cursor-default items-center px-2 ${labelBg} ${textColor}`}>
+            {isNegative ? "Demote" : "Boost"}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-xs">
+          <span>
+            {isNegative
+              ? `Multiplies this condition's score by ${node.boost ?? 0}, subtracting from the total.`
+              : `Multiplies this condition's score by ${node.boost ?? 0}.`}
+          </span>
+          <DocsLink href="https://upstash-search.mintlify.app/redis/search/query-operators/boolean-operators/boost" />
+        </TooltipContent>
+      </Tooltip>
       {isStatic ? (
         <span className={`px-2 ${textColor}`}>{node.boost}</span>
       ) : (

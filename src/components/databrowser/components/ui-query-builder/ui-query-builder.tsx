@@ -160,7 +160,7 @@ const getFieldType = (schemaType: string): FieldType => {
  * Extracts field info from the index schema
  * The schema is a flat Record<string, DescribeFieldInfo> where keys are field paths
  */
-const extractFieldInfo = (schema: SearchIndex["schema"]): FieldInfo[] => {
+const extractFieldInfo = (schema: NonNullable<SearchIndex>["schema"]): FieldInfo[] => {
   return Object.entries(schema).map(([fieldPath, fieldInfo]) => ({
     name: fieldPath,
     type: getFieldType(fieldInfo.type),
