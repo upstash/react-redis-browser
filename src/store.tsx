@@ -90,7 +90,7 @@ export const DatabrowserProvider = ({
 
           if (version <= 7) {
             // Add AI consent field
-            state.aiDataSharingConsent = state.aiDataSharingConsent ?? null
+            state.aiDataSharingConsent = state.aiDataSharingConsent ?? false
           }
 
           return state
@@ -189,7 +189,7 @@ type DatabrowserStore = {
   searchHistory: string[]
   addSearchHistory: (key: string) => void
 
-  aiDataSharingConsent: boolean | null
+  aiDataSharingConsent: boolean
   setAiDataSharingConsent: (consent: boolean) => void
 }
 
@@ -502,7 +502,7 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
     set((old) => ({ ...old, searchHistory: [key, ...old.searchHistory] }))
   },
 
-  aiDataSharingConsent: null,
+  aiDataSharingConsent: false,
   setAiDataSharingConsent: (consent) => {
     set({ aiDataSharingConsent: consent })
   },
