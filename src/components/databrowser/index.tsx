@@ -1,3 +1,5 @@
+import "@/globals.css"
+
 import { useEffect, useMemo, useRef } from "react"
 import { DarkModeProvider, useTheme, type DarkModeOption } from "@/dark-mode-context"
 import { RedisProvider } from "@/redis-context"
