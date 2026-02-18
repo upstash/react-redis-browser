@@ -2,19 +2,20 @@ import { useEffect, useState } from "react"
 import { useTab } from "@/tab-provider"
 import { Panel, PanelGroup } from "react-resizable-panels"
 
-import { cn } from "@/lib/utils"
+import { cn, formatUpstashErrorMessage } from "@/lib/utils"
 import { ResizeHandle } from "@/components/ui/resize-handle"
 import { Segmented } from "@/components/ui/segmented"
 import { Toaster } from "@/components/ui/toaster"
 
 import type { TabType } from ".."
 import { useFetchSearchIndexes } from "../hooks/use-fetch-search-indexes"
-import { KeysProvider } from "../hooks/use-keys"
+import { KeysProvider, useKeys } from "../hooks/use-keys"
 import { DataDisplay } from "./display"
 import { DocsLink } from "./docs-link"
 import { Header } from "./header"
 import { HeaderError } from "./header-error"
 import { QueryBuilder } from "./query-builder"
+import { QueryBuilderError } from "./query-builder-error"
 import { SearchEmptyState } from "./search-empty-state"
 import { Sidebar } from "./sidebar"
 import { UIQueryBuilder } from "./ui-query-builder"
@@ -26,8 +27,9 @@ type QueryBuilderMode = "builder" | "code"
 
 const QueryBuilderContent = () => {
   const { valuesSearch } = useTab()
+  const { query } = useKeys()
   const [mode, setMode] = useState<QueryBuilderMode>("builder")
-  const [switchError, setSwitchError] = useState<string | null>(null)
+  const [switchError, setSwitchError] = useState<string>()
 
   const handleModeChange = (value: string) => {
     const newMode = value as QueryBuilderMode
@@ -38,35 +40,36 @@ const QueryBuilderContent = () => {
         )
         return
       }
-      setSwitchError(null)
+      setSwitchError(undefined)
     } else {
-      setSwitchError(null)
+      setSwitchError(undefined)
     }
     setMode(newMode)
   }
 
+  const errorMessage =
+    switchError ?? (query.error ? formatUpstashErrorMessage(query.error) : undefined)
+
   return (
-    <>
-      <div className="relative h-full overflow-hidden">
-        <div className="absolute right-4 top-4 z-10">
-          <Segmented
-            options={[
-              { key: "builder", label: "Query Builder" },
-              { key: "code", label: "Code Editor" },
-            ]}
-            value={mode}
-            onChange={handleModeChange}
-            buttonClassName="h-6"
-          />
-        </div>
-        {mode === "builder" ? <UIQueryBuilder /> : <QueryBuilder />}
-        <DocsLink
-          className="absolute bottom-2 right-2 text-sm"
-          href="https://upstash-search.mintlify.app/redis/search/query-operators/boolean-operators/overview"
+    <div className="relative h-full">
+      <div className="absolute right-4 top-4 z-[2]">
+        <Segmented
+          options={[
+            { key: "builder", label: "Query Builder" },
+            { key: "code", label: "Code Editor" },
+          ]}
+          value={mode}
+          onChange={handleModeChange}
+          buttonClassName="h-6"
         />
       </div>
-      {switchError && <p className="mt-3 text-sm text-red-500">{switchError}</p>}
-    </>
+      {mode === "builder" ? <UIQueryBuilder /> : <QueryBuilder />}
+      <QueryBuilderError error={errorMessage} autoHide={Boolean(switchError)} />
+      <DocsLink
+        className="absolute bottom-2 right-2 text-sm"
+        href="https://upstash-search.mintlify.app/redis/search/query-operators/boolean-operators/overview"
+      />
+    </div>
   )
 }
 
@@ -118,7 +121,7 @@ export const DatabrowserInstance = ({
       >
         <div className="space-y-3 py-5">
           <Header tabType={tabType} allowSearch={allowSearch} />
-          <HeaderError />
+          {!isValuesSearchSelected && <HeaderError />}
         </div>
 
         {showEmptyState ? (

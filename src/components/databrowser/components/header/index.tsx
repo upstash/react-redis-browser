@@ -1,18 +1,13 @@
 import { useEffect, useState } from "react"
-import { useRedis } from "@/redis-context"
 import { useTab } from "@/tab-provider"
 import {
   IconChevronDown,
   IconCircleCheck,
   IconCirclePlus,
-  IconLoader2,
   IconPlus,
-  IconRefresh,
   IconSearch,
 } from "@tabler/icons-react"
-import { useMutation } from "@tanstack/react-query"
 
-import { queryClient } from "@/lib/clients"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -20,18 +15,11 @@ import { Segmented } from "@/components/ui/segmented"
 import { SimpleTooltip } from "@/components/ui/tooltip"
 
 import type { TabType } from "../.."
-import { ReloadButton } from "../../../common/reload-button"
-import {
-  FETCH_KEYS_QUERY_KEY,
-  FETCH_LIST_ITEMS_QUERY_KEY,
-  FETCH_SIMPLE_KEY_QUERY_KEY,
-  useKeys,
-} from "../../hooks"
-import { FETCH_KEY_TYPE_QUERY_KEY } from "../../hooks/use-fetch-key-type"
 import { useFetchSearchIndexes } from "../../hooks/use-fetch-search-indexes"
 import { AddKeyModal } from "../add-key-modal"
 import { CreateIndexModal } from "../search/create-index-modal"
 import { EditIndexModal } from "../search/edit-index-modal"
+import { RefreshButton } from "./refresh-button"
 import { SearchInput } from "./search-input"
 import { DataTypeSelector } from "./type-selector"
 
@@ -82,14 +70,7 @@ export const Header = ({ tabType, allowSearch }: { tabType: TabType; allowSearch
       {/* Actions */}
       <div className="flex items-center gap-1.5">
         <RefreshButton />
-        {isValuesSearchSelected ? (
-          <>
-            <ReindexButton />
-            <AddIndexButton />
-          </>
-        ) : (
-          <AddKeyModal />
-        )}
+        {isValuesSearchSelected ? <AddIndexButton /> : <AddKeyModal />}
       </div>
     </div>
   )
@@ -231,36 +212,6 @@ const CreateIndexButton = () => {
   )
 }
 
-const ReindexButton = () => {
-  const { redisNoPipeline: redis } = useRedis()
-  const {
-    valuesSearch: { index },
-  } = useTab()
-
-  const { mutate, isPending } = useMutation({
-    mutationFn: async () => {
-      if (!index) return
-      await redis.search.index({ name: index }).waitIndexing()
-    },
-  })
-
-  return (
-    <Button
-      variant="outline"
-      onClick={() => mutate()}
-      disabled={!index || isPending}
-      className="flex h-8 items-center gap-1 rounded-lg px-2 text-sm font-medium"
-    >
-      {isPending ? (
-        <IconLoader2 className="size-4 animate-spin" />
-      ) : (
-        <IconRefresh className="size-4" />
-      )}
-      Reindex
-    </Button>
-  )
-}
-
 const AddIndexButton = () => {
   const [open, setOpen] = useState(false)
 
@@ -270,7 +221,7 @@ const AddIndexButton = () => {
         <Button
           variant="primary"
           onClick={() => setOpen(true)}
-          className="flex h-8 items-center gap-1 rounded-lg pl-2 pr-3 text-sm font-medium"
+          className="flex h-8 select-none items-center gap-1 rounded-lg pl-2 pr-3 text-sm font-medium"
         >
           <IconPlus className="size-5" />
           Index
@@ -278,29 +229,5 @@ const AddIndexButton = () => {
       </SimpleTooltip>
       <CreateIndexModal open={open} onOpenChange={setOpen} />
     </>
-  )
-}
-
-const RefreshButton = () => {
-  const { query } = useKeys()
-
-  return (
-    <ReloadButton
-      onClick={() => {
-        queryClient.invalidateQueries({
-          queryKey: [FETCH_KEYS_QUERY_KEY],
-        })
-        queryClient.invalidateQueries({
-          queryKey: [FETCH_LIST_ITEMS_QUERY_KEY],
-        })
-        queryClient.invalidateQueries({
-          queryKey: [FETCH_SIMPLE_KEY_QUERY_KEY],
-        })
-        queryClient.invalidateQueries({
-          queryKey: [FETCH_KEY_TYPE_QUERY_KEY],
-        })
-      }}
-      isLoading={query.isFetching}
-    />
   )
 }

@@ -1,5 +1,3 @@
-import "@/globals.css"
-
 import { useEffect, useMemo, useRef } from "react"
 import { DarkModeProvider, useTheme, type DarkModeOption } from "@/dark-mode-context"
 import { RedisProvider } from "@/redis-context"
@@ -160,7 +158,7 @@ const RedisBrowserRoot = ({
       style={{ height: "100%" }}
       ref={rootRef}
     >
-      <div className="flex h-full flex-col overflow-hidden rounded-[14px] border-[4px] border-zinc-300 text-zinc-700">
+      <div className="flex h-full flex-col rounded-[14px] border-[4px] border-zinc-300 text-zinc-700">
         {!hideTabs && <DatabrowserTabs onFullScreenClick={onFullScreenClick} />}
         <DatabrowserInstances tabType={tabType} allowSearch={allowSearch} />
       </div>

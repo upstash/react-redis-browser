@@ -7,9 +7,11 @@ import { SimpleTooltip } from "@/components/ui/tooltip"
 export const ReloadButton = ({
   onClick,
   isLoading: isLoadingProp,
+  tooltip = "Refresh",
 }: {
   onClick: () => void
   isLoading?: boolean
+  tooltip?: string
 }) => {
   const [isLoading, setIsLoading] = useState(false)
 
@@ -23,7 +25,7 @@ export const ReloadButton = ({
 
   return (
     <div>
-      <SimpleTooltip content="Refresh">
+      <SimpleTooltip content={tooltip}>
         <Button
           variant="outline"
           size="icon"

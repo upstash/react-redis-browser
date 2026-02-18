@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useState } from "react"
 import { useController, type UseFormReturn } from "react-hook-form"
 
 import { ContentTypeSelect, type ContentType } from "./content-type-select"
@@ -53,6 +53,15 @@ export const useField = ({
       }
     }
   }
+
+  // Runs the JSON formatting when "Cancel" is clicked
+  useLayoutEffect(() => {
+    if (!fieldState.isDirty && contentType === "JSON" && checkIsValidJSON(data)) {
+      form.setValue(name, formatJSON(data), {
+        shouldDirty: false,
+      })
+    }
+  }, [data, fieldState.isDirty])
 
   return {
     selector: (

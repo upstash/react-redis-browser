@@ -55,7 +55,7 @@ const EditorDisplayForm = ({
   const { mutateAsync: setKey, isPending: isSettingKey } = useSetSimpleKey(dataKey, type)
 
   const handleCancel = () => {
-    form.reset({ value: data })
+    form.reset()
   }
 
   return (

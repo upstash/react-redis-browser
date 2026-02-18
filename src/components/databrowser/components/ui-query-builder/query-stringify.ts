@@ -52,8 +52,10 @@ const conditionToObject = (node: QueryNode & { type: "condition" }): Record<stri
   } = node.condition
   const effectiveBoost = node.boost ?? conditionBoost
 
-  // Shorthand for $smart without boost (default operator)
-  if (operator === "smart" && !effectiveBoost) {
+  // Shorthand for $smart without boost, or $eq on boolean/number without boost
+  const isCollapsibleEq =
+    operator === "eq" && (typeof value === "boolean" || typeof value === "number")
+  if ((operator === "smart" || isCollapsibleEq) && !effectiveBoost) {
     return { [field]: value }
   }
 
@@ -71,24 +73,19 @@ const conditionToObject = (node: QueryNode & { type: "condition" }): Record<stri
   return { [field]: fieldCondition }
 }
 
-/** Check if all children are simple $smart conditions that can be merged into shorthand */
+/** Check if all children are single-field conditions with unique fields that can be merged into object form */
 const canMergeChildren = (children: QueryNode[]): boolean => {
-  return children.every(
-    (child) =>
-      child.type === "condition" &&
-      !child.not &&
-      !child.boost &&
-      child.condition.operator === "smart" &&
-      !child.condition.boost
-  )
+  if (!children.every((child) => child.type === "condition" && !child.not)) return false
+  const fields = children.map((c) => (c as QueryNode & { type: "condition" }).condition.field)
+  return new Set(fields).size === fields.length
 }
 
-/** Merge simple conditions into a single object */
+/** Merge conditions into a single object using conditionToObject for each */
 const mergeConditions = (children: QueryNode[], boost?: number): Record<string, unknown> => {
   const merged: Record<string, unknown> = {}
   for (const child of children) {
     if (child.type === "condition") {
-      merged[child.condition.field] = child.condition.value
+      Object.assign(merged, conditionToObject(child as QueryNode & { type: "condition" }))
     }
   }
   if (boost && boost !== 1) {
@@ -97,10 +94,22 @@ const mergeConditions = (children: QueryNode[], boost?: number): Record<string, 
   return merged
 }
 
+/** Build $mustNot value: object form for single item, array for multiple */
+const buildMustNot = (
+  negatedChildren: QueryNode[]
+): Record<string, unknown> | Record<string, unknown>[] => {
+  const negatedObjects = negatedChildren.map((child) => {
+    const withoutNot = { ...child, not: undefined }
+    return queryNodeToObject(withoutNot, false)
+  })
+  return negatedObjects.length === 1 ? negatedObjects[0] : negatedObjects
+}
+
 /** Convert a group node to a query object */
 const groupToObject = (
   node: QueryNode & { type: "group" },
-  isRoot: boolean
+  isRoot: boolean,
+  forArray: boolean = false
 ): Record<string, unknown> => {
   const { groupOperator, children, boost, not } = node
 
@@ -125,30 +134,68 @@ const groupToObject = (
     return { $mustNot: [inner] }
   }
 
-  // Optimization: flatten root AND with single normal child (no negated, no boost)
-  if (
-    isRoot &&
-    groupOperator === "and" &&
-    normalChildren.length === 1 &&
-    negatedChildren.length === 0 &&
-    !boost
-  ) {
-    return queryNodeToObject(normalChildren[0], false)
+  // Optimization: flatten root AND children into top-level object
+  // Conditions become field keys, groups become $and/$or keys — if no key conflicts
+  if (isRoot && groupOperator === "and" && negatedChildren.length === 0) {
+    // Single child: just unwrap it
+    if (normalChildren.length === 1) {
+      const result = queryNodeToObject(normalChildren[0], false)
+      if (boost && boost !== 1) result.$boost = boost
+      return result
+    }
+
+    const conditionChildren = normalChildren.filter((c) => c.type === "condition")
+    const groupChildren = normalChildren.filter((c) => c.type === "group") as (QueryNode & {
+      type: "group"
+    })[]
+
+    // Don't flatten if a group child has same operator, multiple children, and boost
+    // (would create confusing nested $and inside root AND)
+    const hasConflictingGroupChild = groupChildren.some(
+      (c) => c.groupOperator === groupOperator && c.children.length > 1 && c.boost
+    )
+
+    if (!hasConflictingGroupChild) {
+      // Check for key conflicts: duplicate fields or duplicate group operators
+      const fields = conditionChildren.map(
+        (c) => (c as QueryNode & { type: "condition" }).condition.field
+      )
+      const groupOps = groupChildren.map((c) => `$${c.groupOperator}`)
+      const allKeys = [...fields, ...groupOps]
+      const hasConflicts = new Set(allKeys).size !== allKeys.length
+
+      if (!hasConflicts) {
+        const result: Record<string, unknown> = {}
+        for (const child of conditionChildren) {
+          Object.assign(result, conditionToObject(child as QueryNode & { type: "condition" }))
+        }
+        for (const child of groupChildren) {
+          Object.assign(result, groupToObject(child, false))
+        }
+        if (boost && boost !== 1) result.$boost = boost
+        return result
+      }
+    }
   }
 
-  // Optimization: merge simple $eq conditions (only when no negated children)
-  if (
-    normalChildren.length > 0 &&
-    negatedChildren.length === 0 &&
-    canMergeChildren(normalChildren)
-  ) {
-    const merged = mergeConditions(normalChildren, boost)
-    if (isRoot && groupOperator === "and") {
-      return merged
+  // Optimization: merge all-condition children into object form
+  if (normalChildren.length > 0 && canMergeChildren(normalChildren)) {
+    // Root AND without negated children: flatten to top-level
+    if (isRoot && groupOperator === "and" && negatedChildren.length === 0) {
+      return mergeConditions(normalChildren, boost)
     }
-    const result: Record<string, unknown> = { [`$${groupOperator}`]: merged }
-    if (boost && boost !== 1) {
-      result.$boost = boost
+
+    const result: Record<string, unknown> = {}
+    if (forArray) {
+      // Array context: boost goes outside as sibling of $op key
+      result[`$${groupOperator}`] = mergeConditions(normalChildren)
+      if (boost && boost !== 1) result.$boost = boost
+    } else {
+      // Standalone/merged context: boost goes inside the operator value
+      result[`$${groupOperator}`] = mergeConditions(normalChildren, boost)
+    }
+    if (negatedChildren.length > 0) {
+      result.$mustNot = buildMustNot(negatedChildren)
     }
     return result
   }
@@ -157,14 +204,32 @@ const groupToObject = (
   const result: Record<string, unknown> = {}
 
   if (normalChildren.length > 0) {
-    result[`$${groupOperator}`] = normalChildren.map((child) => queryNodeToObject(child, false))
+    result[`$${groupOperator}`] = normalChildren.map((child) => {
+      // Same-operator group with multiple mergeable conditions: flatten to merged object
+      // (avoids redundant nesting like $and: [{ $and: { ... } }] inside $and array)
+      if (child.type === "group") {
+        const groupChild = child as QueryNode & { type: "group" }
+        const gc = groupChild.children
+        const gcNormal = gc.filter((c) => !c.not)
+        const gcNegated = gc.filter((c) => c.not)
+        if (
+          groupChild.groupOperator === groupOperator &&
+          gc.length > 1 &&
+          gcNegated.length === 0 &&
+          canMergeChildren(gcNormal)
+        ) {
+          return mergeConditions(gcNormal, groupChild.boost)
+        }
+      }
+      return queryNodeToObject(child, false, true)
+    })
+  } else if (negatedChildren.length > 0) {
+    // Preserve empty group operator when there are negated children
+    result[`$${groupOperator}`] = {}
   }
 
   if (negatedChildren.length > 0) {
-    result.$mustNot = negatedChildren.map((child) => {
-      const withoutNot = { ...child, not: undefined }
-      return queryNodeToObject(withoutNot, false)
-    })
+    result.$mustNot = buildMustNot(negatedChildren)
   }
 
   if (boost && boost !== 1) {
@@ -175,12 +240,16 @@ const groupToObject = (
 }
 
 /** Convert a QueryNode to a raw query object */
-const queryNodeToObject = (node: QueryNode, isRoot: boolean = false): Record<string, unknown> => {
+const queryNodeToObject = (
+  node: QueryNode,
+  isRoot: boolean = false,
+  forArray: boolean = false
+): Record<string, unknown> => {
   if (node.type === "condition") {
     return conditionToObject(node as QueryNode & { type: "condition" })
   }
   if (node.type === "group") {
-    return groupToObject(node as QueryNode & { type: "group" }, isRoot)
+    return groupToObject(node as QueryNode & { type: "group" }, isRoot, forArray)
   }
   return {}
 }

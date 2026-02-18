@@ -94,14 +94,16 @@ const isFieldConditionObject = (obj: unknown): obj is Record<string, unknown> =>
 
 /** Parse a single field condition into a QueryNode */
 const parseFieldCondition = (field: string, fieldValue: unknown): QueryNode => {
-  // Shorthand: { field: "value" } → $smart
+  // Shorthand: { field: "value" } → $eq for boolean/number, $smart for strings
   if (!isFieldConditionObject(fieldValue)) {
+    const operator: FieldOperator =
+      typeof fieldValue === "boolean" || typeof fieldValue === "number" ? "eq" : "smart"
     return {
       id: generateId(),
       type: "condition",
       condition: {
         field,
-        operator: "smart",
+        operator,
         value: fieldValue as string | number | boolean | string[],
       },
     }
@@ -140,6 +142,11 @@ const parseFieldCondition = (field: string, fieldValue: unknown): QueryNode => {
     }
   }
 
+  // Auto-fix: $smart on boolean/number → $eq (smart is only meaningful for strings)
+  if (operator === "smart" && (typeof value === "boolean" || typeof value === "number")) {
+    operator = "eq"
+  }
+
   if ("$boost" in fieldObj) {
     boost = fieldObj.$boost as number
   }
@@ -147,6 +154,7 @@ const parseFieldCondition = (field: string, fieldValue: unknown): QueryNode => {
   return {
     id: generateId(),
     type: "condition",
+    boost,
     condition: {
       field,
       operator,
@@ -154,7 +162,6 @@ const parseFieldCondition = (field: string, fieldValue: unknown): QueryNode => {
       fuzzyDistance,
       phraseSlop,
       phrasePrefix,
-      boost,
     },
   }
 }
@@ -170,6 +177,10 @@ const parseMultiFieldObject = (
   for (const [key, value] of Object.entries(obj)) {
     if (key === "$boost") {
       boost = value as number
+    } else if (key === "$and" || key === "$or") {
+      const nestedOp: GroupOperator = key === "$and" ? "and" : "or"
+      const nestedGroup = parseGroup(value, nestedOp)
+      if (nestedGroup) children.push(nestedGroup)
     } else if (!isOperatorKey(key)) {
       children.push(parseFieldCondition(key, value))
     }
@@ -267,18 +278,41 @@ const objectToQueryNode = (obj: Record<string, unknown>): QueryNode | null => {
   const hasMustNot = "$mustNot" in obj
   const nonOperatorKeys = keys.filter((key) => !isOperatorKey(key))
 
-  // Handle $and/$or groups (possibly with $mustNot as sibling)
+  // Handle $and/$or groups (possibly with $mustNot or field conditions as siblings)
   if (hasGroup) {
     const operator: GroupOperator = "$and" in obj ? "and" : "or"
     const groupValue = obj["$and"] ?? obj["$or"]
     const boost = "$boost" in obj ? (obj.$boost as number) : undefined
-    const groupNode = parseGroup(groupValue, operator, boost)
+    const groupNode = parseGroup(
+      groupValue,
+      operator,
+      nonOperatorKeys.length === 0 ? boost : undefined
+    )
 
     if (groupNode && groupNode.type === "group" && hasMustNot) {
       addMustNotChildren(groupNode, obj.$mustNot)
     }
 
-    return groupNode
+    // No sibling field conditions → return group directly
+    if (!groupNode || nonOperatorKeys.length === 0) {
+      return groupNode
+    }
+
+    // Sibling field conditions: { field: value, $and: [...] } → wrap in AND
+    const fieldChildren = nonOperatorKeys.map((key) => parseFieldCondition(key, obj[key]))
+    const group: QueryNode & { type: "group" } = {
+      id: generateId(),
+      type: "group",
+      groupOperator: "and",
+      children: [...fieldChildren, groupNode],
+      boost,
+    }
+
+    if (hasMustNot) {
+      addMustNotChildren(group, obj.$mustNot)
+    }
+
+    return group
   }
 
   // Handle $mustNot (possibly with field conditions at the same level)

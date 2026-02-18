@@ -8,7 +8,7 @@ export function Sidebar() {
   const { keys, query } = useKeys()
 
   return (
-    <div className="flex h-full flex-col gap-2">
+    <div className="relative flex h-full flex-col gap-2">
       {query.isLoading && keys.length === 0 ? (
         <LoadingSkeleton />
       ) : keys.length > 0 ? (

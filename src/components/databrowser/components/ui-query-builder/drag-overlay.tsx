@@ -1,7 +1,8 @@
 import { DragOverlay as DndKitDragOverlay } from "@dnd-kit/core"
 import { IconGripVertical } from "@tabler/icons-react"
 
-import { BoostBadge, NotBadge } from "./condition-common"
+import { BoostBadge } from "./boost-badge"
+import { NotBadge } from "./not-badge"
 import { QueryCondition } from "./query-condition"
 import type { QueryNode } from "./types"
 

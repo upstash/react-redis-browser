@@ -17,10 +17,12 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 import { DocsLink } from "../docs-link"
-import { BoostBadge, NodeActionsMenu } from "./condition-common"
+import { BoostBadge } from "./boost-badge"
 import { QueryDndProvider } from "./dnd-context"
 import { DraggableItem, type DragHandleProps } from "./draggable-item"
 import { DropIndicator, EmptyGroupDropZone } from "./drop-zone"
+import { NodeActionsMenu } from "./node-actions-menu"
+import { NotBadge } from "./not-badge"
 import { useQueryBuilderUI } from "./query-builder-context"
 import { QueryCondition } from "./query-condition"
 import { createEmptyCondition, createEmptyGroup } from "./query-parser"
@@ -97,9 +99,7 @@ const InnerGroup = ({
   }
 
   const handleAddGroup = () => {
-    const newGroup = createEmptyGroup("and")
-    ;(newGroup as QueryNode & { type: "group" }).children = [createEmptyCondition(fieldInfos)]
-    addChildToGroup(node.id, newGroup)
+    addChildToGroup(node.id, createEmptyGroup("and"))
   }
 
   const handleDeleteGroup = () => {
@@ -150,6 +150,7 @@ const InnerGroup = ({
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {node.not && <NotBadge />}
         {node.boost !== undefined && <BoostBadge node={node} />}
 
         {/* Actions (settings menu & delete) - visible on hover */}

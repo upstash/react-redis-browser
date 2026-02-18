@@ -25,7 +25,12 @@ export const Segmented = ({
   unselectedClassName?: string
 }) => {
   return (
-    <div className={cn("flex w-fit gap-[2px] rounded-lg bg-zinc-200 p-[2px] text-sm", className)}>
+    <div
+      className={cn(
+        "flex w-fit select-none gap-[2px] rounded-lg bg-zinc-200 p-[2px] text-sm",
+        className
+      )}
+    >
       {options.map((option) => (
         <button
           className={cn(

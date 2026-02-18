@@ -110,7 +110,7 @@ export const SearchDisplay = ({
   }
 
   return (
-    <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-2 overflow-hidden">
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col gap-2">
       {!isCreateModal && (
         <DisplayHeader dataKey={effectiveIndexName} type={"search"} hideTypeTag={isEditModal} />
       )}
@@ -119,7 +119,7 @@ export const SearchDisplay = ({
         {!isCreateModal && isLoading ? (
           <Spinner isLoadingText={""} isLoading={true} />
         ) : (
-          <div className="flex min-h-0 w-full flex-1 flex-col gap-3 overflow-hidden">
+          <div className="flex min-h-0 w-full flex-1 flex-col gap-3">
             {/* Index Name - only shown in create modal */}
             {isCreateModal && (
               <div className="flex flex-col gap-1.5">
@@ -198,12 +198,12 @@ export const SearchDisplay = ({
             </div>
 
             {/* Schema Section */}
-            <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-zinc-300 bg-white">
+            <div className="relative flex min-h-0 flex-1 flex-col rounded-md border border-zinc-300 bg-white">
               <div className="flex items-center justify-between border-b border-zinc-200 px-3 py-2">
                 <h3 className="text-sm font-medium text-zinc-700">Schema</h3>
               </div>
 
-              <div className="min-h-0 flex-1 overflow-hidden">
+              <div className="min-h-0 flex-1">
                 <div className="h-full px-1">
                   <Controller
                     name="editorValue"

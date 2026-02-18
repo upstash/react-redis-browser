@@ -1,4 +1,3 @@
-import { useRedis } from "@/redis-context"
 import { useTab } from "@/tab-provider"
 import { IconDotsVertical } from "@tabler/icons-react"
 
@@ -24,8 +23,7 @@ export function KeyActions({
   type: string
 }) {
   const { mutateAsync: deleteKey } = useDeleteKey()
-  const { redisNoPipeline: redis } = useRedis()
-  const { isValuesSearchSelected, valuesSearch } = useTab()
+  const { isValuesSearchSelected } = useTab()
 
   return (
     <DropdownMenu modal={false}>
@@ -62,10 +60,7 @@ export function KeyActions({
           deletionType="key"
           showReindex={isValuesSearchSelected && type !== "search"}
           onDeleteConfirm={async (_e, options) => {
-            await deleteKey(dataKey)
-            if (options?.reindex && valuesSearch.index) {
-              await redis.search.index({ name: valuesSearch.index }).waitIndexing()
-            }
+            await deleteKey({ keys: [dataKey], reindex: options?.reindex })
           }}
         >
           <DropdownMenuItem

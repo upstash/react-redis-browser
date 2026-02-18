@@ -5,108 +5,239 @@ import { parseJSObjectLiteral } from "@/lib/utils"
 import { parseQueryString } from "./query-parser"
 import { stringifyQueryState } from "./query-stringify"
 
-const roundtrip = (input: string) => {
-  const state = parseQueryString(input)
+const roundtrip = (input: Record<string, unknown>) => {
+  const state = parseQueryString(JSON.stringify(input))
   if (!state) return
   return parseJSObjectLiteral(stringifyQueryState(state))
 }
 
-const parse = (input: string) => parseJSObjectLiteral(input)
+// Single object = input and expected are the same
+// Tuple [input, expected] = when output differs from input due to normalization
+const queries: (Record<string, unknown> | [Record<string, unknown>, Record<string, unknown>])[] = [
+  // empty
+  {},
 
-/** Deep equal ignoring key order */
-const deepEqual = (a: unknown, b: unknown): boolean => {
-  if (a === b) return true
-  if (typeof a !== typeof b) return false
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false
-    return a.every((item, i) => deepEqual(item, b[i]))
-  }
-  if (a && b && typeof a === "object" && typeof b === "object") {
-    const keysA = Object.keys(a as Record<string, unknown>).sort()
-    const keysB = Object.keys(b as Record<string, unknown>).sort()
-    if (keysA.length !== keysB.length) return false
-    return keysA.every(
-      (key, i) =>
-        key === keysB[i] &&
-        deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])
-    )
-  }
-  return false
-}
-
-// [input, expected output] — when output differs from input due to normalization
-// If only a string is provided, the output should match the input exactly.
-const queries: (string | [string, string])[] = [
-  // shorthand ($smart)
-  `{ name: "foo" }`,
-  `{ name: "foo", title: "bar" }`,
-  `{ age: 25 }`,
-  `{ active: true }`,
+  // shorthand ($smart for strings, $eq for number/boolean)
+  { name: "foo" },
+  { name: "foo", title: "bar" },
+  { age: 25 },
+  { active: true },
 
   // explicit $smart collapses to shorthand
-  [`{ name: { $smart: "foo" } }`, `{ name: "foo" }`],
+  [{ name: { $smart: "foo" } }, { name: "foo" }],
+  // explicit $smart on boolean/number auto-fixes to $eq then collapses
+  [{ active: { $smart: true } }, { active: true }],
+  [{ age: { $smart: 25 } }, { age: 25 }],
 
-  // $eq
-  `{ name: { $eq: "foo" } }`,
-  `{ age: { $eq: 25 } }`,
+  // $eq on string stays as $eq, $eq on number/boolean collapses
+  { name: { $eq: "foo" } },
+  [{ age: { $eq: 25 } }, { age: 25 }],
 
   // $ne
-  `{ name: { $ne: "foo" } }`,
-  `{ age: { $ne: 0 } }`,
+  { name: { $ne: "foo" } },
+  { age: { $ne: 0 } },
 
   // numeric comparisons
-  `{ age: { $gt: 18 } }`,
-  `{ age: { $gte: 18 } }`,
-  `{ age: { $lt: 100 } }`,
-  `{ age: { $lte: 100 } }`,
+  { age: { $gt: 18 } },
+  { age: { $gte: 18 } },
+  { age: { $lt: 100 } },
+  { age: { $lte: 100 } },
 
   // $in
-  `{ status: { $in: ["active", "pending"] } }`,
+  { status: { $in: ["active", "pending"] } },
 
   // $phrase
-  `{ bio: { $phrase: "hello world" } }`,
-  `{ bio: { $phrase: { value: "hello world", slop: 2 } } }`,
-  `{ bio: { $phrase: { value: "hello", prefix: true } } }`,
+  { bio: { $phrase: "hello world" } },
+  { bio: { $phrase: { value: "hello world", slop: 2 } } },
+  { bio: { $phrase: { value: "hello", prefix: true } } },
 
   // $regex
-  `{ name: { $regex: "^foo.*bar$" } }`,
+  { name: { $regex: "^foo.*bar$" } },
 
   // $fuzzy
-  `{ name: { $fuzzy: { value: "foo", distance: 2 } } }`,
+  { name: { $fuzzy: { value: "foo", distance: 2 } } },
 
-  // boolean groups
-  `{ $and: [{ name: "foo" }, { age: { $gt: 18 } }] }`,
-  `{ $or: [{ status: "active" }, { age: { $gt: 18 } }] }`,
+  // root AND removed
+  [{ $and: { age: 18 } }, { age: 18 }],
+  // root OR stays
+  [{ $or: { age: 18 } }, { $or: { age: 18 } }],
 
-  // $mustNot
-  [`{ $mustNot: { name: "foo" } }`, `{ $mustNot: [{ name: "foo" }] }`],
-  `{ $and: [{ name: "foo" }], $mustNot: [{ age: { $lt: 18 } }] }`,
+  // root and removed and flattened
+  [{ $and: [{ name: "foo" }, { age: 18 }] }, { name: "foo", age: 18 }],
+  // root or stays and flattened
+  [{ $or: [{ status: "active" }, { age: 18 }] }, { $or: { status: "active", age: 18 } }],
 
-  // nested groups ($or with $smart children merges to object form)
+  // --- flattening with $boost ---
+
+  // root $and removed with $boost
+  [{ $and: { name: "foo", $boost: 2 } }, { name: "foo", $boost: 2 }],
+  // root $or stays and flattened with $boost
+  [{ $or: { name: "foo", $boost: 2 } }, { $or: { name: "foo", $boost: 2 } }],
+
+  // do not flatten
+  { name: "foo", $or: { age: 18, $boost: 2 } },
+  { name: "foo", $or: { age: 18, $boost: 2 }, $boost: 3 },
+  { name: "foo", $and: { age: 18, $boost: 2 }, $boost: 3 },
+
+  // flatten the $boost
   [
-    `{ $and: [{ $or: [{ name: "a" }, { status: "b" }] }, { active: true }] }`,
-    `{ $and: [{ $or: { name: "a", status: "b" } }, { active: true }] }`,
+    {
+      $or: [
+        {
+          name: "foo",
+          $boost: 2,
+        },
+        {
+          age: 18,
+          $boost: 3,
+        },
+      ],
+    },
+    {
+      $or: {
+        name: { $smart: "foo", $boost: 2 },
+        age: { $eq: 18, $boost: 3 },
+      },
+    },
   ],
 
+  // flatten with $boost and remove the root $and
   [
-    `{ $and: [{ $or: [{ name: "a" }, { status: { $eq: "b" } }] }, { active: true }] }`,
-    `{ $and: [{ $or: { name: "a", status: { $eq: "b" } } }, { active: true }] }`,
+    {
+      $and: [
+        {
+          name: "foo",
+          $boost: 2,
+        },
+        {
+          age: 18,
+          $boost: 3,
+        },
+      ],
+    },
+    {
+      name: { $smart: "foo", $boost: 2 },
+      age: { $eq: 18, $boost: 3 },
+    },
   ],
 
-  // boost
-  `{ name: { $eq: "foo", $boost: 2 } }`,
+  // flatten carefully when single child with $boost
+  [
+    {
+      $and: [
+        {
+          name: "foo",
+          age: 18,
+          $boost: 2,
+        },
+      ],
+    },
+    {
+      $and: {
+        name: "foo",
+        age: 18,
+        $boost: 2,
+      },
+    },
+  ],
 
-  // empty
-  `{}`,
+  // don't flatten when one child is combined with $boost
+  {
+    $and: [
+      {
+        name: "foo",
+        age: 18,
+        $boost: 2,
+      },
+      {
+        status: "active",
+      },
+    ],
+  },
+
+  // --- $boost placement ---
+  // flat & flat
+  [
+    {
+      $or: {
+        $or: {
+          age: 18,
+          $boost: 2,
+        },
+        foo: "bar",
+      },
+    },
+    {
+      $or: [
+        {
+          $or: { age: 18 },
+          $boost: 2,
+        },
+        { foo: "bar" },
+      ],
+    },
+  ],
+
+  // array & flat (the best way, should stay as is)
+  {
+    $or: [
+      {
+        $or: {
+          age: 18,
+        },
+        // place on the same level as the group operator,
+        // whenever you can
+        $boost: 2,
+      },
+    ],
+  },
+
+  // array & array (here we can't flatten the $or, so it stays as is)
+  {
+    $or: [
+      {
+        $or: [{ age: 18 }, { age: 19 }],
+        // again, same level if you can
+        $boost: 2,
+      },
+      { foo: "bar" },
+    ],
+  },
+
+  // --- $mustNot ---
+
+  // $and stays with mustNot
+  { $and: {}, $mustNot: { name: "foo" } },
+  { $or: {}, $mustNot: { name: "foo" } },
+  // must not flattened
+  [
+    { $and: {}, $mustNot: [{ name: "foo" }] },
+    { $and: {}, $mustNot: { name: "foo" } },
+  ],
+  // both flattened
+  [
+    { $and: [{ name: "foo" }], $mustNot: [{ age: 18 }] },
+    { $and: { name: "foo" }, $mustNot: { age: 18 } },
+  ],
+
+  // nested groups (root AND flattens, inner $or merges to object form)
+  [
+    { $and: [{ $or: [{ name: "a" }, { status: "b" }] }, { active: true }] },
+    { $or: { name: "a", status: "b" }, active: true },
+  ],
+  [
+    { $and: [{ $or: [{ name: "a" }, { status: { $eq: "b" } }] }, { active: true }] },
+    { $or: { name: "a", status: { $eq: "b" } }, active: true },
+  ],
 ]
 
 describe("query roundtrip: parse → stringify", () => {
   for (const entry of queries) {
     const [input, expected] = Array.isArray(entry) ? entry : [entry, entry]
-    test(input, () => {
+    test(JSON.stringify(input), () => {
       const result = roundtrip(input)
       expect(result).not.toBeUndefined()
-      expect(deepEqual(result, parse(expected))).toBe(true)
+      expect(result).toEqual(expected)
     })
   }
 })
