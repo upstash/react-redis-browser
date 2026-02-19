@@ -7,7 +7,7 @@ export const SearchEmptyState = () => {
   const [importModalOpen, setImportModalOpen] = useState(false)
 
   return (
-    <div className="mx-auto flex h-full max-w-4xl gap-8 rounded-xl border border-zinc-200 bg-gradient-to-b from-zinc-50 to-white p-8">
+    <div className="mx-auto flex h-full gap-8 rounded-xl border border-zinc-200 bg-gradient-to-b from-zinc-50 to-white p-8">
       <ImportSampleDatasetModal open={importModalOpen} onOpenChange={setImportModalOpen} />
 
       {/* Left side - Explanation */}

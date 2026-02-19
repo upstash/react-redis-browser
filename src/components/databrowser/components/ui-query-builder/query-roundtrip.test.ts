@@ -156,6 +156,8 @@ const queries: (Record<string, unknown> | [Record<string, unknown>, Record<strin
   },
 
   // --- $boost placement ---
+  // The following tests all have a $boost 2 placed on the $or that contains age: 18
+
   // flat & flat
   [
     {
