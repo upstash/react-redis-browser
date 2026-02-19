@@ -2,7 +2,6 @@ import { useEffect, useState } from "react"
 import { useTab } from "@/tab-provider"
 import { Panel, PanelGroup } from "react-resizable-panels"
 
-import type { UseQueryWizard } from "@/types/query-wizard"
 import { cn, formatUpstashErrorMessage } from "@/lib/utils"
 import { ResizeHandle } from "@/components/ui/resize-handle"
 import { Segmented } from "@/components/ui/segmented"
@@ -90,12 +89,10 @@ export const DatabrowserInstance = ({
   hidden,
   tabType,
   allowSearch,
-  useQueryWizard,
 }: {
   hidden?: boolean
   tabType: TabType
   allowSearch: boolean
-  useQueryWizard?: UseQueryWizard
 }) => {
   const { isValuesSearchSelected, setIsValuesSearchSelected } = useTab()
   const { data: indexes, isLoading } = useFetchSearchIndexes({
@@ -122,7 +119,7 @@ export const DatabrowserInstance = ({
         )}
       >
         <div className="space-y-3 py-5">
-          <Header tabType={tabType} allowSearch={allowSearch} useQueryWizard={useQueryWizard} />
+          <Header tabType={tabType} allowSearch={allowSearch} />
           {!isValuesSearchSelected && <HeaderError />}
         </div>
 

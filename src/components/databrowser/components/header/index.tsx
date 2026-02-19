@@ -9,7 +9,6 @@ import {
   IconSparkles,
 } from "@tabler/icons-react"
 
-import type { UseQueryWizard } from "@/types/query-wizard"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -19,22 +18,15 @@ import { SimpleTooltip } from "@/components/ui/tooltip"
 import type { TabType } from "../.."
 import { useFetchSearchIndexes } from "../../hooks/use-fetch-search-indexes"
 import { AddKeyModal } from "../add-key-modal"
+import { QueryWizardPopover } from "../query-wizard/query-wizard-popover"
+import { useQueryWizardFn } from "../query-wizard/use-query-wizard"
 import { CreateIndexModal } from "../search/create-index-modal"
 import { EditIndexModal } from "../search/edit-index-modal"
-import { QueryAssistantPopover } from "../search/query-assistant-popover"
 import { RefreshButton } from "./refresh-button"
 import { SearchInput } from "./search-input"
 import { DataTypeSelector } from "./type-selector"
 
-export const Header = ({
-  tabType,
-  allowSearch,
-  useQueryWizard,
-}: {
-  tabType: TabType
-  allowSearch: boolean
-  useQueryWizard?: UseQueryWizard
-}) => {
+export const Header = ({ tabType, allowSearch }: { tabType: TabType; allowSearch: boolean }) => {
   const { isValuesSearchSelected, setIsValuesSearchSelected } = useTab()
 
   return (
@@ -80,7 +72,7 @@ export const Header = ({
 
       {/* Actions */}
       <div className="flex items-center gap-1.5">
-        {isValuesSearchSelected && <WizardButton useQueryWizard={useQueryWizard} />}
+        {isValuesSearchSelected && <WizardButton />}
         <RefreshButton />
         {isValuesSearchSelected ? <AddIndexButton /> : <AddKeyModal />}
       </div>
@@ -244,8 +236,11 @@ const AddIndexButton = () => {
   )
 }
 
-const WizardButton = ({ useQueryWizard }: { useQueryWizard?: UseQueryWizard }) => {
+const WizardButton = () => {
+  const queryWizard = useQueryWizardFn()
   const [open, setOpen] = useState(false)
+
+  if (!queryWizard) return null
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal={false}>
@@ -263,7 +258,7 @@ const WizardButton = ({ useQueryWizard }: { useQueryWizard?: UseQueryWizard }) =
         avoidCollisions={false}
         className="w-auto p-0"
       >
-        <QueryAssistantPopover onClose={() => setOpen(false)} useQueryWizard={useQueryWizard} />
+        <QueryWizardPopover onClose={() => setOpen(false)} />
       </PopoverContent>
     </Popover>
   )

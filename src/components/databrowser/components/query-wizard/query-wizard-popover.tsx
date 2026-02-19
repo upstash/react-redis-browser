@@ -4,21 +4,14 @@ import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
 import { IconChevronRight } from "@tabler/icons-react"
 
-import type { UseQueryWizard } from "@/types/query-wizard"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 
 import { useFetchSearchIndex } from "../../hooks/use-fetch-search-index"
-import { useGenerateQuery } from "../../hooks/use-generate-query"
-import { AiConsentPrompt } from "./ai-consent-prompt"
+import { ConsentPrompt } from "./consent-prompt"
+import { useGenerateQuery } from "./use-query-wizard"
 
-export const QueryAssistantPopover = ({
-  onClose,
-  useQueryWizard,
-}: {
-  onClose?: () => void
-  useQueryWizard?: UseQueryWizard
-}) => {
+export const QueryWizardPopover = ({ onClose }: { onClose?: () => void }) => {
   const { valuesSearch, setValuesSearchQuery, setQueryBuilderMode } = useTab()
   const { redisNoPipeline: redis } = useRedis()
   const [input, setInput] = useState("")
@@ -29,7 +22,7 @@ export const QueryAssistantPopover = ({
   const aiDataSharingConsent = store.aiDataSharingConsent
 
   const { data: indexData, isLoading: isLoadingIndex } = useFetchSearchIndex(valuesSearch.index)
-  const generateQuery = useGenerateQuery(useQueryWizard)
+  const generateQuery = useGenerateQuery()
 
   const handleGenerate = async () => {
     if (!input.trim() || !valuesSearch.index) return
@@ -100,7 +93,7 @@ export const QueryAssistantPopover = ({
   }
 
   if (aiDataSharingConsent === false) {
-    return <AiConsentPrompt onClose={onClose} />
+    return <ConsentPrompt onClose={onClose} />
   }
 
   return (

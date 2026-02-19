@@ -15,6 +15,7 @@ import { portalWrapper } from "@/lib/portal-root"
 
 import { DatabrowserInstance } from "./components/databrowser-instance"
 import { DatabrowserTabs } from "./components/databrowser-tabs"
+import { QueryWizardProvider } from "./components/query-wizard/use-query-wizard"
 
 /**
  * Persistence storage interface for the Databrowser.
@@ -147,16 +148,17 @@ export const RedisBrowser = ({
       <RedisProvider redisCredentials={credentials} telemetry={!disableTelemetry}>
         <DarkModeProvider theme={theme}>
           <DatabrowserProvider storage={storage} rootRef={rootRef}>
-            <TooltipProvider>
-              <RedisBrowserRoot
-                allowSearch={allowSearch}
-                hideTabs={hideTabs}
-                tabType={tabType}
-                rootRef={rootRef}
-                onFullScreenClick={onFullScreenClick}
-                useQueryWizard={useQueryWizard}
-              />
-            </TooltipProvider>
+            <QueryWizardProvider value={useQueryWizard}>
+              <TooltipProvider>
+                <RedisBrowserRoot
+                  allowSearch={allowSearch}
+                  hideTabs={hideTabs}
+                  tabType={tabType}
+                  rootRef={rootRef}
+                  onFullScreenClick={onFullScreenClick}
+                />
+              </TooltipProvider>
+            </QueryWizardProvider>
           </DatabrowserProvider>
         </DarkModeProvider>
       </RedisProvider>
@@ -170,14 +172,12 @@ const RedisBrowserRoot = ({
   allowSearch,
   rootRef,
   onFullScreenClick,
-  useQueryWizard,
 }: {
   hideTabs?: boolean
   tabType: TabType
   allowSearch: boolean
   rootRef: React.RefObject<HTMLDivElement>
   onFullScreenClick?: () => void
-  useQueryWizard?: UseQueryWizard
 }) => {
   const theme = useTheme()
 
@@ -195,11 +195,7 @@ const RedisBrowserRoot = ({
     >
       <div className="flex h-full flex-col rounded-[14px] border-[4px] border-zinc-300 text-zinc-700">
         {!hideTabs && <DatabrowserTabs onFullScreenClick={onFullScreenClick} />}
-        <DatabrowserInstances
-          tabType={tabType}
-          allowSearch={allowSearch}
-          useQueryWizard={useQueryWizard}
-        />
+        <DatabrowserInstances tabType={tabType} allowSearch={allowSearch} />
       </div>
     </div>
   )
@@ -208,11 +204,9 @@ const RedisBrowserRoot = ({
 const DatabrowserInstances = ({
   tabType,
   allowSearch,
-  useQueryWizard,
 }: {
   tabType: TabType
   allowSearch: boolean
-  useQueryWizard?: UseQueryWizard
 }) => {
   const { tabs, selectedTab, selectTab, addTab } = useDatabrowserStore()
 
@@ -229,7 +223,6 @@ const DatabrowserInstances = ({
         hidden={id !== selectedTab}
         tabType={tabType}
         allowSearch={allowSearch}
-        useQueryWizard={useQueryWizard}
       />
     </TabIdProvider>
   ))

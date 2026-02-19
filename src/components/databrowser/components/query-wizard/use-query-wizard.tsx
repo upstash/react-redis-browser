@@ -1,11 +1,22 @@
+import { createContext, useContext } from "react"
 import { useMutation } from "@tanstack/react-query"
 
 import type { SampleDataItem, UseQueryWizard } from "@/types/query-wizard"
 
-import { SEARCH_TYPES } from "../components/search/search-types-file"
-import type { SearchIndex } from "./use-fetch-search-index"
+import type { SearchIndex } from "../../hooks/use-fetch-search-index"
+import { SEARCH_TYPES } from "../search/search-types-file"
 
-export const useGenerateQuery = (queryWizard?: UseQueryWizard) => {
+const QueryWizardContext = createContext<UseQueryWizard | undefined>(undefined)
+
+export const QueryWizardProvider = QueryWizardContext.Provider
+
+export const useQueryWizardFn = () => {
+  return useContext(QueryWizardContext)
+}
+
+export const useGenerateQuery = () => {
+  const queryWizard = useQueryWizardFn()
+
   return useMutation({
     mutationFn: async ({
       prompt,

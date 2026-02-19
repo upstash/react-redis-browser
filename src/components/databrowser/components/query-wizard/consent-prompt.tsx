@@ -1,7 +1,7 @@
 import { useDatabrowserStore } from "@/store"
 import { IconAlertCircleFilled } from "@tabler/icons-react"
 
-export const AiConsentPrompt = ({ onClose }: { onClose?: () => void }) => {
+export const ConsentPrompt = ({ onClose }: { onClose?: () => void }) => {
   const store = useDatabrowserStore()
 
   const handleContinue = () => {
