@@ -210,7 +210,7 @@ export const DatabrowserTabs = ({ onFullScreenClick }: { onFullScreenClick?: () 
   }
 
   return (
-    <div className="relative shrink-0 overflow-hidden rounded-t-lg bg-zinc-300">
+    <div className="relative shrink-0 overflow-hidden rounded-t-[10px] bg-zinc-300">
       <div className="flex items-center gap-1">
         {/* Scrollable tabs area */}
         <div className="relative min-w-0 flex-1">
@@ -258,16 +258,15 @@ export const DatabrowserTabs = ({ onFullScreenClick }: { onFullScreenClick?: () 
         </div>
 
         {/* Fixed right controls: search + add */}
-        <div className="flex items-center gap-1 pl-1">
+        <div className="flex items-center gap-1 px-1">
           {isOverflow && <AddTabButton />}
           {tabs.length > 1 && <TabsListButton tabs={tabs} onSelectTab={selectTab} />}
           {onFullScreenClick && (
             <Button
               aria-label="Toggle fullscreen"
               variant="secondary"
-              size="icon-sm"
               onClick={onFullScreenClick}
-              className="flex-shrink-0 bg-white text-zinc-500 dark:bg-zinc-100"
+              className="h-[34px] w-[34px] flex-shrink-0 rounded-lg bg-white text-zinc-500 dark:bg-zinc-100"
             >
               <IconWindowMaximize size={16} />
             </Button>
@@ -343,8 +342,7 @@ function TabsListButton({
       <PopoverTrigger asChild>
         <Button
           variant="secondary"
-          size="sm"
-          className="gap-1 bg-white px-2"
+          className="h-[34px] gap-1 rounded-lg bg-white px-2"
           aria-label="Search in tabs"
         >
           <span className="text-xs text-zinc-600">{tabs.length}</span>

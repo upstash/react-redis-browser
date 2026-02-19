@@ -147,7 +147,7 @@ const IndexSelector = () => {
               {filteredIndexes?.map((idx) => (
                 <div
                   key={idx}
-                  className="flex h-9 items-center rounded-md px-2 transition-colors hover:bg-zinc-100"
+                  className="flex h-9 items-center rounded-md px-2 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-200"
                 >
                   <button
                     onClick={() => {
@@ -202,7 +202,7 @@ const CreateIndexButton = () => {
           e.stopPropagation()
           setOpen(true)
         }}
-        className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-sm text-emerald-600 transition-colors hover:bg-zinc-50"
+        className="flex h-9 w-full items-center gap-2 rounded-md px-2 text-sm text-emerald-600 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-200"
       >
         <IconCirclePlus className="size-5" />
         <span className="underline">Create a new Index</span>

@@ -53,7 +53,7 @@ export const DisplayHeader = ({
 
       {/* Key info badges */}
       {type === "search" && hideTypeTag ? undefined : (
-        <div className="flex h-10 items-center gap-1.5 overflow-scroll">
+        <div className="flex h-10 items-center gap-1.5 overflow-x-scroll">
           {!hideTypeTag && <TypeTag variant={type} type="badge" />}
           {type !== "search" && <SizeBadge dataKey={dataKey} />}
           {type !== "search" && <LengthBadge dataKey={dataKey} type={type} content={content} />}

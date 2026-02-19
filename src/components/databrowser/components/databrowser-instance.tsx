@@ -115,7 +115,7 @@ export const DatabrowserInstance = ({
     <KeysProvider>
       <div
         className={cn(
-          "flex min-h-0 grow flex-col rounded-md bg-white px-5 pb-5",
+          "flex min-h-0 grow flex-col rounded-[10px] bg-white px-5 pb-5",
           hidden && "hidden"
         )}
       >

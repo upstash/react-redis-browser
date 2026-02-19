@@ -140,7 +140,7 @@ export const SearchDisplay = ({
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium text-zinc-700">Config</h3>
               </div>
-              <div className="mt-2 grid grid-cols-4 gap-4 text-sm">
+              <div className="mt-2 grid grid-cols-2 gap-4 text-sm lg:grid-cols-4">
                 <div>
                   <span className="mb-1.5 block text-xs font-medium text-zinc-500">Data Type</span>
                   <Controller
