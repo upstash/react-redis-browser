@@ -62,6 +62,21 @@ export function formatTime(seconds: number) {
 export const isTest = typeof window !== "undefined" && (window as any).__PLAYWRIGHT__ === true
 
 /**
+ * Convert JSON string to JS object literal string.
+ * Removes quotes from keys that are valid identifiers.
+ */
+const jsonToJsLiteral = (json: string): string => {
+  return json.replaceAll(/"([$A-Z_a-z][\w$]*)"\s*:/g, "$1:")
+}
+
+/**
+ * Stringify with pretty formatting, then convert to JS literal
+ */
+export const toJsLiteral = (obj: unknown): string => {
+  return jsonToJsLiteral(JSON.stringify(obj, null, 2))
+}
+
+/**
  * Formats an UpstashError message by stripping the "ERR" and "command was: ..." parts.
  */
 export const formatUpstashErrorMessage = (error: Error): string => {

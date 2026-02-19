@@ -23,17 +23,16 @@ import { hasMustShouldCombination } from "./ui-query-builder/query-parser"
 
 export const PREFIX = "const query: Query = "
 
-type QueryBuilderMode = "builder" | "code"
+type QueryBuilderMode = "ui" | "code"
 
 const QueryBuilderContent = () => {
-  const { valuesSearch } = useTab()
+  const { valuesSearch, queryBuilderMode, setQueryBuilderMode } = useTab()
   const { query } = useKeys()
-  const [mode, setMode] = useState<QueryBuilderMode>("builder")
   const [switchError, setSwitchError] = useState<string>()
 
   const handleModeChange = (value: string) => {
     const newMode = value as QueryBuilderMode
-    if (newMode === "builder") {
+    if (newMode === "ui") {
       if (hasMustShouldCombination(valuesSearch.query)) {
         setSwitchError(
           "Queries using both $must and $should are not supported in the UI query builder"
@@ -44,7 +43,7 @@ const QueryBuilderContent = () => {
     } else {
       setSwitchError(undefined)
     }
-    setMode(newMode)
+    setQueryBuilderMode(newMode)
   }
 
   const errorMessage =
@@ -55,15 +54,15 @@ const QueryBuilderContent = () => {
       <div className="absolute right-4 top-4 z-[2]">
         <Segmented
           options={[
-            { key: "builder", label: "Query Builder" },
+            { key: "ui", label: "Query Builder" },
             { key: "code", label: "Code Editor" },
           ]}
-          value={mode}
+          value={queryBuilderMode}
           onChange={handleModeChange}
           buttonClassName="h-6"
         />
       </div>
-      {mode === "builder" ? <UIQueryBuilder /> : <QueryBuilder />}
+      {queryBuilderMode === "ui" ? <UIQueryBuilder /> : <QueryBuilder />}
       <QueryBuilderError error={errorMessage} autoHide={Boolean(switchError)} />
       <DocsLink
         className="absolute bottom-2 right-2 text-sm"

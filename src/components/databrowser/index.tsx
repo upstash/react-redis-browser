@@ -14,6 +14,8 @@ import { portalWrapper } from "@/lib/portal-root"
 
 import { DatabrowserInstance } from "./components/databrowser-instance"
 import { DatabrowserTabs } from "./components/databrowser-tabs"
+import type { UseQueryWizard } from "./components/query-wizard/types"
+import { QueryWizardProvider } from "./components/query-wizard/use-query-wizard"
 
 /**
  * Persistence storage interface for the Databrowser.
@@ -35,6 +37,7 @@ export const RedisBrowser = ({
   onFullScreenClick,
   theme = "light",
   allowSearch = false,
+  useQueryWizard,
 }: RedisCredentials & {
   /**
    * Whether to disable telemetry.
@@ -104,6 +107,34 @@ export const RedisBrowser = ({
    * @default true
    */
   allowSearch?: boolean
+
+  /**
+   * AI Query Wizard function for generating Redis search queries from natural language.
+   * When provided, a wizard button (🪄) appears in the Search tab that allows users to
+   * generate queries using AI.
+   *
+   * The function receives:
+   * - prompt: User's natural language query
+   * - schema: Current index schema
+   * - sampleData: First ~10 items from the database
+   * - searchTypes: Redis search type definitions
+   *
+   * And should return a query object.
+   *
+   * @example
+   * ```tsx
+   * <RedisBrowser
+   *   useQueryWizard={async ({ prompt, schema, sampleData, searchTypes }) => {
+   *     const response = await fetch('/api/generate-query', {
+   *       method: 'POST',
+   *       body: JSON.stringify({ prompt, schema, sampleData, searchTypes }),
+   *     })
+   *     return await response.json()
+   *   }}
+   * />
+   * ```
+   */
+  useQueryWizard?: UseQueryWizard
 }) => {
   const credentials = useMemo(() => ({ token, url }), [token, url])
   const rootRef = useRef<HTMLDivElement>(null)
@@ -117,15 +148,17 @@ export const RedisBrowser = ({
       <RedisProvider redisCredentials={credentials} telemetry={!disableTelemetry}>
         <DarkModeProvider theme={theme}>
           <DatabrowserProvider storage={storage} rootRef={rootRef}>
-            <TooltipProvider>
-              <RedisBrowserRoot
-                allowSearch={allowSearch}
-                hideTabs={hideTabs}
-                tabType={tabType}
-                rootRef={rootRef}
-                onFullScreenClick={onFullScreenClick}
-              />
-            </TooltipProvider>
+            <QueryWizardProvider value={useQueryWizard}>
+              <TooltipProvider>
+                <RedisBrowserRoot
+                  allowSearch={allowSearch}
+                  hideTabs={hideTabs}
+                  tabType={tabType}
+                  rootRef={rootRef}
+                  onFullScreenClick={onFullScreenClick}
+                />
+              </TooltipProvider>
+            </QueryWizardProvider>
           </DatabrowserProvider>
         </DarkModeProvider>
       </RedisProvider>

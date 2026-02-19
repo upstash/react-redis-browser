@@ -6,6 +6,7 @@ import {
   IconCirclePlus,
   IconPlus,
   IconSearch,
+  IconSparkles,
 } from "@tabler/icons-react"
 
 import { cn } from "@/lib/utils"
@@ -17,6 +18,8 @@ import { SimpleTooltip } from "@/components/ui/tooltip"
 import type { TabType } from "../.."
 import { useFetchSearchIndexes } from "../../hooks/use-fetch-search-indexes"
 import { AddKeyModal } from "../add-key-modal"
+import { QueryWizardPopover } from "../query-wizard/query-wizard-popover"
+import { useQueryWizardFn } from "../query-wizard/use-query-wizard"
 import { CreateIndexModal } from "../search/create-index-modal"
 import { EditIndexModal } from "../search/edit-index-modal"
 import { RefreshButton } from "./refresh-button"
@@ -69,6 +72,7 @@ export const Header = ({ tabType, allowSearch }: { tabType: TabType; allowSearch
 
       {/* Actions */}
       <div className="flex items-center gap-1.5">
+        {isValuesSearchSelected && <WizardButton />}
         <RefreshButton />
         {isValuesSearchSelected ? <AddIndexButton /> : <AddKeyModal />}
       </div>
@@ -229,5 +233,33 @@ const AddIndexButton = () => {
       </SimpleTooltip>
       <CreateIndexModal open={open} onOpenChange={setOpen} />
     </>
+  )
+}
+
+const WizardButton = () => {
+  const queryWizard = useQueryWizardFn()
+  const [open, setOpen] = useState(false)
+
+  if (!queryWizard) return null
+
+  return (
+    <Popover open={open} onOpenChange={setOpen} modal={false}>
+      <SimpleTooltip content="Query Wizard">
+        <PopoverTrigger asChild>
+          <Button size="icon" aria-label="Query Wizard">
+            <IconSparkles className="size-4 text-zinc-500" />
+          </Button>
+        </PopoverTrigger>
+      </SimpleTooltip>
+      <PopoverContent
+        side="bottom"
+        align="end"
+        alignOffset={-124}
+        avoidCollisions={false}
+        className="w-auto p-0"
+      >
+        <QueryWizardPopover onClose={() => setOpen(false)} />
+      </PopoverContent>
+    </Popover>
   )
 }

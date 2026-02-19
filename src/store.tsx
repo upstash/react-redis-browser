@@ -45,7 +45,7 @@ export const DatabrowserProvider = ({
           setItem: (_name, value) => storage.set(JSON.stringify(value)),
           removeItem: () => {},
         },
-        version: 7,
+        version: 8,
         migrate: (originalState, version) => {
           const state = originalState as DatabrowserStore
 
@@ -84,8 +84,13 @@ export const DatabrowserProvider = ({
             // Reset valuesSearch to new structure
             state.tabs = state.tabs.map(([id, data]) => [
               id,
-              { ...data, valuesSearch: { index: "", queries: {} } },
+              { ...data, valuesSearch: { index: "", queries: {}, queryBuilderMode: "ui" } },
             ])
+          }
+
+          if (version <= 7) {
+            // Add AI consent field
+            state.aiDataSharingConsent = state.aiDataSharingConsent ?? false
           }
 
           return state
@@ -128,6 +133,8 @@ export type ValuesSearchFilter = {
 
   // A map of <indexName, queryValue>
   queries: Record<string, string>
+
+  queryBuilderMode: "ui" | "code"
 }
 
 export type SelectedItem = {
@@ -178,9 +185,13 @@ type DatabrowserStore = {
   setValuesSearchIndex: (tabId: TabId, index: string) => void
   setValuesSearchQuery: (tabId: TabId, query: string) => void
   setIsValuesSearchSelected: (tabId: TabId, isSelected: boolean) => void
+  setQueryBuilderMode: (tabId: TabId, mode: "ui" | "code") => void
 
   searchHistory: string[]
   addSearchHistory: (key: string) => void
+
+  aiDataSharingConsent: boolean
+  setAiDataSharingConsent: (consent: boolean) => void
 }
 
 export type DatabrowserStoreObject = UseBoundStore<StoreApi<DatabrowserStore>>
@@ -196,7 +207,7 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
       id,
       selectedKeys: [],
       search: { key: "", type: undefined },
-      valuesSearch: { index: "", queries: {} },
+      valuesSearch: { index: "", queries: {}, queryBuilderMode: "ui" },
       isValuesSearchSelected: false,
       pinned: false,
     }
@@ -474,8 +485,32 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
     })
   },
 
+  setQueryBuilderMode: (tabId, mode) => {
+    set((old) => {
+      const tabIndex = old.tabs.findIndex(([id]) => id === tabId)
+      if (tabIndex === -1) return old
+
+      const newTabs = [...old.tabs]
+      const [, tabData] = newTabs[tabIndex]
+      newTabs[tabIndex] = [
+        tabId,
+        {
+          ...tabData,
+          valuesSearch: { ...tabData.valuesSearch, queryBuilderMode: mode },
+        },
+      ]
+
+      return { ...old, tabs: newTabs }
+    })
+  },
+
   searchHistory: [],
   addSearchHistory: (key) => {
     set((old) => ({ ...old, searchHistory: [key, ...old.searchHistory] }))
+  },
+
+  aiDataSharingConsent: false,
+  setAiDataSharingConsent: (consent) => {
+    set({ aiDataSharingConsent: consent })
   },
 })
