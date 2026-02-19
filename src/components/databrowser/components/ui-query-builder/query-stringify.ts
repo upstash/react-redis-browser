@@ -1,21 +1,6 @@
+import { toJsLiteral } from "@/lib/utils"
+
 import type { FieldOperator, QueryNode, QueryState } from "./types"
-
-/**
- * Convert JSON string to JS object literal string.
- * Removes quotes from keys that are valid identifiers.
- */
-const jsonToJsLiteral = (json: string): string => {
-  // Match quoted keys that are valid JS identifiers and remove the quotes
-  // Valid identifier: starts with $, letter, or underscore, followed by word chars or $
-  return json.replaceAll(/"([$A-Z_a-z][\w$]*)"\s*:/g, "$1:")
-}
-
-/**
- * Stringify with pretty formatting, then convert to JS literal
- */
-const toJsLiteral = (obj: unknown): string => {
-  return jsonToJsLiteral(JSON.stringify(obj, null, 2))
-}
 
 /** Build the operator value for a condition (handles fuzzy and phrase specially) */
 const buildOperatorValue = (

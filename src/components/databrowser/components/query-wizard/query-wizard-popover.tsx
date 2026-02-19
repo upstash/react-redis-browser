@@ -4,6 +4,8 @@ import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
 import { IconChevronRight } from "@tabler/icons-react"
 
+import { scanKeys } from "@/lib/scan-keys"
+import { toJsLiteral } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 
@@ -18,8 +20,7 @@ export const QueryWizardPopover = ({ onClose }: { onClose?: () => void }) => {
   const [sampleData, setSampleData] = useState<any[]>([])
   const [showIndexFields, setShowIndexFields] = useState(false)
 
-  const store = useDatabrowserStore()
-  const aiDataSharingConsent = store.aiDataSharingConsent
+  const { aiDataSharingConsent } = useDatabrowserStore()
 
   const { data: indexData, isLoading: isLoadingIndex } = useFetchSearchIndex(valuesSearch.index)
   const generateQuery = useGenerateQuery()
@@ -31,8 +32,11 @@ export const QueryWizardPopover = ({ onClose }: { onClose?: () => void }) => {
       let samples = sampleData
       if (samples.length === 0 && indexData?.prefixes?.[0]) {
         try {
-          const keys = await redis.keys(`${indexData.prefixes[0]}*`)
-          const firstTenKeys = keys.slice(0, 10)
+          const firstTenKeys = await scanKeys(redis, {
+            match: `${indexData.prefixes[0]}*`,
+            type: indexData.dataType,
+            limit: 10,
+          })
 
           const dataPromises = firstTenKeys.map(async (key) => {
             try {
@@ -65,7 +69,7 @@ export const QueryWizardPopover = ({ onClose }: { onClose?: () => void }) => {
         sampleData: samples,
       })
 
-      const queryString = JSON.stringify(result.query, null, 2)
+      const queryString = toJsLiteral(result.query)
       setValuesSearchQuery(queryString)
 
       setQueryBuilderMode("code")
@@ -78,7 +82,7 @@ export const QueryWizardPopover = ({ onClose }: { onClose?: () => void }) => {
 
   if (isLoadingIndex) {
     return (
-      <div className="flex h-[100px] items-center justify-center">
+      <div className="flex h-[100px] w-[340px] items-center justify-center rounded-2xl bg-white">
         <Spinner isLoading={true} isLoadingText="Loading index..." />
       </div>
     )
@@ -86,8 +90,11 @@ export const QueryWizardPopover = ({ onClose }: { onClose?: () => void }) => {
 
   if (!valuesSearch.index) {
     return (
-      <div className="flex h-[100px] items-center justify-center">
-        <p className="text-sm text-zinc-500">Please select an index first</p>
+      <div className="flex w-[340px] flex-col items-center gap-2 rounded-2xl bg-white p-8">
+        <p className="text-sm font-medium text-zinc-700">No index selected</p>
+        <p className="text-center text-xs text-zinc-500">
+          Create a new index to use the Query Wizard.
+        </p>
       </div>
     )
   }
@@ -97,7 +104,7 @@ export const QueryWizardPopover = ({ onClose }: { onClose?: () => void }) => {
   }
 
   return (
-    <div className="flex w-[500px] flex-col gap-6 rounded-2xl bg-white p-6 shadow-[0_6px_16px_rgba(0,0,0,0.2)]">
+    <div className="flex w-[500px] flex-col gap-6 rounded-2xl bg-white p-6">
       <div className="flex items-center gap-2">
         <h3 className="text-base font-semibold text-zinc-950">AI Query Builder</h3>
         <div className="flex items-center justify-center rounded-md bg-purple-100 px-1.5 py-0.5">

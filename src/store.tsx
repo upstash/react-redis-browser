@@ -84,7 +84,7 @@ export const DatabrowserProvider = ({
             // Reset valuesSearch to new structure
             state.tabs = state.tabs.map(([id, data]) => [
               id,
-              { ...data, valuesSearch: { index: "", queries: {} } },
+              { ...data, valuesSearch: { index: "", queries: {}, queryBuilderMode: "ui" } },
             ])
           }
 
@@ -133,6 +133,8 @@ export type ValuesSearchFilter = {
 
   // A map of <indexName, queryValue>
   queries: Record<string, string>
+
+  queryBuilderMode: "ui" | "code"
 }
 
 export type SelectedItem = {
@@ -148,7 +150,6 @@ export type TabData = {
   search: SearchFilter
   valuesSearch: ValuesSearchFilter
   isValuesSearchSelected: boolean
-  queryBuilderMode?: "builder" | "code"
   pinned?: boolean
 }
 
@@ -184,7 +185,7 @@ type DatabrowserStore = {
   setValuesSearchIndex: (tabId: TabId, index: string) => void
   setValuesSearchQuery: (tabId: TabId, query: string) => void
   setIsValuesSearchSelected: (tabId: TabId, isSelected: boolean) => void
-  setQueryBuilderMode: (tabId: TabId, mode: "builder" | "code") => void
+  setQueryBuilderMode: (tabId: TabId, mode: "ui" | "code") => void
 
   searchHistory: string[]
   addSearchHistory: (key: string) => void
@@ -206,7 +207,7 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
       id,
       selectedKeys: [],
       search: { key: "", type: undefined },
-      valuesSearch: { index: "", queries: {} },
+      valuesSearch: { index: "", queries: {}, queryBuilderMode: "ui" },
       isValuesSearchSelected: false,
       pinned: false,
     }
@@ -491,7 +492,13 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => ({
 
       const newTabs = [...old.tabs]
       const [, tabData] = newTabs[tabIndex]
-      newTabs[tabIndex] = [tabId, { ...tabData, queryBuilderMode: mode }]
+      newTabs[tabIndex] = [
+        tabId,
+        {
+          ...tabData,
+          valuesSearch: { ...tabData.valuesSearch, queryBuilderMode: mode },
+        },
+      ]
 
       return { ...old, tabs: newTabs }
     })

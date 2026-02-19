@@ -85,6 +85,16 @@ const App = () => {
               url={credentials.url}
               theme={theme}
               allowSearch
+              useQueryWizard={async (params) => {
+                // eslint-disable-next-line no-console
+                console.log("useQueryWizard params:", params)
+                await new Promise((resolve) => setTimeout(resolve, 1500))
+                return {
+                  query: {
+                    $or: [{ name: "foo", age: 18, prompt: params.prompt }],
+                  },
+                }
+              }}
             />
           ) : (
             <CredentialsForm />

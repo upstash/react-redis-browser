@@ -1,10 +1,9 @@
 import { createContext, useContext } from "react"
 import { useMutation } from "@tanstack/react-query"
 
-import type { SampleDataItem, UseQueryWizard } from "@/types/query-wizard"
-
 import type { SearchIndex } from "../../hooks/use-fetch-search-index"
 import { SEARCH_TYPES } from "../search/search-types-file"
+import type { SampleDataItem, UseQueryWizard } from "./types"
 
 const QueryWizardContext = createContext<UseQueryWizard | undefined>(undefined)
 

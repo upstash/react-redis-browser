@@ -5,4 +5,4 @@ export type {
   QueryWizardContext,
   QueryWizardResponse,
   SampleDataItem,
-} from "@/types/query-wizard"
+} from "@/components/databrowser/components/query-wizard/types"

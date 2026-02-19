@@ -1,4 +1,4 @@
-import type { SearchIndex } from "@/components/databrowser/hooks/use-fetch-search-index"
+import type { SearchIndex } from "../../hooks/use-fetch-search-index"
 
 export type SampleDataItem = {
   key: string

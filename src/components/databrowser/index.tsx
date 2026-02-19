@@ -9,12 +9,12 @@ import { TabIdProvider } from "@/tab-provider"
 import { TooltipProvider } from "@radix-ui/react-tooltip"
 import { QueryClientProvider } from "@tanstack/react-query"
 
-import type { UseQueryWizard } from "@/types/query-wizard"
 import { queryClient } from "@/lib/clients"
 import { portalWrapper } from "@/lib/portal-root"
 
 import { DatabrowserInstance } from "./components/databrowser-instance"
 import { DatabrowserTabs } from "./components/databrowser-tabs"
+import type { UseQueryWizard } from "./components/query-wizard/types"
 import { QueryWizardProvider } from "./components/query-wizard/use-query-wizard"
 
 /**
