@@ -68,7 +68,7 @@ export const QueryAssistantPopover = ({
 
       const result = await generateQuery.mutateAsync({
         prompt: input,
-        searchIndex: indexData,
+        searchIndex: indexData ?? undefined,
         sampleData: samples,
       })
 
