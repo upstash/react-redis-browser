@@ -123,7 +123,7 @@ export const SearchDisplay = ({
             {/* Index Name - only shown in create modal */}
             {isCreateModal && (
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="index-name">Key</Label>
+                <Label htmlFor="index-name">Index Key</Label>
                 <Input
                   id="index-name"
                   {...register("indexName", { required: "Please enter an index name" })}
@@ -261,7 +261,6 @@ export const SearchDisplay = ({
               values={pendingFormValues}
               onClose={() => {
                 setPendingFormValues(undefined)
-                reset()
                 if (isEditModal && onClose) onClose()
               }}
             />
