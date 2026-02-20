@@ -3,6 +3,7 @@ import { type DataType } from "@/types"
 import { IconPlus } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { SimpleTooltip } from "@/components/ui/tooltip"
 
 import { TypeTag } from "../type-tag"
@@ -53,12 +54,14 @@ export const DisplayHeader = ({
 
       {/* Key info badges */}
       {type === "search" && hideTypeTag ? undefined : (
-        <div className="flex h-10 items-center gap-1.5 overflow-x-scroll">
-          {!hideTypeTag && <TypeTag variant={type} type="badge" />}
-          {type !== "search" && <SizeBadge dataKey={dataKey} />}
-          {type !== "search" && <LengthBadge dataKey={dataKey} type={type} content={content} />}
-          {type !== "search" && <HeaderTTLBadge dataKey={dataKey} />}
-        </div>
+        <ScrollArea orientation="horizontal" className="w-full whitespace-nowrap">
+          <div className="flex w-max items-center gap-1.5 pb-2 pt-1">
+            {!hideTypeTag && <TypeTag variant={type} type="badge" />}
+            {type !== "search" && <SizeBadge dataKey={dataKey} />}
+            {type !== "search" && <LengthBadge dataKey={dataKey} type={type} content={content} />}
+            {type !== "search" && <HeaderTTLBadge dataKey={dataKey} />}
+          </div>
+        </ScrollArea>
       )}
     </div>
   )
