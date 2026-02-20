@@ -33,10 +33,6 @@ const queries: (Record<string, unknown> | [Record<string, unknown>, Record<strin
   { name: { $eq: "foo" } },
   [{ age: { $eq: 25 } }, { age: 25 }],
 
-  // $ne
-  { name: { $ne: "foo" } },
-  { age: { $ne: 0 } },
-
   // numeric comparisons
   { age: { $gt: 18 } },
   { age: { $gte: 18 } },

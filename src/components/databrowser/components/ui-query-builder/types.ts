@@ -1,6 +1,5 @@
 export type FieldOperator =
   | "eq"
-  | "ne"
   | "gt"
   | "gte"
   | "lt"
@@ -20,25 +19,16 @@ export type FieldInfo = {
   type: FieldType
 }
 
-export const STRING_OPERATORS: FieldOperator[] = [
-  "smart",
-  "eq",
-  "ne",
-  "in",
-  "phrase",
-  "regex",
-  "fuzzy",
-]
+export const STRING_OPERATORS: FieldOperator[] = ["smart", "eq", "in", "phrase", "regex", "fuzzy"]
 
-export const NUMBER_OPERATORS: FieldOperator[] = ["eq", "ne", "gt", "gte", "lt", "lte"]
-export const BOOLEAN_OPERATORS: FieldOperator[] = ["eq", "ne"]
+export const NUMBER_OPERATORS: FieldOperator[] = ["eq", "gt", "gte", "lt", "lte"]
+export const BOOLEAN_OPERATORS: FieldOperator[] = ["eq"]
 export const DATE_OPERATORS: FieldOperator[] = NUMBER_OPERATORS
 
 /** All available operators */
 export const ALL_OPERATORS: FieldOperator[] = [
   "smart",
   "eq",
-  "ne",
   "gt",
   "gte",
   "lt",
@@ -52,7 +42,6 @@ export const ALL_OPERATORS: FieldOperator[] = [
 /** Operator descriptions for tooltips */
 export const OPERATOR_DESCRIPTIONS: Record<FieldOperator, string> = {
   eq: "Equals",
-  ne: "Not equals",
   gt: "Greater than",
   gte: "Greater than or equal",
   lt: "Less than",
@@ -68,7 +57,6 @@ export const OPERATOR_DESCRIPTIONS: Record<FieldOperator, string> = {
 export const OPERATOR_OPTIONS: { value: FieldOperator; label: string }[] = [
   { value: "smart", label: "smart" },
   { value: "eq", label: "eq" },
-  { value: "ne", label: "ne" },
   { value: "gt", label: "gt" },
   { value: "gte", label: "gte" },
   { value: "lt", label: "lt" },
