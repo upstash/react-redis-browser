@@ -328,6 +328,16 @@ function parseFieldBuilder(str: string): FieldValue | null {
     }
   }
 
+  // s.keyword()
+  if (str.startsWith("s.keyword()")) {
+    return "KEYWORD"
+  }
+
+  // s.facet()
+  if (str.startsWith("s.facet()")) {
+    return "FACET"
+  }
+
   return null
 }
 
@@ -422,6 +432,12 @@ function fieldToBuilder(value: unknown): string {
       case "F64": {
         return `s.number("${value}")`
       }
+      case "KEYWORD": {
+        return "s.keyword()"
+      }
+      case "FACET": {
+        return "s.facet()"
+      }
       default: {
         return "s.string()"
       }
@@ -454,6 +470,14 @@ function fieldToBuilder(value: unknown): string {
     case "DATE": {
       builder = "s.date()"
       if (v.fast) builder += ".fast()"
+      break
+    }
+    case "KEYWORD": {
+      builder = "s.keyword()"
+      break
+    }
+    case "FACET": {
+      builder = "s.facet()"
       break
     }
     default: {
