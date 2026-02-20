@@ -3,13 +3,16 @@ import { useRedis } from "@/redis-context"
 import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
 import { IconChevronRight } from "@tabler/icons-react"
+import { useMutation } from "@tanstack/react-query"
 
 import { scanKeys } from "@/lib/scan-keys"
 import { toJsLiteral } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 
+import type { SearchIndex } from "../../hooks/use-fetch-search-index"
 import { useFetchSearchIndex } from "../../hooks/use-fetch-search-index"
+import { DocsLink } from "../docs-link"
 import { ConsentPrompt } from "./consent-prompt"
 import { useGenerateQuery } from "./use-query-wizard"
 
@@ -25,42 +28,45 @@ export const QueryWizardPopover = ({ onClose }: { onClose?: () => void }) => {
   const { data: indexData, isLoading: isLoadingIndex } = useFetchSearchIndex(valuesSearch.index)
   const generateQuery = useGenerateQuery()
 
+  const fetchSampleKeys = useMutation({
+    mutationFn: async (index: SearchIndex) => {
+      const firstTenKeys = await scanKeys(redis, {
+        match: `${index.prefixes?.[0]}*`,
+        type: index.dataType,
+        limit: 10,
+      })
+
+      const dataPromises = firstTenKeys.map(async (key) => {
+        try {
+          if (index.dataType === "json") {
+            const data = await redis.json.get(key)
+            return { key, data }
+          } else if (index.dataType === "hash") {
+            const data = await redis.hgetall(key)
+            return { key, data }
+          } else {
+            const data = await redis.get(key)
+            return { key, data }
+          }
+        } catch {
+          return null
+        }
+      })
+
+      const results = await Promise.all(dataPromises)
+      const filtered = results.filter(Boolean)
+      setSampleData(filtered)
+      return filtered
+    },
+  })
+
   const handleGenerate = async () => {
     if (!input.trim() || !valuesSearch.index) return
 
     try {
       let samples = sampleData
       if (samples.length === 0 && indexData?.prefixes?.[0]) {
-        try {
-          const firstTenKeys = await scanKeys(redis, {
-            match: `${indexData.prefixes[0]}*`,
-            type: indexData.dataType,
-            limit: 10,
-          })
-
-          const dataPromises = firstTenKeys.map(async (key) => {
-            try {
-              if (indexData.dataType === "json") {
-                const data = await redis.json.get(key)
-                return { key, data }
-              } else if (indexData.dataType === "hash") {
-                const data = await redis.hgetall(key)
-                return { key, data }
-              } else {
-                const data = await redis.get(key)
-                return { key, data }
-              }
-            } catch {
-              return null
-            }
-          })
-
-          const results = await Promise.all(dataPromises)
-          samples = results.filter(Boolean)
-          setSampleData(samples)
-        } catch (error) {
-          console.error("Error fetching sample data:", error)
-        }
+        samples = await fetchSampleKeys.mutateAsync(indexData)
       }
 
       const result = await generateQuery.mutateAsync({
@@ -150,21 +156,14 @@ export const QueryWizardPopover = ({ onClose }: { onClose?: () => void }) => {
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
             placeholder=""
             className="h-[58px] w-full resize-none rounded-md border border-zinc-300 bg-white px-3 py-3 text-sm text-zinc-950 shadow-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={generateQuery.isPending}
+            disabled={generateQuery.isPending || fetchSampleKeys.isPending}
             autoFocus
           />
-          <div className="flex flex-col gap-0.5 pt-0.5">
-            <p className="text-xs text-zinc-500">
-              Example: Find sports cars and trucks, exclude age &gt; 100, boost sports_car
-            </p>
-            <a
-              href="https://upstash.com/docs/redis"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-zinc-500 underline hover:text-zinc-700"
-            >
-              View Docs →
-            </a>
+          <div>
+            <span className="text-xs text-zinc-500">
+              Example: Find people named "John", boost if older than 20.
+            </span>
+            <DocsLink href="https://upstash-search.mintlify.app/redis/search/query-operators/boolean-operators/overview" />
           </div>
         </div>
       </div>
@@ -172,17 +171,22 @@ export const QueryWizardPopover = ({ onClose }: { onClose?: () => void }) => {
       <div className="flex items-center justify-end gap-2">
         <button
           onClick={onClose}
-          disabled={generateQuery.isPending}
+          disabled={generateQuery.isPending || fetchSampleKeys.isPending}
           className="flex h-8 items-center justify-center rounded-md border border-zinc-300 bg-white px-4 text-sm text-zinc-950 shadow-[0_1px_1px_rgba(0,0,0,0.05)] hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Cancel
         </button>
         <button
           onClick={handleGenerate}
-          disabled={!input.trim() || generateQuery.isPending}
+          disabled={!input.trim() || generateQuery.isPending || fetchSampleKeys.isPending}
           className="flex h-8 items-center justify-center gap-2 rounded-md bg-purple-500 px-4 text-sm text-white shadow-[0_1px_1px_rgba(0,0,0,0.05)] hover:bg-purple-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-purple-500"
         >
-          {generateQuery.isPending ? (
+          {fetchSampleKeys.isPending ? (
+            <>
+              <Spinner isLoading={true} />
+              Sampling keys...
+            </>
+          ) : generateQuery.isPending ? (
             <>
               <Spinner isLoading={true} />
               Generating...
