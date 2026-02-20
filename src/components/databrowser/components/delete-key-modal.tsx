@@ -34,11 +34,16 @@ export function DeleteKeyModal({
   const isPlural = count > 1
   const itemLabel = deletionType === "item" ? "Item" : "Key"
   const itemsLabel = deletionType === "item" ? "Items" : "Keys"
+  const [internalOpen, setInternalOpen] = useState(false)
   const [reindex, setReindex] = useState(true)
   const [isPending, setIsPending] = useState(false)
 
+  const isControlled = open !== undefined
+  const isOpen = isControlled ? open : internalOpen
+  const setIsOpen = isControlled ? onOpenChange : setInternalOpen
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
 
       <DialogContent>
@@ -72,7 +77,7 @@ export function DeleteKeyModal({
             type="button"
             variant="outline"
             disabled={isPending}
-            onClick={() => onOpenChange?.(false)}
+            onClick={() => setIsOpen?.(false)}
           >
             Cancel
           </Button>

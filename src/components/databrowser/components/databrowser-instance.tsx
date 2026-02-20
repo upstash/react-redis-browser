@@ -50,7 +50,7 @@ const QueryBuilderContent = () => {
     switchError ?? (query.error ? formatUpstashErrorMessage(query.error) : undefined)
 
   return (
-    <div className="relative h-full">
+    <div className="relative flex h-full min-h-0 flex-col">
       <div className="absolute right-4 top-4 z-[2]">
         <Segmented
           options={[
@@ -94,7 +94,7 @@ export const DatabrowserInstance = ({
   tabType: TabType
   allowSearch: boolean
 }) => {
-  const { isValuesSearchSelected, setIsValuesSearchSelected } = useTab()
+  const { isValuesSearchSelected, queryBuilderMode, setIsValuesSearchSelected } = useTab()
   const { data: indexes, isLoading } = useFetchSearchIndexes({
     enabled: tabType === "search",
   })
@@ -129,9 +129,14 @@ export const DatabrowserInstance = ({
           <PanelGroup
             autoSaveId="search-layout"
             direction="vertical"
-            className="h-full w-full text-sm antialiased"
+            className="h-full w-full !overflow-visible text-sm antialiased"
           >
-            <Panel defaultSize={30} minSize={15} maxSize={60}>
+            <Panel
+              defaultSize={30}
+              minSize={15}
+              maxSize={60}
+              className={queryBuilderMode === "code" ? "!overflow-visible" : ""}
+            >
               <SearchContent />
             </Panel>
             <ResizeHandle direction="vertical" />
