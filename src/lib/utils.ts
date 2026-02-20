@@ -69,11 +69,63 @@ const jsonToJsLiteral = (json: string): string => {
   return json.replaceAll(/"([$A-Z_a-z][\w$]*)"\s*:/g, "$1:")
 }
 
+const MAX_INLINE_KEYS = 2
+
 /**
- * Stringify with pretty formatting, then convert to JS literal
+ * Check if a value is simple enough to inline (primitive or small object/array with no nesting).
+ */
+const isInlineable = (value: unknown): boolean => {
+  if (typeof value !== "object" || value === null) return true
+  if (Array.isArray(value)) return value.every((v) => typeof v !== "object" || v === null)
+  const entries = Object.entries(value as Record<string, unknown>)
+  return (
+    entries.length <= MAX_INLINE_KEYS &&
+    entries.every(([, v]) => typeof v !== "object" || v === null)
+  )
+}
+
+/**
+ * Pretty-print a JS value, collapsing short objects (max 2 keys, no nested objects) to single lines.
+ */
+const prettyPrint = (value: unknown, indent: number): string => {
+  if (value === undefined || value === null) return String(value)
+  if (typeof value !== "object") return JSON.stringify(value)
+
+  const prefix = "  ".repeat(indent)
+  const childPrefix = "  ".repeat(indent + 1)
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "[]"
+    if (value.every((v) => isInlineable(v))) {
+      const inline = `[${value.map((v) => prettyPrint(v, 0)).join(", ")}]`
+      if (!inline.includes("\n")) return inline
+    }
+    const items = value.map((v) => `${childPrefix}${prettyPrint(v, indent + 1)}`)
+    return `[\n${items.join(",\n")}\n${prefix}]`
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>)
+  if (entries.length === 0) return "{}"
+  if (
+    indent > 0 &&
+    entries.length <= MAX_INLINE_KEYS &&
+    entries.every(([, v]) => isInlineable(v))
+  ) {
+    const inline = `{ ${entries.map(([k, v]) => `${JSON.stringify(k)}: ${prettyPrint(v, 0)}`).join(", ")} }`
+    if (!inline.includes("\n")) return inline
+  }
+  const parts = entries.map(
+    ([k, v]) => `${childPrefix}${JSON.stringify(k)}: ${prettyPrint(v, indent + 1)}`
+  )
+  return `{\n${parts.join(",\n")}\n${prefix}}`
+}
+
+/**
+ * Stringify with pretty formatting, then convert to JS literal.
+ * Short objects/arrays are collapsed to single lines for readability.
  */
 export const toJsLiteral = (obj: unknown): string => {
-  return jsonToJsLiteral(JSON.stringify(obj, null, 2))
+  return jsonToJsLiteral(prettyPrint(obj, 0))
 }
 
 /**

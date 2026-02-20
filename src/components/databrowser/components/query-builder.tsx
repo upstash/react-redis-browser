@@ -14,15 +14,17 @@ export const QueryBuilder = () => {
 
   return (
     <div className="flex h-full flex-col rounded-lg border border-zinc-300 bg-white px-[6px]">
-      <div className="min-h-0 flex-1">
-        <QueryEditor
-          value={editorValue}
-          onChange={(value) => {
-            const queryPart = value.slice(PREFIX.length)
-            setValuesSearchQuery(queryPart)
-          }}
-          schema={indexDetails}
-        />
+      <div className="relative min-h-0 flex-1">
+        <div className="absolute inset-0">
+          <QueryEditor
+            value={editorValue}
+            onChange={(value) => {
+              const queryPart = value.slice(PREFIX.length)
+              setValuesSearchQuery(queryPart)
+            }}
+            schema={indexDetails}
+          />
+        </div>
       </div>
     </div>
   )

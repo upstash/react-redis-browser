@@ -1,7 +1,15 @@
 // Taken from upstash/redis-js
 export const SEARCH_TYPES = `
-
-export const FIELD_TYPES = ["TEXT", "U64", "I64", "F64", "BOOL", "DATE"] as const;
+export const FIELD_TYPES = [
+  "TEXT",
+  "U64",
+  "I64",
+  "F64",
+  "BOOL",
+  "DATE",
+  "KEYWORD",
+  "FACET",
+] as const;
 export type FieldType = (typeof FIELD_TYPES)[number];
 
 export type TextField = {
@@ -29,7 +37,21 @@ export type DateField = {
   from?: string;
 };
 
-export type DetailedField = TextField | NumericField | BoolField | DateField;
+export type KeywordField = {
+  type: "KEYWORD";
+};
+
+export type FacetField = {
+  type: "FACET";
+};
+
+export type DetailedField =
+  | TextField
+  | NumericField
+  | BoolField
+  | DateField
+  | KeywordField
+  | FacetField;
 export type NestedIndexSchema = {
   [key: string]: FieldType | DetailedField | NestedIndexSchema;
 };
@@ -43,7 +65,7 @@ export type SchemaPaths<T, Prefix extends string = ""> = {
     ? T[K] extends FieldType | DetailedField
       ? Prefix extends ""
         ? K
-        : \`\${Prefix}\${K}\`
+        : \`$\{Prefix}\${K}\`
       : T[K] extends object
         ? SchemaPaths<T[K], \`\${Prefix}\${K}.\`>
         : never
@@ -77,7 +99,11 @@ type FieldValueType<T extends FieldType> = T extends "TEXT"
       ? boolean
       : T extends "DATE"
         ? string
-        : never;
+        : T extends "KEYWORD"
+          ? string
+          : T extends "FACET"
+            ? string
+            : never;
 
 type GetFieldValueType<TSchema, Path extends string> =
   GetFieldAtPath<TSchema, Path> extends infer Field
@@ -184,7 +210,7 @@ type PathToNestedObject<
   TSchema,
   Path extends string,
   Value,
-> = Path extends \`\${ infer First }.\${ infer Rest }\`
+> = Path extends \`\${infer First}.\${infer Rest}\`
   ? { [K in First]: PathToNestedObject<TSchema, Rest, Value> }
   : { [K in Path]: Value };
 
@@ -261,7 +287,6 @@ export type PublicQueryResult<
 // These are the operations that can be used for each field type
 type StringOperationMap<T extends string> = {
   $eq: T;
-  $ne: T;
   $in: T[];
   $fuzzy: T | { value: T; distance?: number; transpositionCostOne?: boolean };
   $phrase:
@@ -275,7 +300,15 @@ type StringOperationMap<T extends string> = {
 
 type NumberOperationMap<T extends number> = {
   $eq: T;
-  $ne: T;
+  $in: T[];
+  $gt: T;
+  $gte: T;
+  $lt: T;
+  $lte: T;
+};
+
+type KeywordOperationMap<T extends string> = {
+  $eq: T;
   $in: T[];
   $gt: T;
   $gte: T;
@@ -285,18 +318,21 @@ type NumberOperationMap<T extends number> = {
 
 type BooleanOperationMap<T extends boolean> = {
   $eq: T;
-  $ne: T;
   $in: T[];
 };
 
 type DateOperationMap<T extends string | Date> = {
   $eq: T;
-  $ne: T;
   $in: T[];
   $gt: T;
   $gte: T;
   $lte: T;
   $lt: T;
+};
+
+type FacetOperationMap<T extends string> = {
+  $eq: T;
+  $in: T[];
 };
 
 // Create union types for each field type
@@ -324,6 +360,18 @@ type DateOperations = {
   };
 }[keyof DateOperationMap<string | Date>];
 
+type KeywordOperations = {
+  [K in keyof KeywordOperationMap<string>]: { [P in K]: KeywordOperationMap<string>[K] } & {
+    $boost?: number;
+  };
+}[keyof KeywordOperationMap<string>];
+
+type FacetOperations = {
+  [K in keyof FacetOperationMap<string>]: { [P in K]: FacetOperationMap<string>[K] } & {
+    $boost?: number;
+  };
+}[keyof FacetOperationMap<string>];
+
 // Create a union type for all operations for a given field type
 type OperationsForFieldType<T extends FieldType> = T extends "TEXT"
   ? StringOperations
@@ -333,7 +381,11 @@ type OperationsForFieldType<T extends FieldType> = T extends "TEXT"
       ? BooleanOperations
       : T extends "DATE"
         ? DateOperations
-        : never;
+        : T extends "KEYWORD"
+          ? KeywordOperations
+          : T extends "FACET"
+            ? FacetOperations
+            : never;
 
 // Create a union type for all operations for a given path
 type PathOperations<TSchema, TPath extends string> =
@@ -501,7 +553,7 @@ type RootOrNode<TSchema extends NestedIndexSchema | FlatIndexSchema> = {
   $and?: never;
   $must?: never;
   $should?: never;
-  $mustNot?: never;
+  $mustNot?: QueryFilter<TSchema> | QueryFilter<TSchema>[];
 };
 
 export type DescribeFieldInfo = {
@@ -538,5 +590,297 @@ export type Language =
   | "swedish"
   | "tamil"
   | "turkish";
+
+// Helper type to extract only FACET field paths from schema
+export type FacetPaths<T, Prefix extends string = ""> = {
+  [K in keyof T]: K extends string
+    ? T[K] extends "FACET" | { type: "FACET" }
+      ? Prefix extends ""
+        ? K
+        : \`$\{Prefix}\${K}\`
+      : T[K] extends FieldType | DetailedField
+        ? never
+        : T[K] extends object
+          ? FacetPaths<T[K], \`\${Prefix}\${K}.\`>
+          : never
+    : never;
+}[keyof T];
+
+// Aggregate Types
+export type AggregateOptions<TSchema extends NestedIndexSchema | FlatIndexSchema> = {
+  filter?: RootQueryFilter<TSchema>;
+  aggregations: {
+    [key: string]: Aggregation<TSchema>;
+  };
+};
+
+export type Aggregation<TSchema extends NestedIndexSchema | FlatIndexSchema> =
+  | TermsAggregation<TSchema>
+  | RangeAggregation<TSchema>
+  | HistogramAggregation<TSchema>
+  | StatsAggregation<TSchema>
+  | AvgAggregation<TSchema>
+  | SumAggregation<TSchema>
+  | MinAggregation<TSchema>
+  | MaxAggregation<TSchema>
+  | CountAggregation<TSchema>
+  | ExtendedStatsAggregation<TSchema>
+  | PercentilesAggregation<TSchema>
+  | CardinalityAggregation<TSchema>
+  | FacetAggregation<TSchema>;
+
+type BaseAggregation<TSchema extends NestedIndexSchema | FlatIndexSchema> = {
+  $aggs?: {
+    [key: string]: Aggregation<TSchema>;
+  };
+};
+
+export type TermsAggregation<TSchema extends NestedIndexSchema | FlatIndexSchema> =
+  BaseAggregation<TSchema> & {
+    $terms: {
+      field: SchemaPaths<TSchema>;
+      size?: number;
+    };
+  };
+
+export type RangeAggregation<TSchema extends NestedIndexSchema | FlatIndexSchema> =
+  BaseAggregation<TSchema> & {
+    $range: {
+      field: SchemaPaths<TSchema>;
+      ranges: { from?: number; to?: number }[];
+    };
+  };
+
+export type HistogramAggregation<TSchema extends NestedIndexSchema | FlatIndexSchema> =
+  BaseAggregation<TSchema> & {
+    $histogram: {
+      field: SchemaPaths<TSchema>;
+      interval: number;
+    };
+  };
+
+export type StatsAggregation<TSchema extends NestedIndexSchema | FlatIndexSchema> =
+  BaseAggregation<TSchema> & {
+    $stats: {
+      field: SchemaPaths<TSchema>;
+      missing?: number;
+    };
+  };
+
+export type AvgAggregation<TSchema extends NestedIndexSchema | FlatIndexSchema> =
+  BaseAggregation<TSchema> & {
+    $avg: {
+      field: SchemaPaths<TSchema>;
+      missing?: number;
+    };
+  };
+
+export type SumAggregation<TSchema extends NestedIndexSchema | FlatIndexSchema> =
+  BaseAggregation<TSchema> & {
+    $sum: {
+      field: SchemaPaths<TSchema>;
+      missing?: number;
+    };
+  };
+
+export type MinAggregation<TSchema extends NestedIndexSchema | FlatIndexSchema> =
+  BaseAggregation<TSchema> & {
+    $min: {
+      field: SchemaPaths<TSchema>;
+      missing?: number;
+    };
+  };
+
+export type MaxAggregation<TSchema extends NestedIndexSchema | FlatIndexSchema> =
+  BaseAggregation<TSchema> & {
+    $max: {
+      field: SchemaPaths<TSchema>;
+      missing?: number;
+    };
+  };
+
+export type CountAggregation<TSchema extends NestedIndexSchema | FlatIndexSchema> =
+  BaseAggregation<TSchema> & {
+    $count: {
+      field: SchemaPaths<TSchema>;
+    };
+  };
+
+export type ExtendedStatsAggregation<TSchema extends NestedIndexSchema | FlatIndexSchema> =
+  BaseAggregation<TSchema> & {
+    $extendedStats: {
+      field: SchemaPaths<TSchema>;
+      sigma?: number;
+      missing?: number;
+    };
+  };
+
+export type PercentilesAggregation<TSchema extends NestedIndexSchema | FlatIndexSchema> =
+  BaseAggregation<TSchema> & {
+    $percentiles: {
+      field: SchemaPaths<TSchema>;
+      percents?: number[];
+      keyed?: boolean;
+      missing?: number;
+    };
+  };
+
+export type CardinalityAggregation<TSchema extends NestedIndexSchema | FlatIndexSchema> =
+  BaseAggregation<TSchema> & {
+    $cardinality: {
+      field: SchemaPaths<TSchema>;
+    };
+  };
+
+export type FacetAggregation<TSchema extends NestedIndexSchema | FlatIndexSchema> =
+  BaseAggregation<TSchema> & {
+    $facet: {
+      field: FacetPaths<TSchema>;
+      path: string;
+      depth?: number;
+      size?: number;
+      minDocCount?: number;
+      order?: { count: "desc" | "asc" };
+    };
+  };
+
+export type AggregateResult<
+  TSchema extends NestedIndexSchema | FlatIndexSchema,
+  TOpts extends AggregateOptions<TSchema>,
+> = BuildAggregateResult<TSchema, TOpts["aggregations"]>;
+
+type BuildAggregateResult<
+  TSchema extends NestedIndexSchema | FlatIndexSchema,
+  TAggs extends { [key: string]: Aggregation<TSchema> },
+> = {
+  [K in keyof TAggs]: TAggs[K] extends TermsAggregation<TSchema>
+    ? TermsResult<TSchema, TAggs[K]>
+    : TAggs[K] extends RangeAggregation<TSchema>
+      ? RangeResult<TSchema, TAggs[K]>
+      : TAggs[K] extends HistogramAggregation<TSchema>
+        ? HistogramResult<TSchema, TAggs[K]>
+        : TAggs[K] extends StatsAggregation<TSchema>
+          ? StatsResult
+          : TAggs[K] extends AvgAggregation<TSchema>
+            ? MetricValueResult
+            : TAggs[K] extends SumAggregation<TSchema>
+              ? MetricValueResult
+              : TAggs[K] extends MinAggregation<TSchema>
+                ? MetricValueResult
+                : TAggs[K] extends MaxAggregation<TSchema>
+                  ? MetricValueResult
+                  : TAggs[K] extends CountAggregation<TSchema>
+                    ? MetricValueResult
+                    : TAggs[K] extends CardinalityAggregation<TSchema>
+                      ? MetricValueResult
+                      : TAggs[K] extends ExtendedStatsAggregation<TSchema>
+                        ? ExtendedStatsResult<TAggs[K]>
+                        : TAggs[K] extends PercentilesAggregation<TSchema>
+                          ? PercentilesResult<TAggs[K]>
+                          : TAggs[K] extends FacetAggregation<TSchema>
+                            ? FacetResult
+                            : never;
+};
+
+type Bucket<T> = {
+  key: T;
+  docCount: number;
+  from?: number;
+  to?: number;
+};
+
+type TermsResult<
+  TSchema extends NestedIndexSchema | FlatIndexSchema,
+  TAgg extends TermsAggregation<TSchema>,
+> = TAgg["$aggs"] extends { [key: string]: Aggregation<TSchema> }
+  ? {
+      buckets: (Bucket<GetFieldValueType<TSchema, TAgg["$terms"]["field"]>> &
+        BuildAggregateResult<TSchema, TAgg["$aggs"]>)[];
+      sumOtherDocCount: number;
+      docCountErrorUpperBound: number;
+    }
+  : {
+      buckets: Bucket<GetFieldValueType<TSchema, TAgg["$terms"]["field"]>>[];
+      sumOtherDocCount: number;
+      docCountErrorUpperBound: number;
+    };
+
+type RangeResult<
+  TSchema extends NestedIndexSchema | FlatIndexSchema,
+  TAgg extends RangeAggregation<TSchema>,
+> = TAgg["$aggs"] extends { [key: string]: Aggregation<TSchema> }
+  ? {
+      buckets: (Bucket<string> & BuildAggregateResult<TSchema, TAgg["$aggs"]>)[];
+    }
+  : {
+      buckets: Bucket<string>[];
+    };
+
+type HistogramResult<
+  TSchema extends NestedIndexSchema | FlatIndexSchema,
+  TAgg extends HistogramAggregation<TSchema>,
+> = TAgg["$aggs"] extends { [key: string]: Aggregation<TSchema> }
+  ? {
+      buckets: (Bucket<number> & BuildAggregateResult<TSchema, TAgg["$aggs"]>)[];
+    }
+  : {
+      buckets: Bucket<number>[];
+    };
+
+type MetricValueResult = {
+  value: number;
+};
+
+type StatsResult = {
+  count: number;
+  min: number;
+  max: number;
+  sum: number;
+  avg: number;
+};
+
+type ExtendedStatsResult<_TAgg> = {
+  count: number;
+  min: number;
+  max: number;
+  avg: number;
+  sum: number;
+  sumOfSquares: number;
+  variance: number;
+  variancePopulation: number;
+  varianceSampling: number;
+  stdDeviation: number;
+  stdDeviationPopulation: number;
+  stdDeviationSampling: number;
+  stdDeviationBounds: {
+    upper: number;
+    lower: number;
+    upperSampling: number;
+    lowerSampling: number;
+    upperPopulation: number;
+    lowerPopulation: number;
+  };
+};
+
+type PercentilesResult<TAgg> = TAgg extends { $percentiles: { keyed: false } }
+  ? {
+      values: Array<{ key: number; value: number }>;
+    }
+  : {
+      values: { [key: string]: number };
+    };
+
+type FacetChildNode = {
+  path: string;
+  docCount: number;
+  sumOtherDocCount: number;
+  children?: FacetChildNode[];
+};
+
+type FacetResult = {
+  path: string;
+  sumOtherDocCount: number;
+  children: FacetChildNode[];
+};
 
 `
