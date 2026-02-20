@@ -7,7 +7,7 @@ export const SearchEmptyState = () => {
   const [importModalOpen, setImportModalOpen] = useState(false)
 
   return (
-    <div className="mx-auto flex h-full gap-8 rounded-xl border border-zinc-200 bg-gradient-to-b from-zinc-50 to-white p-8">
+    <div className="mx-auto flex h-full w-full gap-8 rounded-xl border border-zinc-200 bg-gradient-to-b from-zinc-50 to-white p-8">
       <ImportSampleDatasetModal open={importModalOpen} onOpenChange={setImportModalOpen} />
 
       {/* Left side - Explanation */}
@@ -77,7 +77,7 @@ export const SearchEmptyState = () => {
       </div>
 
       {/* Right side - Import action */}
-      <div className="flex w-72 flex-col items-center justify-center rounded-lg border bg-gradient-to-b from-zinc-50 to-white p-6 shadow-sm">
+      <div className="flex w-[350px] flex-col items-center justify-center rounded-lg border bg-gradient-to-b from-zinc-50 to-white p-6 shadow-sm">
         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
           <IconSparkles size={24} />
         </div>
