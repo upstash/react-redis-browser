@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
-import { parseSchemaFromEditorValue, schemaToEditorValue } from "./schema-parser"
+import { parseSchemaFromEditorValue } from "./schema-parser"
 
 describe("Schema Parser", () => {
   test("parses basic string field", () => {
@@ -752,21 +752,18 @@ describe("Schema Parser - Malformed Inputs", () => {
     expect(result.success === false && result.error).toContain("Expected s.object")
   })
 
-  test("handles unknown field type gracefully", () => {
+  test("handles unknown field type with error", () => {
     const input = `
       const schema: Schema = s.object({
-        name: s.string(),
         unknown: s.unknown(),
-        age: s.number(),
       })
     `
     const result = parseSchemaFromEditorValue(input)
-    // Should parse known fields and skip unknown
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.schema.name).toBe("TEXT")
-      expect(result.schema.unknown).toBeUndefined()
-      expect(result.schema.age).toBe("F64")
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error).toContain("Unknown field type")
+      expect(result.error).toContain("s.unknown()")
+      expect(result.error).toContain("unknown")
     }
   })
 
@@ -896,188 +893,74 @@ describe("Schema Parser - Malformed Inputs", () => {
 })
 
 // ============================================================================
-// ROUND-TRIP TESTS (parse -> convert -> parse)
+// ERROR HANDLING TESTS
 // ============================================================================
 
-describe("Schema Parser - Round Trip", () => {
-  test("round-trips simple schema", () => {
-    const original = {
-      name: "TEXT",
-      age: "F64",
-      active: "BOOL",
-    }
-    const editorValue = schemaToEditorValue(original)
-    const result = parseSchemaFromEditorValue(editorValue)
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.schema).toEqual(original)
-    }
-  })
-
-  test("round-trips nested schema", () => {
-    const original = {
-      "user.name": "TEXT",
-      "user.address.city": "TEXT",
-      "user.address.zip": "U64",
-    }
-    const editorValue = schemaToEditorValue(original)
-    const result = parseSchemaFromEditorValue(editorValue)
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.schema).toEqual(original)
+describe("Schema Parser - Error Handling", () => {
+  test("reports unknown field type with field name", () => {
+    const input = `
+      const schema: Schema = s.object({
+        myField: s.unknown(),
+      })
+    `
+    const result = parseSchemaFromEditorValue(input)
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error).toBe('Unknown field type "s.unknown()" for field "myField"')
     }
   })
 
-  test("round-trips schema with all field types", () => {
-    const original = {
-      text: "TEXT",
-      textWithOptions: { type: "TEXT", noTokenize: true, noStem: true },
-      bool: "BOOL",
-      boolFast: { type: "BOOL", fast: true },
-      date: "DATE",
-      dateFast: { type: "DATE", fast: true },
-      f64: "F64",
-      f64From: { type: "F64", from: "source" },
-      u64: "U64",
-      i64: "I64",
-    }
-    const editorValue = schemaToEditorValue(original)
-    const result = parseSchemaFromEditorValue(editorValue)
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.schema).toEqual(original)
+  test("reports unknown field type in nested object with full path", () => {
+    const input = `
+      const schema: Schema = s.object({
+        user: s.object({
+          data: s.vector(),
+        }),
+      })
+    `
+    const result = parseSchemaFromEditorValue(input)
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error).toBe('Unknown field type "s.vector()" for field "user.data"')
     }
   })
 
-  test("round-trips schema with from() fields", () => {
-    const original = {
-      name: { type: "TEXT", from: "fullName" },
-      count: { type: "U64", from: "total" },
-      active: { type: "BOOL", fast: true, from: "isActive" },
-    }
-    const editorValue = schemaToEditorValue(original)
-    const result = parseSchemaFromEditorValue(editorValue)
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.schema).toEqual(original)
-    }
-  })
-
-  test("round-trips empty schema", () => {
-    const original = {}
-    const editorValue = schemaToEditorValue(original)
-    const result = parseSchemaFromEditorValue(editorValue)
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.schema).toEqual(original)
+  test("reports malformed nested s.object()", () => {
+    const input = `
+      const schema: Schema = s.object({
+        user: s.object({ name: s.string()
+      })
+    `
+    const result = parseSchemaFromEditorValue(input)
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error).toContain("Malformed s.object()")
+      expect(result.error).toContain("user")
     }
   })
 
-  test("round-trips deeply nested schema", () => {
-    const original = {
-      "a.b.c.d.e": "TEXT",
-      "a.b.c.d.f": "F64",
-      "a.b.x": "BOOL",
-    }
-    const editorValue = schemaToEditorValue(original)
-    const result = parseSchemaFromEditorValue(editorValue)
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.schema).toEqual(original)
-    }
-  })
-
-  test("round-trips schema with all modifiers", () => {
-    const original = {
-      text1: { type: "TEXT", noTokenize: true },
-      text2: { type: "TEXT", noStem: true },
-      text3: { type: "TEXT", noTokenize: true, noStem: true, from: "source" },
-      bool: { type: "BOOL", fast: true, from: "flag" },
-      date: { type: "DATE", fast: true, from: "timestamp" },
-    }
-    const editorValue = schemaToEditorValue(original)
-    const result = parseSchemaFromEditorValue(editorValue)
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.schema).toEqual(original)
+  test("reports multiple unknown types (first one wins)", () => {
+    const input = `
+      const schema: Schema = s.object({
+        a: s.array(),
+        b: s.map(),
+      })
+    `
+    const result = parseSchemaFromEditorValue(input)
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error).toBe('Unknown field type "s.array()" for field "a"')
     }
   })
-})
 
-// ============================================================================
-// SCHEMA TO EDITOR VALUE TESTS
-// ============================================================================
-
-describe("schemaToEditorValue", () => {
-  test("converts simple flat schema", () => {
-    const input = { name: "TEXT", age: "F64" }
-    const result = schemaToEditorValue(input)
-    expect(result).toContain("s.object({")
-    expect(result).toContain("name: s.string()")
-    expect(result).toContain('age: s.number("F64")')
-  })
-
-  test("converts number with from modifier", () => {
-    const input = { price: { type: "F64", from: "amount" } }
-    const result = schemaToEditorValue(input)
-    expect(result).toContain('price: s.number("F64").from("amount")')
-  })
-
-  test("converts nested schema with proper indentation", () => {
-    const input = {
-      "user.name": "TEXT",
-      "user.email": "TEXT",
-    }
-    const result = schemaToEditorValue(input)
-    expect(result).toContain("user: s.object({")
-    expect(result).toContain("name: s.string()")
-    expect(result).toContain("email: s.string()")
-  })
-
-  test("converts all simple types correctly", () => {
-    const input = {
-      text: "TEXT",
-      bool: "BOOL",
-      date: "DATE",
-      u64: "U64",
-      i64: "I64",
-      f64: "F64",
-    }
-    const result = schemaToEditorValue(input)
-    expect(result).toContain("text: s.string()")
-    expect(result).toContain("bool: s.boolean()")
-    expect(result).toContain("date: s.date()")
-    expect(result).toContain('u64: s.number("U64")')
-    expect(result).toContain('i64: s.number("I64")')
-    expect(result).toContain('f64: s.number("F64")')
-  })
-
-  test("converts object types with modifiers", () => {
-    const input = {
-      a: { type: "TEXT", noTokenize: true },
-      b: { type: "TEXT", noStem: true },
-      c: { type: "TEXT", from: "source" },
-      d: { type: "BOOL", fast: true },
-      e: { type: "DATE", fast: true },
-    }
-    const result = schemaToEditorValue(input)
-    expect(result).toContain("a: s.string().noTokenize()")
-    expect(result).toContain("b: s.string().noStem()")
-    expect(result).toContain('c: s.string().from("source")')
-    expect(result).toContain("d: s.boolean().fast()")
-    expect(result).toContain("e: s.date().fast()")
-  })
-
-  test("converts empty schema", () => {
-    const input = {}
-    const result = schemaToEditorValue(input)
-    // Empty schema has a newline inside the braces from renderObject
-    expect(result).toBe("const schema: Schema = s.object({\n\n})")
-  })
-
-  test("handles unknown type by defaulting to string", () => {
-    const input = { field: "UNKNOWN_TYPE" }
-    const result = schemaToEditorValue(input)
-    expect(result).toContain("field: s.string()")
+  test("known fields before unknown field are not in result on error", () => {
+    const input = `
+      const schema: Schema = s.object({
+        name: s.string(),
+        bad: s.invalid(),
+      })
+    `
+    const result = parseSchemaFromEditorValue(input)
+    expect(result.success).toBe(false)
   })
 })

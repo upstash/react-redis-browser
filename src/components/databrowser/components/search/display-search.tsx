@@ -22,7 +22,8 @@ import { DocsLink } from "../docs-link"
 import { TypeTag } from "../type-tag"
 import { SaveSchemaModal } from "./save-schema-modal"
 import { SCHEMA_DEFAULT, SchemaEditor } from "./schema-editor"
-import { schemaToEditorValue } from "./schema-parser"
+import { parseSchemaFromEditorValue } from "./schema-parser"
+import { schemaToEditorValue } from "./schema-stringify"
 
 type FormValues = {
   indexName: string
@@ -64,6 +65,7 @@ export const SearchDisplay = ({
   const effectiveIndexName = isCreateModal ? currentIndexName : (indexName ?? "")
 
   const [pendingFormValues, setPendingFormValues] = useState<FormValues | undefined>()
+  const [parseError, setParseError] = useState<string | undefined>()
 
   const { data, isLoading } = useFetchSearchIndex(indexName, {
     enabled: !isCreateModal,
@@ -82,6 +84,8 @@ export const SearchDisplay = ({
   }, [data, reset, indexName])
 
   const onSubmit = (values: FormValues) => {
+    setParseError(undefined)
+
     if (isCreateModal) {
       createSchema.mutate(
         {
@@ -96,6 +100,11 @@ export const SearchDisplay = ({
         }
       )
     } else {
+      const result = parseSchemaFromEditorValue(values.editorValue)
+      if (!result.success) {
+        setParseError(result.error)
+        return
+      }
       setPendingFormValues({ ...values, indexName: indexName! })
     }
   }
@@ -231,6 +240,11 @@ export const SearchDisplay = ({
                   ? "Invalid schema"
                   : formatUpstashErrorMessage(createSchema.error)}
               </div>
+            )}
+
+            {/* Parse error display - for edit/save flow */}
+            {parseError && (
+              <div className="w-full break-words text-xs text-red-500">{parseError}</div>
             )}
 
             {/* Save/Cancel buttons */}

@@ -1,7 +1,6 @@
-/* eslint-disable unicorn/no-array-push-push */
 /**
  * Schema Parser
- * Converts between TypeScript schema builder syntax and API format
+ * Converts TypeScript schema builder syntax to flat API format
  *
  * Editor format (nested, readable):
  *   const schema: Schema = s.object({
@@ -127,20 +126,27 @@ function parseFields(content: string, prefix: string, flatSchema: FlatSchema): v
       fieldName = fieldName.slice(1, -1)
     }
 
+    if (fieldName.length === 0) {
+      throw new Error("Field name cannot be empty")
+    }
+
     const valueStr = entry.slice(colonIndex + 1).trim()
     const fullKey = prefix ? `${prefix}.${fieldName}` : fieldName
 
     // Check if it's a nested s.object()
     if (valueStr.startsWith("s.object(")) {
       const nestedContent = extractObjectContent(valueStr)
-      if (nestedContent !== null) {
-        parseFields(nestedContent, fullKey, flatSchema)
-        continue
+      if (nestedContent === undefined) {
+        throw new Error(
+          `Malformed s.object() for field "${fullKey}": missing closing brace or parenthesis`
+        )
       }
+      parseFields(nestedContent, fullKey, flatSchema)
+      continue
     }
 
     // Parse the field builder (s.string(), s.number(), etc.)
-    const fieldValue = parseFieldBuilder(valueStr)
+    const fieldValue = parseFieldBuilder(valueStr, fullKey)
     if (fieldValue) {
       flatSchema[fullKey] = fieldValue
     }
@@ -222,25 +228,26 @@ function findColonIndex(entry: string): number {
 
 /**
  * Extract content from s.object({ ... })
+ * Returns undefined when the nested object is malformed
  */
-function extractObjectContent(str: string): string | null {
+function extractObjectContent(str: string): string | undefined {
   const match = str.match(/^s\.object\s*\(\s*{([\S\s]*)}\s*\)/)
-  return match ? match[1] : null
+  return match ? match[1] : undefined
 }
 
 /**
  * Extract the string value from a .from("...") or .from('...') call
  * Handles escaped quotes and mixed quote types properly
  */
-function extractFromValue(str: string): string | null {
+function extractFromValue(str: string): string | undefined {
   const fromIndex = str.indexOf(".from(")
-  if (fromIndex === -1) return null
+  if (fromIndex === -1) return undefined
 
   const start = fromIndex + 6 // length of ".from("
-  if (start >= str.length) return null
+  if (start >= str.length) return undefined
 
   const quoteChar = str[start]
-  if (quoteChar !== '"' && quoteChar !== "'") return null
+  if (quoteChar !== '"' && quoteChar !== "'") return undefined
 
   let result = ""
   let i = start + 1
@@ -264,13 +271,14 @@ function extractFromValue(str: string): string | null {
     i++
   }
 
-  return null
+  return undefined
 }
 
 /**
  * Parse a field builder like s.string().noTokenize()
+ * Throws for unrecognized field types with field name context
  */
-function parseFieldBuilder(str: string): FieldValue | null {
+function parseFieldBuilder(str: string, fieldName: string): FieldValue | undefined {
   str = str.trim().replace(/,\s*$/, "")
 
   // s.string()
@@ -279,13 +287,13 @@ function parseFieldBuilder(str: string): FieldValue | null {
     const noStem = str.includes(".noStem()")
     const fromValue = extractFromValue(str)
 
-    if (!noTokenize && !noStem && fromValue === null) return "TEXT"
+    if (!noTokenize && !noStem && fromValue === undefined) return "TEXT"
 
     return {
       type: "TEXT",
       ...(noTokenize && { noTokenize: true }),
       ...(noStem && { noStem: true }),
-      ...(fromValue !== null && { from: fromValue }),
+      ...(fromValue !== undefined && { from: fromValue }),
     }
   }
 
@@ -295,7 +303,7 @@ function parseFieldBuilder(str: string): FieldValue | null {
     const numType = typeMatch?.[1] || "F64"
     const fromValue = extractFromValue(str)
 
-    if (fromValue === null) return numType
+    if (fromValue === undefined) return numType
 
     return { type: numType, from: fromValue }
   }
@@ -305,12 +313,12 @@ function parseFieldBuilder(str: string): FieldValue | null {
     const fast = str.includes(".fast()")
     const fromValue = extractFromValue(str)
 
-    if (!fast && fromValue === null) return "BOOL"
+    if (!fast && fromValue === undefined) return "BOOL"
 
     return {
       type: "BOOL",
       ...(fast && { fast: true }),
-      ...(fromValue !== null && { from: fromValue }),
+      ...(fromValue !== undefined && { from: fromValue }),
     }
   }
 
@@ -319,12 +327,12 @@ function parseFieldBuilder(str: string): FieldValue | null {
     const fast = str.includes(".fast()")
     const fromValue = extractFromValue(str)
 
-    if (!fast && fromValue === null) return "DATE"
+    if (!fast && fromValue === undefined) return "DATE"
 
     return {
       type: "DATE",
       ...(fast && { fast: true }),
-      ...(fromValue !== null && { from: fromValue }),
+      ...(fromValue !== undefined && { from: fromValue }),
     }
   }
 
@@ -338,156 +346,12 @@ function parseFieldBuilder(str: string): FieldValue | null {
     return "FACET"
   }
 
-  return null
-}
-
-// ============================================================================
-// CONVERT: API (flat) -> Editor (nested)
-// ============================================================================
-
-/**
- * Convert flat API schema to editor TypeScript format
- */
-export function schemaToEditorValue(flatSchema: Record<string, unknown>): string {
-  const nested = unflattenSchema(flatSchema)
-  const body = renderObject(nested, 1)
-  return `const schema: Schema = s.object({\n${body}})`
-}
-
-/**
- * Convert flat dot-notation keys to nested structure
- */
-function unflattenSchema(flat: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {}
-
-  for (const [key, value] of Object.entries(flat)) {
-    const parts = key.split(".")
-    let current = result
-
-    for (let i = 0; i < parts.length - 1; i++) {
-      const part = parts[i]
-      if (!current[part] || typeof current[part] !== "object") {
-        current[part] = {}
-      }
-      current = current[part] as Record<string, unknown>
-    }
-
-    current[parts.at(-1)!] = value
+  // Check if it looks like a field builder but is unrecognized
+  if (str.startsWith("s.")) {
+    const typeMatch = str.match(/^s\.(\w+)\(/)
+    const typeName = typeMatch?.[1] ?? "unknown"
+    throw new Error(`Unknown field type "s.${typeName}()" for field "${fieldName}"`)
   }
 
-  return result
-}
-
-/**
- * Render nested schema object to TypeScript code
- */
-function renderObject(obj: Record<string, unknown>, indent: number): string {
-  const pad = "  ".repeat(indent)
-  const lines: string[] = []
-
-  for (const [key, value] of Object.entries(obj)) {
-    if (isFieldValue(value)) {
-      lines.push(`${pad}${key}: ${fieldToBuilder(value)},`)
-    } else {
-      // Nested object
-      const nested = renderObject(value as Record<string, unknown>, indent + 1)
-      lines.push(`${pad}${key}: s.object({`)
-      lines.push(nested.trimEnd())
-      lines.push(`${pad}}),`)
-    }
-  }
-
-  return lines.join("\n") + "\n"
-}
-
-/**
- * Check if value is a field definition vs nested object
- */
-function isFieldValue(value: unknown): boolean {
-  if (typeof value === "string") return true
-  if (typeof value === "object" && value !== null) {
-    return "type" in value
-  }
-  return false
-}
-
-/**
- * Convert field value to builder syntax
- */
-function fieldToBuilder(value: unknown): string {
-  // Simple string types
-  if (typeof value === "string") {
-    switch (value) {
-      case "TEXT": {
-        return "s.string()"
-      }
-      case "BOOL": {
-        return "s.boolean()"
-      }
-      case "DATE": {
-        return "s.date()"
-      }
-      case "U64":
-      case "I64":
-      case "F64": {
-        return `s.number("${value}")`
-      }
-      case "KEYWORD": {
-        return "s.keyword()"
-      }
-      case "FACET": {
-        return "s.facet()"
-      }
-      default: {
-        return "s.string()"
-      }
-    }
-  }
-
-  // Object with options
-  const v = value as Record<string, unknown>
-  const type = v.type as string
-  let builder = ""
-
-  switch (type) {
-    case "TEXT": {
-      builder = "s.string()"
-      if (v.noTokenize) builder += ".noTokenize()"
-      if (v.noStem) builder += ".noStem()"
-      break
-    }
-    case "U64":
-    case "I64":
-    case "F64": {
-      builder = `s.number("${type}")`
-      break
-    }
-    case "BOOL": {
-      builder = "s.boolean()"
-      if (v.fast) builder += ".fast()"
-      break
-    }
-    case "DATE": {
-      builder = "s.date()"
-      if (v.fast) builder += ".fast()"
-      break
-    }
-    case "KEYWORD": {
-      builder = "s.keyword()"
-      break
-    }
-    case "FACET": {
-      builder = "s.facet()"
-      break
-    }
-    default: {
-      builder = "s.string()"
-    }
-  }
-
-  if (v.from) {
-    builder += `.from("${v.from}")`
-  }
-
-  return builder
+  return undefined
 }
