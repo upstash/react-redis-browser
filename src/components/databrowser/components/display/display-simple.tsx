@@ -9,19 +9,21 @@ import { useFetchSimpleKey } from "../../hooks/use-fetch-simple-key"
 import { useSetSimpleKey } from "../../hooks/use-set-simple-key"
 import { DisplayHeader } from "./display-header"
 import { useField } from "./input/use-field"
+import { KeyDeleted } from "./key-deleted"
 
 export const EditorDisplay = ({ dataKey, type }: { dataKey: string; type: SimpleDataType }) => {
   const { data } = useFetchSimpleKey(dataKey, type)
 
-  return (
-    <div className="flex h-full w-full flex-col gap-2">
-      <DisplayHeader dataKey={dataKey} type={type} content={data ?? undefined} />
+  if (data === null) {
+    return <KeyDeleted />
+  }
 
-      <div className="flex h-full grow flex-col gap-2 rounded-md bg-zinc-100">
+  return (
+    <div className="flex h-full min-h-0 w-full flex-col gap-2 overflow-hidden">
+      <DisplayHeader dataKey={dataKey} type={type} content={data ?? undefined} />
+      <div className="flex min-h-0 grow flex-col gap-2 rounded-md">
         {data === undefined ? (
           <Spinner isLoadingText={""} isLoading={true} />
-        ) : data === null ? (
-          <></>
         ) : (
           <EditorDisplayForm key={dataKey} dataKey={dataKey} type={type} data={data} />
         )}
@@ -53,17 +55,17 @@ const EditorDisplayForm = ({
   const { mutateAsync: setKey, isPending: isSettingKey } = useSetSimpleKey(dataKey, type)
 
   const handleCancel = () => {
-    form.reset({ value: data })
+    form.reset()
   }
 
   return (
     <>
-      <div className="flex grow flex-col gap-1">
+      <div className="flex min-h-0 grow flex-col gap-1">
         <div className="flex shrink-0 items-center gap-2">
           {type === "json" ? <div /> : selector}
         </div>
 
-        <div className="grow rounded-md border border-zinc-300 bg-white p-2">{editor}</div>
+        <div className="min-h-0 grow rounded-md border border-zinc-300 bg-white p-2">{editor}</div>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">

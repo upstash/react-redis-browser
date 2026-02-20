@@ -1,4 +1,5 @@
 import { useMemo } from "react"
+import { useTab } from "@/tab-provider"
 import type { ListDataType } from "@/types"
 import { IconTrash } from "@tabler/icons-react"
 import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query"
@@ -6,15 +7,15 @@ import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
+import { InfiniteScroll } from "../../../common/infinite-scroll"
 import { useEditListItem } from "../../hooks"
 import { useFetchListItems } from "../../hooks/use-fetch-list-items"
+import { DeleteKeyModal } from "../delete-key-modal"
 import { ItemContextMenu } from "../item-context-menu"
-import { InfiniteScroll } from "../sidebar/infinite-scroll"
-import { DeleteAlertDialog } from "./delete-alert-dialog"
 import { DisplayHeader } from "./display-header"
 import { ListEditDisplay } from "./display-list-edit"
 import { HashFieldTTLInfo } from "./hash/hash-field-ttl-info"
-import { useTab } from "@/tab-provider"
+import { KeyDeleted } from "./key-deleted"
 
 export const headerLabels = {
   list: ["Index", "Content"],
@@ -28,8 +29,14 @@ export const ListDisplay = ({ dataKey, type }: { dataKey: string; type: ListData
   const { selectedListItem } = useTab()
   const query = useFetchListItems({ dataKey, type })
 
+  const isEmpty = query.isFetched && query.data?.pages.every((page) => page.keys.length === 0)
+
+  if (isEmpty) {
+    return <KeyDeleted />
+  }
+
   return (
-    <div className="flex h-full flex-col gap-2">
+    <div className="flex h-full min-h-0 flex-col gap-2 overflow-hidden">
       <DisplayHeader dataKey={dataKey} type={type} />
 
       {selectedListItem && (
@@ -37,7 +44,7 @@ export const ListDisplay = ({ dataKey, type }: { dataKey: string; type: ListData
       )}
 
       <div className={cn("min-h-0 grow", selectedListItem && "hidden")}>
-        <InfiniteScroll query={query}>
+        <InfiniteScroll query={query} className="rounded-lg border border-zinc-200 bg-white">
           <table className="w-full">
             <ItemContextMenu dataKey={dataKey} type={type}>
               <tbody>
@@ -85,7 +92,7 @@ export const ListItems = ({
             setSelectedListItem({ key })
           }}
           className={cn(
-            "h-10 border-b border-b-zinc-100 transition-colors hover:bg-zinc-100 dark:border-b-zinc-200 dark:hover:bg-zinc-200"
+            "h-9 border-b border-b-zinc-100 transition-colors hover:bg-zinc-100 dark:border-b-zinc-200 dark:hover:bg-zinc-200"
           )}
         >
           <td
@@ -110,11 +117,11 @@ export const ListItems = ({
                 e.stopPropagation()
               }}
             >
-              <div className="flex items-center justify-end gap-2">
+              <div className="flex items-center justify-end gap-2 pr-2">
                 {type === "hash" && (
                   <HashFieldTTLInfo dataKey={dataKey} field={key} fields={fields} />
                 )}
-                <DeleteAlertDialog
+                <DeleteKeyModal
                   deletionType="item"
                   onDeleteConfirm={(e) => {
                     e.stopPropagation()
@@ -135,7 +142,7 @@ export const ListItems = ({
                   >
                     <IconTrash className="size-4 text-zinc-500" />
                   </Button>
-                </DeleteAlertDialog>
+                </DeleteKeyModal>
               </div>
             </td>
           )}

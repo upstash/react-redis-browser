@@ -1,5 +1,6 @@
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
+import * as ReactDOM from "react-dom"
 
 import { portalRoot } from "@/lib/portal-root"
 import { cn } from "@/lib/utils"
@@ -17,7 +18,7 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "relative flex h-8 w-full items-center justify-between rounded-md border border-zinc-200 bg-white px-3 py-2 " +
+      "relative flex h-8 w-full items-center justify-between rounded-lg border border-zinc-200 bg-white px-3 py-2 font-medium text-zinc-950" +
         " text-sm ring-offset-white placeholder:text-zinc-500 focus:ring-zinc-950 disabled:cursor-not-allowed disabled:opacity-50",
       className
     )}
@@ -64,7 +65,7 @@ const SelectContent = React.forwardRef<
     >
       <SelectPrimitive.Viewport
         className={cn(
-          "p-1",
+          "max-h-[min(var(--radix-select-content-available-height),20rem)] overflow-y-auto p-1",
           position === "popper" &&
             "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
         )}
@@ -88,20 +89,58 @@ const SelectLabel = React.forwardRef<
 ))
 SelectLabel.displayName = SelectPrimitive.Label.displayName
 
+const SelectItemTooltip = ({
+  description,
+  itemRef,
+}: {
+  description: string
+  itemRef: React.RefObject<HTMLDivElement | null>
+}) => {
+  const [pos, setPos] = React.useState<{ top: number; left: number } | undefined>()
+
+  React.useEffect(() => {
+    const el = itemRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    setPos({ top: rect.top + rect.height / 2, left: rect.right + 8 })
+  }, [itemRef])
+
+  if (!pos) return
+
+  return ReactDOM.createPortal(
+    <div
+      className="pointer-events-none fixed z-[100] -translate-y-1/2 whitespace-nowrap rounded-md bg-zinc-900 px-3 py-1.5 text-xs text-zinc-50 shadow-md animate-in fade-in-0"
+      style={{ top: pos.top, left: pos.left }}
+    >
+      {description}
+    </div>,
+    portalRoot ?? document.body
+  )
+}
+
 const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
->(({ className, children, ...props }, ref) => (
-  <SelectPrimitive.Item
-    ref={ref}
-    className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-zinc-100 focus:text-zinc-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-      className
-    )}
-    {...props}
-  >
-    <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
-      <SelectPrimitive.ItemIndicator>
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item> & { description?: string }
+>(({ className, children, description, ...props }, ref) => {
+  const [isHovered, setIsHovered] = React.useState(false)
+  const itemRef = React.useRef<HTMLDivElement>(null)
+
+  return (
+    <SelectPrimitive.Item
+      ref={(node) => {
+        ;(itemRef as React.MutableRefObject<HTMLDivElement | null>).current = node
+        if (typeof ref === "function") ref(node)
+        else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+      }}
+      className={cn(
+        "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none hover:bg-zinc-100 focus:bg-zinc-100 focus:text-zinc-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        className
+      )}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      {...props}
+    >
+      <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
         <SelectPrimitive.ItemIndicator>
           <svg
             width="15"
@@ -119,11 +158,14 @@ const SelectItem = React.forwardRef<
             />
           </svg>
         </SelectPrimitive.ItemIndicator>
-      </SelectPrimitive.ItemIndicator>
-    </span>
-    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
-  </SelectPrimitive.Item>
-))
+      </span>
+      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+      {description && isHovered && (
+        <SelectItemTooltip description={description} itemRef={itemRef} />
+      )}
+    </SelectPrimitive.Item>
+  )
+})
 SelectItem.displayName = SelectPrimitive.Item.displayName
 
 const SelectSeparator = React.forwardRef<

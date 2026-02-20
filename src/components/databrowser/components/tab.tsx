@@ -1,3 +1,6 @@
+import type { TabId } from "@/store"
+import { useDatabrowserStore } from "@/store"
+import { useTab } from "@/tab-provider"
 import {
   IconArrowsMinimize,
   IconCopyPlus,
@@ -6,7 +9,9 @@ import {
   IconSquareX,
   IconX,
 } from "@tabler/icons-react"
-import { SimpleTooltip } from "@/components/ui/tooltip"
+
+import { cn } from "@/lib/utils"
+import { useOverflow } from "@/hooks/use-overflow"
 import {
   ContextMenu,
   ContextMenuContent,
@@ -14,15 +19,12 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
-import { cn } from "@/lib/utils"
-import type { TabId } from "@/store"
-import { useDatabrowserStore } from "@/store"
+import { SimpleTooltip } from "@/components/ui/tooltip"
+
 import { TabTypeIcon } from "./tab-type-icon"
-import { useTab } from "@/tab-provider"
-import { useOverflow } from "@/hooks/use-overflow"
 
 export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
-  const { active, search, selectedKey, pinned } = useTab()
+  const { active, search, selectedKey, valuesSearch, pinned, isValuesSearchSelected } = useTab()
   const {
     selectTab,
     removeTab,
@@ -38,9 +40,15 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
 
   const { ref, isOverflow } = useOverflow()
 
-  const label = search.key || selectedKey
-  const iconNode = search.key ? (
-    <IconSearch size={15} />
+  const label = isValuesSearchSelected ? valuesSearch.index : search.key || selectedKey
+  const iconNode = isValuesSearchSelected ? (
+    <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-emerald-200 text-emerald-800">
+      <IconSearch size={14} />
+    </div>
+  ) : search.key ? (
+    <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-zinc-100 text-zinc-600">
+      <IconSearch size={14} />
+    </div>
   ) : selectedKey ? (
     <TabTypeIcon selectedKey={selectedKey} />
   ) : undefined
@@ -50,14 +58,13 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
       id={isList ? `list-tab-${id}` : `tab-${id}`}
       onClick={() => selectTab(id)}
       className={cn(
-        "flex h-9 w-full cursor-pointer items-center gap-2 px-3 text-[13px] transition-colors",
+        "flex h-[40px] w-full cursor-pointer items-center gap-2 rounded-t-lg px-3 text-[13px] transition-colors",
         isList && "max-w-[370px]",
-        !isList && "rounded-t-lg border border-zinc-200",
         !isList &&
-          (active ? "border-b-white bg-white text-zinc-900" : "bg-zinc-100 hover:bg-zinc-50")
+          (active ? "bg-white text-zinc-950" : "bg-zinc-200 text-zinc-600 hover:bg-zinc-100")
       )}
     >
-      {iconNode}
+      <div className={cn(!active && "transition-colors")}>{iconNode}</div>
       <span
         ref={ref}
         className={cn("min-w-0 grow truncate whitespace-nowrap", !isList && "max-w-32")}
@@ -75,7 +82,7 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
             e.stopPropagation()
             removeTab(id)
           }}
-          className="p-1 text-zinc-300 transition-colors hover:text-zinc-500 dark:text-zinc-400"
+          className="p-[2px] text-zinc-400 transition-colors hover:text-zinc-500"
         >
           <IconX size={16} />
         </button>

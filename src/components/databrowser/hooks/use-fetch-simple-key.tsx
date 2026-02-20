@@ -2,14 +2,11 @@ import { useRedis } from "@/redis-context"
 import type { DataType } from "@/types"
 import { useQuery } from "@tanstack/react-query"
 
-import { useDeleteKeyCache } from "./use-delete-key-cache"
-
 export const FETCH_SIMPLE_KEY_QUERY_KEY = "fetch-simple-key"
 
 /** Simple key standing for string or json */
 export const useFetchSimpleKey = (dataKey: string, type: DataType) => {
   const { redisNoPipeline: redis } = useRedis()
-  const { deleteKeyCache } = useDeleteKeyCache()
 
   return useQuery({
     queryKey: [FETCH_SIMPLE_KEY_QUERY_KEY, dataKey],
@@ -21,8 +18,6 @@ export const useFetchSimpleKey = (dataKey: string, type: DataType) => {
 
       if (type === "json" && result !== null)
         result = JSON.stringify(sortObject(JSON.parse(result)))
-
-      if (result === null) deleteKeyCache(dataKey)
 
       return result
     },

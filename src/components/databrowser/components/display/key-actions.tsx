@@ -1,3 +1,4 @@
+import { useTab } from "@/tab-provider"
 import { IconDotsVertical } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
@@ -10,16 +11,28 @@ import {
 import { toast } from "@/components/ui/use-toast"
 
 import { useDeleteKey } from "../../hooks"
-import { DeleteAlertDialog } from "./delete-alert-dialog"
+import { DeleteKeyModal } from "../delete-key-modal"
 
-export function KeyActions({ dataKey, content }: { dataKey: string; content?: string }) {
+export function KeyActions({
+  dataKey,
+  content,
+  type,
+}: {
+  dataKey: string
+  content?: string
+  type: string
+}) {
   const { mutateAsync: deleteKey } = useDeleteKey()
+  const { isValuesSearchSelected } = useTab()
 
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button size="icon-sm" aria-label="Key actions">
-          <IconDotsVertical className="size-4 text-zinc-500 dark:text-zinc-600" />
+          <IconDotsVertical
+            className="size-4 text-zinc-500 dark:text-zinc-600"
+            fill="rgb(var(--color-zinc-500))"
+          />
         </Button>
       </DropdownMenuTrigger>
 
@@ -43,9 +56,12 @@ export function KeyActions({ dataKey, content }: { dataKey: string; content?: st
         >
           Copy key
         </DropdownMenuItem>
-        <DeleteAlertDialog
+        <DeleteKeyModal
           deletionType="key"
-          onDeleteConfirm={async () => await deleteKey(dataKey)}
+          showReindex={isValuesSearchSelected && type !== "search"}
+          onDeleteConfirm={async (_e, options) => {
+            await deleteKey({ keys: [dataKey], reindex: options?.reindex })
+          }}
         >
           <DropdownMenuItem
             className="text-red-500 focus:bg-red-500 focus:text-white"
@@ -53,7 +69,7 @@ export function KeyActions({ dataKey, content }: { dataKey: string; content?: st
           >
             Delete key
           </DropdownMenuItem>
-        </DeleteAlertDialog>
+        </DeleteKeyModal>
       </DropdownMenuContent>
     </DropdownMenu>
   )

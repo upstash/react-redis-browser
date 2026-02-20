@@ -22,7 +22,7 @@ test.describe("keys", () => {
       })
     ).toHaveValue("value-24")
     await expect(page.getByText("Length:8")).toBeVisible()
-    await expect(page.getByText("TTL:Forever")).toBeVisible()
+    await expect(page.getByText("TTL:No")).toBeVisible()
   })
 
   test("can filter keys by type", async ({ page }) => {

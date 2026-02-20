@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 const DEFAULT_SKELETON_COUNT = 6
 
 export const LoadingSkeleton = () => (
-  <div className="block h-full w-full rounded-lg border border-zinc-200 bg-white p-1 pr-3 transition-all">
+  <div className="block h-full w-full rounded-lg bg-zinc-100 p-1 pr-3 transition-all">
     {Array.from({ length: DEFAULT_SKELETON_COUNT })
       .fill(0)
       .map((_, idx) => (

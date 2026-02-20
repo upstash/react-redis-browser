@@ -1,24 +1,26 @@
 import { useRedis } from "@/redis-context"
+import { useTab } from "@/tab-provider"
 import { useMutation } from "@tanstack/react-query"
 
-import { queryClient } from "@/lib/clients"
-
-import { FETCH_DB_SIZE_QUERY_KEY } from "../components/sidebar/db-size"
 import { useDeleteKeyCache } from "./use-delete-key-cache"
 
 export const useDeleteKey = () => {
-  const { redis } = useRedis()
+  const { redis, redisNoPipeline } = useRedis()
   const { deleteKeyCache } = useDeleteKeyCache()
+  const { isValuesSearchSelected, valuesSearch } = useTab()
 
   const deleteKey = useMutation({
-    mutationFn: async (key: string) => {
-      return Boolean(await redis.del(key))
+    mutationFn: async ({ keys, reindex }: { keys: string[]; reindex?: boolean }) => {
+      await Promise.all(keys.map((key) => redis.del(key)))
+
+      if (reindex && isValuesSearchSelected && valuesSearch.index) {
+        await redisNoPipeline.search.index({ name: valuesSearch.index }).waitIndexing()
+      }
     },
-    onSuccess: (_, key) => {
-      deleteKeyCache(key)
-      queryClient.invalidateQueries({
-        queryKey: [FETCH_DB_SIZE_QUERY_KEY],
-      })
+    onSuccess: (_, { keys }) => {
+      for (const key of keys) {
+        deleteKeyCache(key)
+      }
     },
   })
 

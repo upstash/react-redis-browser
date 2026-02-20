@@ -70,7 +70,7 @@ const App = () => {
             {theme === "dark" ? <IconMoon size={20} /> : <IconSun size={20} />}
           </button>
         </div>
-        <div style={{ height: "800px" }}>
+        <div style={{ height: "740px" }}>
           {credentials ? (
             <RedisBrowser
               onFullScreenClick={() => {
@@ -84,6 +84,17 @@ const App = () => {
               token={credentials.token}
               url={credentials.url}
               theme={theme}
+              allowSearch
+              useQueryWizard={async (params) => {
+                // eslint-disable-next-line no-console
+                console.log("useQueryWizard params:", params)
+                await new Promise((resolve) => setTimeout(resolve, 1500))
+                return {
+                  query: {
+                    $or: [{ name: "foo", age: 18, prompt: params.prompt }],
+                  },
+                }
+              }}
             />
           ) : (
             <CredentialsForm />

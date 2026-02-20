@@ -4,7 +4,6 @@ import { useMutation, type InfiniteData } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
 
-import { FETCH_DB_SIZE_QUERY_KEY } from "../components/sidebar/db-size"
 import { FETCH_KEYS_QUERY_KEY } from "./use-keys"
 
 export const useAddKey = () => {
@@ -58,9 +57,6 @@ export const useAddKey = () => {
       }
     },
     onSuccess: (_, { key, type }) => {
-      queryClient.invalidateQueries({
-        queryKey: [FETCH_DB_SIZE_QUERY_KEY],
-      })
       queryClient.setQueriesData<
         InfiniteData<{
           keys: RedisKey[]
