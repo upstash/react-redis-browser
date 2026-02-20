@@ -7,6 +7,7 @@ type ScrollAreaProps = React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive
   disableRoundedInherit?: boolean
   scrollBarClassName?: string
   scrollBarForceMount?: true
+  orientation?: "vertical" | "horizontal" | "both"
 }
 
 const ScrollArea = React.forwardRef<
@@ -21,6 +22,7 @@ const ScrollArea = React.forwardRef<
       children,
       onScroll,
       disableRoundedInherit = false,
+      orientation = "vertical",
       ...props
     },
     ref
@@ -39,7 +41,20 @@ const ScrollArea = React.forwardRef<
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
-      <ScrollBar className={scrollBarClassName} forceMount={scrollBarForceMount} />
+      {(orientation === "vertical" || orientation === "both") && (
+        <ScrollBar
+          className={scrollBarClassName}
+          forceMount={scrollBarForceMount}
+          orientation="vertical"
+        />
+      )}
+      {(orientation === "horizontal" || orientation === "both") && (
+        <ScrollBar
+          className={scrollBarClassName}
+          forceMount={scrollBarForceMount}
+          orientation="horizontal"
+        />
+      )}
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
   )
@@ -49,11 +64,16 @@ ScrollArea.displayName = ScrollAreaPrimitive.Root.displayName
 const ScrollBar = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>,
   React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>
->(({ className, ...props }, ref) => (
+>(({ className, orientation = "vertical", ...props }, ref) => (
   <ScrollAreaPrimitive.ScrollAreaScrollbar
     ref={ref}
-    orientation="vertical"
-    className={cn("mr-1 flex h-full w-2 touch-none select-none transition-colors", className)}
+    orientation={orientation}
+    className={cn(
+      "flex touch-none select-none transition-colors",
+      orientation === "vertical" && "mr-1 h-full w-2",
+      orientation === "horizontal" && "mb-1 h-2 w-full flex-col",
+      className
+    )}
     {...props}
   >
     <ScrollAreaPrimitive.ScrollAreaThumb
