@@ -18,7 +18,7 @@ type TextFieldBuild<TNoTokenize extends Record<"noTokenize", boolean>, TNoStem e
 } : {}) : TFrom["from"] extends string ? {
     type: "TEXT";
     from: TFrom["from"];
-} : "TEXT";
+} : { type: "TEXT" };
 declare const BUILD: unique symbol;
 declare class TextFieldBuilder<TNoTokenize extends Record<"noTokenize", boolean> = {
     noTokenize: false;
@@ -86,7 +86,7 @@ declare class BoolFieldBuilder<Fast extends Record<"fast", boolean> = {
     } : TFrom["from"] extends string ? {
         type: "BOOL";
         from: TFrom["from"];
-    } : "BOOL";
+    } : { type: "BOOL" };
 }
 declare class DateFieldBuilder<Fast extends Record<"fast", boolean> = {
     fast: false;
@@ -114,7 +114,13 @@ declare class DateFieldBuilder<Fast extends Record<"fast", boolean> = {
     } : TFrom["from"] extends string ? {
         type: "DATE";
         from: TFrom["from"];
-    } : "DATE";
+    } : { type: "DATE" };
+}
+declare class KeywordFieldBuilder {
+    [BUILD](): { type: "KEYWORD" };
+}
+declare class FacetFieldBuilder {
+    [BUILD](): { type: "FACET" };
 }
 type FieldBuilder = TextFieldBuilder<{
     noTokenize: boolean;
@@ -132,12 +138,14 @@ type FieldBuilder = TextFieldBuilder<{
     fast: boolean;
 }, {
     from: string | null;
-}>;
+}> | KeywordFieldBuilder | FacetFieldBuilder;
 declare const s: {
     string(): TextFieldBuilder;
     number<T extends NumericField["type"] = "F64">(type?: T): NumericFieldBuilder<T>;
     boolean(): BoolFieldBuilder;
     date(): DateFieldBuilder;
+    keyword(): KeywordFieldBuilder;
+    facet(): FacetFieldBuilder;
     object<T extends ObjectFieldRecord<T>>(fields: T): { [K in keyof T]: T[K] extends FieldBuilder ? ReturnType<T[K][typeof BUILD]> : T[K]; };
 };
 type ObjectFieldRecord<T> = {
