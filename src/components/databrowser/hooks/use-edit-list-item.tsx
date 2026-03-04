@@ -85,7 +85,7 @@ export const useEditListItem = () => {
         }
         case "stream": {
           if (!isNew || !newKey) throw new Error("Stream data type is not mutable")
-          const opts = transformArray(newValue?.split("\n") ?? []).map(
+          const opts = transformArray((newValue?.split("\n") ?? []).filter(Boolean)).map(
             ({ key, value }) => [key, value] as const
           )
 
