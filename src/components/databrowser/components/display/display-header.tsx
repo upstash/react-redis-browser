@@ -1,5 +1,5 @@
 import { useTab } from "@/tab-provider"
-import { type DataType } from "@/types"
+import { type DataType, type ListDataType } from "@/types"
 import { IconPlus } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
@@ -8,6 +8,7 @@ import { SimpleTooltip } from "@/components/ui/tooltip"
 
 import { TypeTag } from "../type-tag"
 import { HeaderTTLBadge, LengthBadge, SizeBadge } from "./header-badges"
+import { ItemActions } from "./item-actions"
 import { KeyActions } from "./key-actions"
 
 export const DisplayHeader = ({
@@ -21,7 +22,10 @@ export const DisplayHeader = ({
   type: DataType
   hideTypeTag?: boolean
 }) => {
-  const { setSelectedListItem } = useTab()
+  const { setSelectedListItem, selectedListItem } = useTab()
+
+  const isListType = type !== "string" && type !== "json" && type !== "search" && type !== "stream"
+  const showItemActions = isListType && Boolean(selectedListItem)
 
   const handleAddItem = () => {
     setSelectedListItem({ key: type === "stream" ? "*" : "", isNew: true })
@@ -40,7 +44,7 @@ export const DisplayHeader = ({
         </h2>
 
         <div className="flex items-center gap-1">
-          {type !== "string" && type !== "json" && type !== "search" && (
+          {type !== "string" && type !== "json" && type !== "search" && !showItemActions && (
             <SimpleTooltip content="Add item">
               <Button onClick={handleAddItem} size="icon-sm" aria-label="Add item">
                 <IconPlus className="size-4 text-zinc-500 dark:text-zinc-600" />
@@ -48,7 +52,11 @@ export const DisplayHeader = ({
             </SimpleTooltip>
           )}
 
-          <KeyActions dataKey={dataKey} content={content} type={type} />
+          {showItemActions ? (
+            <ItemActions dataKey={dataKey} type={type as ListDataType} />
+          ) : selectedListItem ? undefined : (
+            <KeyActions dataKey={dataKey} content={content} type={type} />
+          )}
         </div>
       </div>
 

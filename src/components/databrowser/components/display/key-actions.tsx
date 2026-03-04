@@ -58,6 +58,7 @@ export function KeyActions({
         </DropdownMenuItem>
         <DeleteKeyModal
           deletionType="key"
+          name={dataKey}
           showReindex={isValuesSearchSelected && type !== "search"}
           onDeleteConfirm={async (_e, options) => {
             await deleteKey({ keys: [dataKey], reindex: options?.reindex })
