@@ -134,8 +134,8 @@ const ListEditForm = ({
                   (type === "stream" && !isNew)
                 }
               >
-                <Spinner isLoading={isPending} isLoadingText={"Saving"}>
-                  Save
+                <Spinner isLoading={isPending} isLoadingText={isNew ? "Adding" : "Saving"}>
+                  {isNew ? "Add Item" : "Save"}
                 </Spinner>
               </Button>
             </SimpleTooltip>
