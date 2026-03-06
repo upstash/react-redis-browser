@@ -1,9 +1,11 @@
 import { useRedis } from "@/redis-context"
-import { useQuery } from "@tanstack/react-query"
+import { useInfiniteQuery } from "@tanstack/react-query"
 
-import { scanKeys } from "@/lib/scan-keys"
+import { listSearchIndexes } from "@/lib/list-search-indexes"
 
 export const FETCH_SEARCH_INDEXES_QUERY_KEY = "fetch-search-indexes"
+
+const PAGE_SIZE = 30
 
 export const useFetchSearchIndexes = ({
   match,
@@ -11,9 +13,27 @@ export const useFetchSearchIndexes = ({
 }: { match?: string; enabled?: boolean } = {}) => {
   const { redisNoPipeline: redis } = useRedis()
 
-  return useQuery({
-    queryKey: [FETCH_SEARCH_INDEXES_QUERY_KEY],
+  const query = useInfiniteQuery({
+    queryKey: [FETCH_SEARCH_INDEXES_QUERY_KEY, match],
     enabled: enabled ?? true,
-    queryFn: () => scanKeys(redis, { match, type: "search" }),
+    initialPageParam: 0,
+    queryFn: async ({ pageParam: offset }) => {
+      const names = await listSearchIndexes(redis, { match, limit: PAGE_SIZE, offset })
+      return {
+        names,
+        nextOffset: names.length >= PAGE_SIZE ? offset + names.length : undefined,
+      }
+    },
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
   })
+
+  const indexes = query.data?.pages.flatMap((page) => page.names)
+
+  return {
+    data: indexes,
+    isLoading: query.isLoading || (query.isFetching && !query.isFetchingNextPage),
+    hasNextPage: query.hasNextPage,
+    fetchNextPage: query.fetchNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
+  }
 }

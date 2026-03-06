@@ -5,6 +5,7 @@ import type { DataType, RedisKey } from "@/types"
 import { useInfiniteQuery, type UseInfiniteQueryResult } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
+import { listSearchIndexes } from "@/lib/list-search-indexes"
 import { parseJSObjectLiteral } from "@/lib/utils"
 
 import { FETCH_KEY_TYPE_QUERY_KEY } from "./use-fetch-key-type"
@@ -80,6 +81,29 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     return { cursor: newCursor, keys }
   }
 
+  // Redis search index scan — used when the type filter is "search"
+  const redisSearchIndexScan = async ({
+    count,
+    cursor,
+  }: {
+    count: number
+    cursor: string
+  }): Promise<ScanResult> => {
+    const offset = Number.parseInt(cursor, 10) || 0
+
+    const names = await listSearchIndexes(redis, {
+      match: search.key || undefined,
+      limit: count,
+      offset,
+    })
+    const keys = names.map((name) => ({ key: name, type: "search" as DataType }))
+
+    const hasMore = keys.length >= count
+    const nextCursor = hasMore ? String(offset + keys.length) : "0"
+
+    return { cursor: nextCursor, keys }
+  }
+
   // Redis search value scan
   const redisValueScan = async ({
     count,
@@ -118,7 +142,11 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
   }
 
   const performScan = async (count: number, cursor: string) => {
-    const scanFunction = isValuesSearchSelected ? redisValueScan : redisKeyScan
+    const scanFunction = isValuesSearchSelected
+      ? redisValueScan
+      : search.type === "search"
+        ? redisSearchIndexScan
+        : redisKeyScan
 
     const result = await scanFunction({ count, cursor })
     return [result.cursor, result.keys] as const

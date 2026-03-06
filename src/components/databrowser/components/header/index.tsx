@@ -4,6 +4,7 @@ import {
   IconChevronDown,
   IconCircleCheck,
   IconCirclePlus,
+  IconLoader2,
   IconPlus,
   IconSearch,
   IconSparkles,
@@ -16,6 +17,7 @@ import { Segmented } from "@/components/ui/segmented"
 import { SimpleTooltip } from "@/components/ui/tooltip"
 
 import type { TabType } from "../.."
+import { useDebounce } from "../../hooks/use-debounce"
 import { useFetchSearchIndexes } from "../../hooks/use-fetch-search-indexes"
 import { AddKeyModal } from "../add-key-modal"
 import { QueryWizardPopover } from "../query-wizard/query-wizard-popover"
@@ -85,22 +87,29 @@ const IndexSelector = () => {
     valuesSearch: { index },
     setValuesSearchIndex,
   } = useTab()
-  const { data: indexes, isLoading } = useFetchSearchIndexes()
   const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState("")
+  const debouncedSearch = useDebounce(search, 150)
+  const match = debouncedSearch ? `${debouncedSearch}*` : undefined
+
+  const {
+    data: indexes,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useFetchSearchIndexes({ match })
+  const [editingIndex, setEditingIndex] = useState<string | undefined>()
 
   // Auto-select first index if none is selected, or clear if selected index no longer exists
   useEffect(() => {
-    if (!indexes || isLoading) return
+    if (!indexes || isLoading || debouncedSearch) return
     if (index && !indexes.includes(index)) {
       setValuesSearchIndex("")
     } else if (!index && indexes.length > 0) {
       setValuesSearchIndex(indexes[0])
     }
-  }, [indexes, index, isLoading, setValuesSearchIndex])
-  const [search, setSearch] = useState("")
-  const [editingIndex, setEditingIndex] = useState<string | undefined>()
-
-  const filteredIndexes = indexes?.filter((idx) => idx.toLowerCase().includes(search.toLowerCase()))
+  }, [indexes, index, isLoading, setValuesSearchIndex, debouncedSearch])
 
   const handleEditIndex = (indexName: string) => {
     setOpen(false)
@@ -145,10 +154,15 @@ const IndexSelector = () => {
 
             {/* Index list */}
             <div className="max-h-[200px] overflow-y-auto">
-              {filteredIndexes?.length === 0 && (
+              {isLoading && !indexes && (
+                <div className="flex items-center justify-center py-4">
+                  <IconLoader2 className="size-4 animate-spin text-zinc-400" />
+                </div>
+              )}
+              {!isLoading && indexes?.length === 0 && (
                 <div className="py-4 text-center text-sm text-zinc-500">No indexes found</div>
               )}
-              {filteredIndexes?.map((idx) => (
+              {indexes?.map((idx) => (
                 <div
                   key={idx}
                   className="flex h-9 items-center rounded-md px-2 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-200"
@@ -182,6 +196,16 @@ const IndexSelector = () => {
                   </button>
                 </div>
               ))}
+
+              {hasNextPage && (
+                <button
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="flex h-9 w-full items-center justify-center rounded-md text-sm text-emerald-600 transition-colors hover:bg-zinc-100 disabled:opacity-50"
+                >
+                  {isFetchingNextPage ? "Loading..." : "Load more"}
+                </button>
+              )}
             </div>
           </div>
         </PopoverContent>
