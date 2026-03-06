@@ -5,11 +5,11 @@ import type { DataType, RedisKey } from "@/types"
 import { useInfiniteQuery, type UseInfiniteQueryResult } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
+import { listSearchIndexes } from "@/lib/list-search-indexes"
 import { parseJSObjectLiteral } from "@/lib/utils"
 
 import { FETCH_KEY_TYPE_QUERY_KEY } from "./use-fetch-key-type"
 import { useFetchSearchIndex } from "./use-fetch-search-index"
-import { parseListIndexesResponse } from "./use-fetch-search-indexes"
 
 const KeysContext = createContext<
   | {
@@ -91,12 +91,11 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
   }): Promise<ScanResult> => {
     const offset = Number.parseInt(cursor, 10) || 0
 
-    const args: string[] = ["search.listindexes"]
-    if (search.key) args.push("MATCH", search.key)
-    args.push("LIMIT", String(count), "OFFSET", String(offset))
-
-    const result = await redis.exec<string[][]>(args as [string, ...string[]])
-    const names = parseListIndexesResponse(result)
+    const names = await listSearchIndexes(redis, {
+      match: search.key || undefined,
+      limit: count,
+      offset,
+    })
     const keys = names.map((name) => ({ key: name, type: "search" as DataType }))
 
     const hasMore = keys.length >= count
