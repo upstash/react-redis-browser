@@ -85,12 +85,17 @@ const ListEditForm = ({
           {type === "zset" && <NumberFormItem name="value" label={valueLabel} />}
 
           {type !== "list" && (
-            <FormItem readOnly={type === "stream"} name="key" label={keyLabel} data={itemKey} />
+            <FormItem
+              readOnly={type === "stream" && !isNew}
+              name="key"
+              label={keyLabel}
+              data={itemKey}
+            />
           )}
 
           {type !== "set" && type !== "zset" && (
             <FormItem
-              readOnly={type === "stream"}
+              readOnly={type === "stream" && !isNew}
               name="value"
               label={valueLabel}
               data={itemValue ?? ""}
@@ -129,8 +134,8 @@ const ListEditForm = ({
                   (type === "stream" && !isNew)
                 }
               >
-                <Spinner isLoading={isPending} isLoadingText={"Saving"}>
-                  Save
+                <Spinner isLoading={isPending} isLoadingText={isNew ? "Adding" : "Saving"}>
+                  {isNew ? "Add Item" : "Save"}
                 </Spinner>
               </Button>
             </SimpleTooltip>

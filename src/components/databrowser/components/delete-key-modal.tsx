@@ -22,6 +22,8 @@ export function DeleteKeyModal({
   deletionType,
   count = 1,
   showReindex,
+  name,
+  nameLabel,
 }: {
   children?: React.ReactNode
   onDeleteConfirm: (e: MouseEvent, options?: { reindex?: boolean }) => void | Promise<void>
@@ -30,6 +32,8 @@ export function DeleteKeyModal({
   deletionType: "item" | "key"
   count?: number
   showReindex?: boolean
+  name?: string
+  nameLabel?: string
 }) {
   const isPlural = count > 1
   const itemLabel = deletionType === "item" ? "Item" : "Key"
@@ -53,7 +57,19 @@ export function DeleteKeyModal({
           </DialogTitle>
           <DialogDescription className="mt-5">
             Are you sure you want to delete{" "}
-            {isPlural ? `these ${count} ${deletionType}s` : `this ${deletionType}`}?<br />
+            {name ? (
+              <>
+                {`${nameLabel ?? deletionType} `}
+                <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                  {nameLabel ? name : `"${name}"`}
+                </span>
+              </>
+            ) : isPlural ? (
+              `these ${count} ${deletionType}s`
+            ) : (
+              `this ${deletionType}`
+            )}
+            ?<br />
             This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
