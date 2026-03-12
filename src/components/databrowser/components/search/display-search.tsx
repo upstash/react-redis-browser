@@ -229,7 +229,7 @@ export const SearchDisplay = ({
               </div>
               <DocsLink
                 className="absolute bottom-2 right-2 text-sm"
-                href="https://upstash-search.mintlify.app/redis/search/schema-definition"
+                href="https://upstash.com/docs/redis/search/schema-definition"
               />
             </div>
 

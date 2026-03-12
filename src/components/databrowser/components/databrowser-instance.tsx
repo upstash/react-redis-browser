@@ -66,7 +66,7 @@ const QueryBuilderContent = () => {
       <QueryBuilderError error={errorMessage} autoHide={Boolean(switchError)} />
       <DocsLink
         className="absolute bottom-2 right-2 text-sm"
-        href="https://upstash-search.mintlify.app/redis/search/query-operators/boolean-operators/overview"
+        href="https://upstash.com/docs/redis/search/query-operators/boolean-operators/overview"
       />
     </div>
   )

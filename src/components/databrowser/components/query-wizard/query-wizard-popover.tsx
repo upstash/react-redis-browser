@@ -163,7 +163,7 @@ export const QueryWizardPopover = ({ onClose }: { onClose?: () => void }) => {
             <span className="text-xs text-zinc-500">
               Example: Find people named "John", boost if older than 20.
             </span>
-            <DocsLink href="https://upstash-search.mintlify.app/redis/search/query-operators/boolean-operators/overview" />
+            <DocsLink href="https://upstash.com/docs/redis/search/query-operators/boolean-operators/overview" />
           </div>
         </div>
       </div>

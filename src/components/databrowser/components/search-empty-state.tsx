@@ -67,7 +67,7 @@ export const SearchEmptyState = () => {
         </div>
 
         <a
-          href="https://upstash-search.mintlify.app/redis/search/introduction"
+          href="https://upstash.com/docs/redis/search/introduction"
           target="_blank"
           rel="noopener noreferrer"
           className="mt-5 inline-block text-sm text-emerald-600 underline-offset-2 hover:underline"

@@ -62,7 +62,7 @@ export const BoostBadge = ({
               ? `Multiplies this condition's score by ${node.boost ?? 0}, subtracting from the total.`
               : `Multiplies this condition's score by ${node.boost ?? 0}.`}
           </span>
-          <DocsLink href="https://upstash-search.mintlify.app/redis/search/query-operators/boolean-operators/boost" />
+          <DocsLink href="https://upstash.com/docs/redis/search/query-operators/boolean-operators/boost" />
         </TooltipContent>
       </Tooltip>
       {isStatic ? (
