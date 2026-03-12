@@ -206,7 +206,7 @@ const InnerGroup = ({
                   <span>
                     Keys matching any of the conditions below are excluded from the results.
                   </span>
-                  <DocsLink href="https://upstash-search.mintlify.app/redis/search/query-operators/boolean-operators/must-not" />
+                  <DocsLink href="https://upstash.com/docs/redis/search/query-operators/boolean-operators/must-not" />
                 </TooltipContent>
               </Tooltip>
             )}
