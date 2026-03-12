@@ -338,12 +338,20 @@ function parseFieldBuilder(str: string, fieldName: string): FieldValue | undefin
 
   // s.keyword()
   if (str.startsWith("s.keyword()")) {
-    return "KEYWORD"
+    const fromValue = extractFromValue(str)
+
+    if (fromValue === undefined) return "KEYWORD"
+
+    return { type: "KEYWORD", from: fromValue }
   }
 
   // s.facet()
   if (str.startsWith("s.facet()")) {
-    return "FACET"
+    const fromValue = extractFromValue(str)
+
+    if (fromValue === undefined) return "FACET"
+
+    return { type: "FACET", from: fromValue }
   }
 
   // Check if it looks like a field builder but is unrecognized

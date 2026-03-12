@@ -39,10 +39,12 @@ export type DateField = {
 
 export type KeywordField = {
   type: "KEYWORD";
+  from?: string;
 };
 
 export type FacetField = {
   type: "FACET";
+  from?: string;
 };
 
 export type DetailedField =
