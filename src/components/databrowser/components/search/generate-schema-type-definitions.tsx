@@ -116,11 +116,31 @@ declare class DateFieldBuilder<Fast extends Record<"fast", boolean> = {
         from: TFrom["from"];
     } : { type: "DATE" };
 }
-declare class KeywordFieldBuilder {
-    [BUILD](): { type: "KEYWORD" };
+declare class KeywordFieldBuilder<TFrom extends Record<"from", string | null> = {
+    from: null;
+}> {
+    private _from;
+    constructor(from?: TFrom);
+    from(field: string): KeywordFieldBuilder<{
+        from: string;
+    }>;
+    [BUILD](): TFrom["from"] extends string ? {
+        type: "KEYWORD";
+        from: TFrom["from"];
+    } : { type: "KEYWORD" };
 }
-declare class FacetFieldBuilder {
-    [BUILD](): { type: "FACET" };
+declare class FacetFieldBuilder<TFrom extends Record<"from", string | null> = {
+    from: null;
+}> {
+    private _from;
+    constructor(from?: TFrom);
+    from(field: string): FacetFieldBuilder<{
+        from: string;
+    }>;
+    [BUILD](): TFrom["from"] extends string ? {
+        type: "FACET";
+        from: TFrom["from"];
+    } : { type: "FACET" };
 }
 type FieldBuilder = TextFieldBuilder<{
     noTokenize: boolean;
@@ -138,7 +158,11 @@ type FieldBuilder = TextFieldBuilder<{
     fast: boolean;
 }, {
     from: string | null;
-}> | KeywordFieldBuilder | FacetFieldBuilder;
+}> | KeywordFieldBuilder<{
+    from: string | null;
+}> | FacetFieldBuilder<{
+    from: string | null;
+}>;
 declare const s: {
     string(): TextFieldBuilder;
     number<T extends NumericField["type"] = "F64">(type?: T): NumericFieldBuilder<T>;
