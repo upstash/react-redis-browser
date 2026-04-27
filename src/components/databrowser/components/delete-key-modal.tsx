@@ -105,6 +105,7 @@ export function DeleteKeyModal({
               setIsPending(true)
               try {
                 await onDeleteConfirm(e, { reindex })
+                setIsOpen?.(false)
               } finally {
                 setIsPending(false)
               }
