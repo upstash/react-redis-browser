@@ -55,8 +55,7 @@ export function formatTime(seconds: number) {
     parts.push("0s")
   }
 
-  // Just get the first part because of design change
-  return parts.slice(0, 1).join(" ")
+  return parts.slice(0, 2).join(" ")
 }
 
 export const isTest = typeof window !== "undefined" && (window as any).__PLAYWRIGHT__ === true
