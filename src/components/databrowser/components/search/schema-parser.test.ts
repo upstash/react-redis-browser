@@ -51,9 +51,9 @@ describe("Schema Parser", () => {
     expect(result).toEqual({
       success: true,
       schema: {
-        price: "F64",
-        count: "U64",
-        score: { type: "I64", from: "val" },
+        price: { type: "F64", fast: true },
+        count: { type: "U64", fast: true },
+        score: { type: "I64", fast: true, from: "val" },
       },
     })
   })
@@ -114,7 +114,7 @@ describe("Schema Parser", () => {
       schema: {
         "user.name": "TEXT",
         "user.address.city": "TEXT",
-        "user.address.zip": "U64",
+        "user.address.zip": { type: "U64", fast: true },
       },
     })
   })
@@ -132,7 +132,7 @@ describe("Schema Parser", () => {
       success: true,
       schema: {
         name: "TEXT",
-        age: "F64",
+        age: { type: "F64", fast: true },
         active: "BOOL",
       },
     })
@@ -176,7 +176,7 @@ describe("Schema Parser - Edge Cases", () => {
       success: true,
       schema: {
         "field.with.dots": "TEXT",
-        "another.dotted.field": "F64",
+        "another.dotted.field": { type: "F64", fast: true },
       },
     })
   })
@@ -210,7 +210,7 @@ describe("Schema Parser - Edge Cases", () => {
       success: true,
       schema: {
         item: { type: "TEXT", from: "items(0)" },
-        nested: { type: "F64", from: "data[key]" },
+        nested: { type: "F64", fast: true, from: "data[key]" },
       },
     })
   })
@@ -247,7 +247,7 @@ describe("Schema Parser - Edge Cases", () => {
       success: true,
       schema: {
         name: "TEXT",
-        age: "U64",
+        age: { type: "U64", fast: true },
       },
     })
   })
@@ -259,7 +259,7 @@ describe("Schema Parser - Edge Cases", () => {
       success: true,
       schema: {
         a: "TEXT",
-        b: "F64",
+        b: { type: "F64", fast: true },
         c: "BOOL",
       },
     })
@@ -314,7 +314,7 @@ describe("Schema Parser - Edge Cases", () => {
     expect(result).toEqual({
       success: true,
       schema: {
-        id: "U64",
+        id: { type: "U64", fast: true },
         "user.name": "TEXT",
         "user.email": "TEXT",
         active: "BOOL",
@@ -337,7 +337,7 @@ describe("Schema Parser - Edge Cases", () => {
       success: true,
       schema: {
         名前: "TEXT",
-        données: "F64",
+        données: { type: "F64", fast: true },
         "emoji_🎉": "BOOL",
       },
     })
@@ -357,7 +357,7 @@ describe("Schema Parser - Edge Cases", () => {
       success: true,
       schema: {
         "s.string()": "TEXT",
-        "s.number()": "F64",
+        "s.number()": { type: "F64", fast: true },
         "s.boolean()": "BOOL",
         ".string()": "TEXT",
       },
@@ -423,11 +423,11 @@ describe("Schema Parser - Edge Cases", () => {
     expect(result).toEqual({
       success: true,
       schema: {
-        f64: "F64",
-        u64: "U64",
-        i64: "I64",
-        default: "F64",
-        aliased: { type: "F64", from: "source" },
+        f64: { type: "F64", fast: true },
+        u64: { type: "U64", fast: true },
+        i64: { type: "I64", fast: true },
+        default: { type: "F64", fast: true },
+        aliased: { type: "F64", fast: true, from: "source" },
       },
     })
   })
@@ -478,7 +478,7 @@ describe("Schema Parser - Edge Cases", () => {
       success: true,
       schema: {
         name: "TEXT",
-        age: "F64",
+        age: { type: "F64", fast: true },
       },
     })
   })
@@ -495,7 +495,7 @@ describe("Schema Parser - Edge Cases", () => {
       success: true,
       schema: {
         name: "TEXT",
-        age: "F64",
+        age: { type: "F64", fast: true },
       },
     })
   })
@@ -514,7 +514,7 @@ describe("Schema Parser - Edge Cases", () => {
     expect(result).toEqual({
       success: true,
       schema: {
-        id: "U64",
+        id: { type: "U64", fast: true },
         name: "TEXT",
       },
     })
@@ -567,7 +567,7 @@ describe("Schema Parser - Additional Edge Cases", () => {
       success: true,
       schema: {
         name: "TEXT",
-        age: "F64",
+        age: { type: "F64", fast: true },
       },
     })
   })
@@ -580,7 +580,7 @@ describe("Schema Parser - Additional Edge Cases", () => {
       success: true,
       schema: {
         name: "TEXT",
-        age: "F64",
+        age: { type: "F64", fast: true },
       },
     })
   })
@@ -598,7 +598,7 @@ describe("Schema Parser - Additional Edge Cases", () => {
       success: true,
       schema: {
         name: "TEXT",
-        age: "F64",
+        age: { type: "F64", fast: true },
       },
     })
   })
@@ -615,7 +615,7 @@ describe("Schema Parser - Additional Edge Cases", () => {
       success: true,
       schema: {
         "field with spaces": "TEXT",
-        "another spaced field": "F64",
+        "another spaced field": { type: "F64", fast: true },
       },
     })
   })
@@ -700,7 +700,7 @@ describe("Schema Parser - Additional Edge Cases", () => {
     expect(result).toEqual({
       success: true,
       schema: {
-        _id: "U64",
+        _id: { type: "U64", fast: true },
         __typename: "TEXT",
         _private_field: "BOOL",
       },
@@ -778,7 +778,7 @@ describe("Schema Parser - Malformed Inputs", () => {
     // Should skip invalid entries and parse valid ones
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.schema.age).toBe("F64")
+      expect(result.schema.age).toEqual({ type: "F64", fast: true })
     }
   })
 
@@ -793,7 +793,7 @@ describe("Schema Parser - Malformed Inputs", () => {
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.schema.name).toBe("TEXT")
-      expect(result.schema.age).toBe("F64")
+      expect(result.schema.age).toEqual({ type: "F64", fast: true })
     }
   })
 
@@ -825,7 +825,7 @@ describe("Schema Parser - Malformed Inputs", () => {
       success: true,
       schema: {
         string: "TEXT",
-        number: "F64",
+        number: { type: "F64", fast: true },
         boolean: "BOOL",
         date: "DATE",
         object: "TEXT",
