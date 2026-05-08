@@ -35,7 +35,7 @@ export const DisplayHeader = ({
     <div className="rounded-lg">
       {/* Key title and actions */}
       <div className="flex h-[26px] items-center justify-between gap-4">
-        <h2 className="grow truncate text-sm">
+        <h2 className="min-w-0 grow truncate text-sm">
           {dataKey.trim() === "" ? (
             <span className="ml-1 text-zinc-500">(Empty Key)</span>
           ) : (
