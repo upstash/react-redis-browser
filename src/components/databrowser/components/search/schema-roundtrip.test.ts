@@ -7,7 +7,7 @@ describe("Schema Parser - Round Trip", () => {
   test("round-trips simple schema", () => {
     const original = {
       name: "TEXT",
-      age: "F64",
+      age: { type: "F64", fast: true },
       active: "BOOL",
     }
     const editorValue = schemaToEditorValue(original)
@@ -22,7 +22,7 @@ describe("Schema Parser - Round Trip", () => {
     const original = {
       "user.name": "TEXT",
       "user.address.city": "TEXT",
-      "user.address.zip": "U64",
+      "user.address.zip": { type: "U64", fast: true },
     }
     const editorValue = schemaToEditorValue(original)
     const result = parseSchemaFromEditorValue(editorValue)
@@ -40,10 +40,10 @@ describe("Schema Parser - Round Trip", () => {
       boolFast: { type: "BOOL", fast: true },
       date: "DATE",
       dateFast: { type: "DATE", fast: true },
-      f64: "F64",
-      f64From: { type: "F64", from: "source" },
-      u64: "U64",
-      i64: "I64",
+      f64: { type: "F64", fast: true },
+      f64From: { type: "F64", fast: true, from: "source" },
+      u64: { type: "U64", fast: true },
+      i64: { type: "I64", fast: true },
     }
     const editorValue = schemaToEditorValue(original)
     const result = parseSchemaFromEditorValue(editorValue)
@@ -56,7 +56,7 @@ describe("Schema Parser - Round Trip", () => {
   test("round-trips schema with from() fields", () => {
     const original = {
       name: { type: "TEXT", from: "fullName" },
-      count: { type: "U64", from: "total" },
+      count: { type: "U64", fast: true, from: "total" },
       active: { type: "BOOL", fast: true, from: "isActive" },
     }
     const editorValue = schemaToEditorValue(original)
@@ -80,7 +80,7 @@ describe("Schema Parser - Round Trip", () => {
   test("round-trips deeply nested schema", () => {
     const original = {
       "a.b.c.d.e": "TEXT",
-      "a.b.c.d.f": "F64",
+      "a.b.c.d.f": { type: "F64", fast: true },
       "a.b.x": "BOOL",
     }
     const editorValue = schemaToEditorValue(original)

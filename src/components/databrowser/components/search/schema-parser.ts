@@ -297,15 +297,17 @@ function parseFieldBuilder(str: string, fieldName: string): FieldValue | undefin
     }
   }
 
-  // s.number() or s.number("F64") - numbers only support .from(), not .fast()
+  // s.number() or s.number("F64") - numerics always include fast: true
   if (str.startsWith("s.number(")) {
     const typeMatch = str.match(/s\.number\(\s*["']?(U64|I64|F64)?["']?\s*\)/)
     const numType = typeMatch?.[1] || "F64"
     const fromValue = extractFromValue(str)
 
-    if (fromValue === undefined) return numType
-
-    return { type: numType, from: fromValue }
+    return {
+      type: numType,
+      fast: true,
+      ...(fromValue !== undefined && { from: fromValue }),
+    }
   }
 
   // s.boolean()
