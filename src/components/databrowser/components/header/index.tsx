@@ -130,8 +130,8 @@ const IndexSelector = () => {
         modal={false}
       >
         <PopoverTrigger asChild>
-          <button className="flex min-w-[140px] items-center justify-between gap-2 rounded-r-lg border border-zinc-300 bg-emerald-50 px-3 py-[5px] text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-100">
-            <span className="truncate">{index || "Select an index"}</span>
+          <button className="flex min-w-[140px] max-w-[240px] items-center justify-between gap-2 rounded-r-lg border border-zinc-300 bg-emerald-50 px-3 py-[5px] text-sm font-medium text-emerald-800 transition-colors hover:bg-emerald-100">
+            <span className="min-w-0 truncate">{index || "Select an index"}</span>
             <IconChevronDown className="size-4 shrink-0 opacity-50" />
           </button>
         </PopoverTrigger>
@@ -172,11 +172,11 @@ const IndexSelector = () => {
                       setValuesSearchIndex(idx)
                       setOpen(false)
                     }}
-                    className="flex flex-1 items-center gap-2 text-left text-sm"
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm"
                   >
                     <span
                       className={cn(
-                        "flex size-5 items-center justify-center",
+                        "flex size-5 shrink-0 items-center justify-center",
                         idx === index ? "text-emerald-600" : "text-transparent"
                       )}
                     >

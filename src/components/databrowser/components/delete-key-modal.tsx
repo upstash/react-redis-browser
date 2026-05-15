@@ -55,7 +55,7 @@ export function DeleteKeyModal({
           <DialogTitle>
             {isPlural ? `Delete ${count} ${itemsLabel}` : `Delete ${itemLabel}`}
           </DialogTitle>
-          <DialogDescription className="mt-5">
+          <DialogDescription className="mt-5 break-all">
             Are you sure you want to delete{" "}
             {name ? (
               <>
