@@ -42,7 +42,13 @@ export const QueryWizardPopover = ({ onClose }: { onClose?: () => void }) => {
             const data = await redis.json.get(key)
             return { key, data }
           } else if (index.dataType === "hash") {
-            const data = await redis.hgetall(key)
+            const raw = (await redis.hgetall(key)) as unknown
+            const data = Array.isArray(raw)
+              ? raw.reduce<Record<string, unknown>>((obj, value, i, arr) => {
+                  if (i % 2 === 0) obj[String(value)] = arr[i + 1]
+                  return obj
+                }, {})
+              : raw
             return { key, data }
           } else {
             const data = await redis.get(key)
