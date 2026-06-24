@@ -164,5 +164,7 @@ const extractFieldInfo = (schema: NonNullable<SearchIndex>["schema"]): FieldInfo
   return Object.entries(schema).map(([fieldPath, fieldInfo]) => ({
     name: fieldPath,
     type: getFieldType(fieldInfo.type),
+    noTokenize: fieldInfo.noTokenize,
+    noStem: fieldInfo.noStem,
   }))
 }

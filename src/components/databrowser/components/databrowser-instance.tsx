@@ -16,6 +16,7 @@ import { Header } from "./header"
 import { HeaderError } from "./header-error"
 import { QueryBuilder } from "./query-builder"
 import { QueryBuilderError } from "./query-builder-error"
+import { WizardButton } from "./query-wizard/wizard-button"
 import { SearchEmptyState } from "./search-empty-state"
 import { Sidebar } from "./sidebar"
 import { UIQueryBuilder } from "./ui-query-builder"
@@ -51,7 +52,8 @@ const QueryBuilderContent = () => {
 
   return (
     <div className="relative flex h-full min-h-0 flex-col">
-      <div className="absolute right-4 top-4 z-[2]">
+      <div className="absolute right-4 top-4 z-[2] flex items-center gap-2">
+        <WizardButton />
         <Segmented
           options={[
             { key: "ui", label: "Query Builder" },

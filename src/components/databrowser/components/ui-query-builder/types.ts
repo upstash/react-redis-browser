@@ -17,6 +17,8 @@ export type FieldType = "string" | "number" | "boolean" | "date" | "unknown"
 export type FieldInfo = {
   name: string
   type: FieldType
+  noTokenize?: boolean
+  noStem?: boolean
 }
 
 export const STRING_OPERATORS: FieldOperator[] = ["smart", "eq", "in", "phrase", "regex", "fuzzy"]
