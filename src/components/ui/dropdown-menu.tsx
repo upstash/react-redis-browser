@@ -5,7 +5,15 @@ import { IconCheck, IconChevronRight, IconCircleFilled } from "@tabler/icons-rea
 import { portalRoot } from "@/lib/portal-root"
 import { cn } from "@/lib/utils"
 
-const DropdownMenu = DropdownMenuPrimitive.Root
+// Default to non-modal: modal dropdowns lock scroll via react-remove-scroll, which sets
+// `position: relative` on <body>. That breaks consumers (e.g. the console fullscreen view) that
+// position a container absolutely against <body>, collapsing its height while the menu is open.
+const DropdownMenu = ({
+  modal = false,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) => (
+  <DropdownMenuPrimitive.Root modal={modal} {...props} />
+)
 
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
 
