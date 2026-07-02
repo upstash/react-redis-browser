@@ -190,7 +190,10 @@ const RedisBrowserRoot = ({
     /* ups-db is the custom class used to prefix every style in the css bundle */
     <div
       className={`ups-db ${theme === "dark" ? "dark" : ""}`}
-      style={{ height: "100%" }}
+      // isolation keeps internal z-indexes (tab scroll shadows, dragged tabs) from stacking above
+      // the host page's own positioned elements, e.g. the console's sticky navbar. Inline because
+      // prefixed css classes only match descendants of .ups-db, not the root itself.
+      style={{ height: "100%", isolation: "isolate" }}
       ref={rootRef}
     >
       <div className="flex h-full flex-col rounded-[14px] border-[4px] border-zinc-300 text-zinc-700">
