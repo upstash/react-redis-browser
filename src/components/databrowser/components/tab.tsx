@@ -1,10 +1,11 @@
 import type { TabId } from "@/store"
-import { useDatabrowserStore } from "@/store"
+import { useDatabrowserRootRef, useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
 import {
   IconArrowsMinimize,
   IconCopyPlus,
   IconPin,
+  IconRestore,
   IconSearch,
   IconSquareX,
   IconX,
@@ -34,11 +35,26 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
     duplicateTab,
     closeOtherTabs,
     closeAllButPinned,
+    closedTabs,
+    reopenClosedTab,
   } = useDatabrowserStore()
+  const rootRef = useDatabrowserRootRef()
 
   const hasPinnedTabs = tabs.some(([, data]) => data.pinned)
 
   const { ref, isOverflow } = useOverflow()
+
+  const handleReopenClosedTab = () => {
+    const reopenedId = reopenClosedTab()
+    if (!reopenedId) return
+
+    setTimeout(() => {
+      const tab = rootRef?.current?.querySelector(`#tab-${reopenedId}`)
+      if (!tab) return
+
+      tab.scrollIntoView({ behavior: "smooth" })
+    }, 20)
+  }
 
   const label = isValuesSearchSelected ? valuesSearch.index : search.key || selectedKey
   const iconNode = isValuesSearchSelected ? (
@@ -124,6 +140,15 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
         >
           <IconArrowsMinimize size={16} />
           Close All But Pinned
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem
+          onSelect={handleReopenClosedTab}
+          className="gap-2"
+          disabled={closedTabs.length === 0}
+        >
+          <IconRestore size={16} />
+          Reopen Closed Tab
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
