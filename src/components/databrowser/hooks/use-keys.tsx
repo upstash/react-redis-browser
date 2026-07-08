@@ -15,13 +15,24 @@ const KeysContext = createContext<
   | {
       keys: RedisKey[]
       query: UseInfiniteQueryResult
+      scan: { paused: boolean; scannedKeys: number }
     }
   | undefined
 >(undefined)
 
 export const FETCH_KEYS_QUERY_KEY = "use-fetch-keys"
 
-const SCAN_COUNTS = [100, 300, 500]
+// Upstash REST caps SCAN at ~1000 examined/returned keys per call regardless of
+// COUNT (measured), so escalating past 1000 is pointless. We still ramp up from a
+// small count for a snappy first response, then sit at the 1000 ceiling.
+const SCAN_COUNTS = [100, 500, 1000]
+
+// Hard cap on SCAN round-trips per page fetch. On a large keyspace a type filter
+// can match nothing for millions of keys; without this the query loops effectively
+// forever. When the budget is spent without finding a key we yield an empty page
+// and let the user explicitly continue (see `scan.paused`).
+const MAX_SCANS_PER_FETCH = 20
+
 type ScanResult = { cursor: string; keys: { key: string; type: DataType; score?: number }[] }
 
 export const KeysProvider = ({ children }: PropsWithChildren) => {
@@ -153,22 +164,36 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
   }
 
   /**
-   * Keeps scanning until a result shows up.
+   * Keeps scanning until a key shows up, the keyspace is exhausted, or this
+   * fetch's request budget (MAX_SCANS_PER_FETCH) is spent.
    *
-   * When a db is sparse and the type argument is used, it could take a lot of
-   * requests to find those sparse keys. Best method is to increase the count
-   * argument when no result is being returned to decrease the number of
-   * requests.
+   * When the db is large and sparse for the active type filter, matching keys can
+   * be millions of keys apart. Rather than loop until we find one (which can mean
+   * tens of thousands of requests), we stop after a bounded number of round-trips
+   * and report back so the UI can pause and let the user continue on demand.
+   *
+   * `signal` is React Query's abort signal; we bail between round-trips so a
+   * filter/type change cancels the in-flight scan instead of churning in the
+   * background.
    */
-  const scanUntilAvailable = async (cursor: string) => {
-    let i = 0
-    while (true) {
-      const [newCursor, values] = await performScan(SCAN_COUNTS[i] ?? SCAN_COUNTS.at(-1), cursor)
-      cursor = newCursor
-      i++
+  const scanUntilAvailable = async (cursor: string, signal?: AbortSignal) => {
+    let scannedKeys = 0
+    for (let i = 0; ; i++) {
+      if (signal?.aborted) throw new DOMException("Scan aborted", "AbortError")
 
-      if (values.length > 0 || cursor === "0") {
-        return [cursor, values] as const
+      const count = SCAN_COUNTS[i] ?? SCAN_COUNTS.at(-1)
+      const [newCursor, values] = await performScan(count, cursor)
+      cursor = newCursor
+      // SCAN examines at most ~1000 keys per call on Upstash REST (see SCAN_COUNTS).
+      scannedKeys += Math.min(count, 1000)
+
+      const exhausted = cursor === "0"
+      const budgetSpent = i + 1 >= MAX_SCANS_PER_FETCH
+      if (values.length > 0 || exhausted || budgetSpent) {
+        // paused === we spent the budget without finding anything and there is
+        // still more keyspace left to scan.
+        const paused = budgetSpent && values.length === 0 && !exhausted
+        return { cursor, values, scannedKeys, paused }
       }
     }
   }
@@ -178,8 +203,8 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     enabled: isQueryEnabled,
 
     initialPageParam: "0",
-    queryFn: async ({ pageParam: lastCursor }) => {
-      const [cursor, values] = await scanUntilAvailable(lastCursor)
+    queryFn: async ({ pageParam: lastCursor, signal }) => {
+      const { cursor, values, scannedKeys, paused } = await scanUntilAvailable(lastCursor, signal)
 
       const keys: RedisKey[] = values.map((value) => [value.key, value.type, value.score])
 
@@ -192,6 +217,8 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
         cursor: cursor === "0" ? undefined : cursor,
         keys,
         hasNextPage: cursor !== "0",
+        scannedKeys,
+        paused,
       }
     },
     meta: {
@@ -218,6 +245,15 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     return dedupedKeys
   }, [query.data])
 
+  const scan = useMemo(() => {
+    const pages = query.data?.pages ?? []
+    return {
+      // Latest fetch spent its budget without a match — wait for the user to continue.
+      paused: Boolean(pages.at(-1)?.paused),
+      scannedKeys: pages.reduce((sum, page) => sum + (page.scannedKeys ?? 0), 0),
+    }
+  }, [query.data])
+
   return (
     <KeysContext.Provider
       value={{
@@ -226,6 +262,7 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
           ...query,
           isLoading: query.isLoading || isIndexDetailsLoading,
         } as UseInfiniteQueryResult,
+        scan,
       }}
     >
       {children}
