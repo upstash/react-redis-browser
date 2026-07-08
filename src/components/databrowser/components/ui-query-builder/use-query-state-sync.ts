@@ -21,6 +21,11 @@ export const useQueryStateSync = () => {
   const lastSyncedQuery = useRef<string>(valuesSearch.query)
   const isOurUpdate = useRef(false)
 
+  // Mirror of the latest state so setQueryState can compute the next state without
+  // running side effects inside the useState updater (which executes during render).
+  const queryStateRef = useRef(queryState)
+  queryStateRef.current = queryState
+
   // Sync FROM zustand only when it changes from an external source
   useEffect(() => {
     // If this change was caused by us, skip re-parsing
@@ -40,20 +45,20 @@ export const useQueryStateSync = () => {
     }
   }, [valuesSearch.query])
 
-  // Setter that applies changes locally and syncs to zustand
+  // Setter that applies changes locally and syncs to zustand.
+  // The zustand write runs here in the caller's context (event handler / effect), not
+  // inside the useState updater, so it never fires during another component's render.
   const setQueryState = useCallback(
     (modifier: (state: QueryState) => QueryState) => {
-      setQueryStateInternal((currentState) => {
-        const newState = modifier(structuredClone(currentState))
+      const newState = modifier(structuredClone(queryStateRef.current))
+      queryStateRef.current = newState
 
-        // Sync to zustand
-        const newQueryString = stringifyQueryState(newState)
-        isOurUpdate.current = true
-        lastSyncedQuery.current = newQueryString
-        setValuesSearchQuery(newQueryString)
+      const newQueryString = stringifyQueryState(newState)
+      isOurUpdate.current = true
+      lastSyncedQuery.current = newQueryString
 
-        return newState
-      })
+      setQueryStateInternal(newState)
+      setValuesSearchQuery(newQueryString)
     },
     [setValuesSearchQuery]
   )
