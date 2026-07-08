@@ -31,6 +31,9 @@ const App = () => {
 
   return (
     <main
+      // The css bundle prefixes every selector with .ups-db, so the playground shell
+      // (credentials form) only gets its tailwind styles inside this scope
+      className={`ups-db ${theme === "dark" ? "dark" : ""}`}
       style={{
         position: "fixed",
         inset: 0,

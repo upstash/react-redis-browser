@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Zustand** with persistence middleware manages tabs, key search, type filters, selections, and search history
 - **React Query** handles server state (key lists, values, metadata)
-- **Persistence:** Optional `RedisBrowserStorage` interface for localStorage/custom storage. Schema is at version 7 with automated migrations from earlier versions.
+- **Persistence:** Optional `RedisBrowserStorage` interface for localStorage/custom storage. Schema is versioned (see `version` in `src/store.tsx`) with automated migrations from earlier versions.
 
 ### Key Source Locations
 
