@@ -139,7 +139,14 @@ export const RedisBrowser = ({
   const credentials = useMemo(() => ({ token, url }), [token, url])
   const rootRef = useRef<HTMLDivElement>(null)
 
+  // Track the url the queries were last reset for so we only reset when the
+  // database actually changes. Resetting on the initial mount would refetch the
+  // keys query that has just started fetching, causing a duplicate first SCAN.
+  const lastResetUrl = useRef(credentials.url)
+
   useEffect(() => {
+    if (lastResetUrl.current === credentials.url) return
+    lastResetUrl.current = credentials.url
     queryClient.resetQueries()
   }, [credentials.url])
 

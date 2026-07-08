@@ -103,6 +103,15 @@ export const QueryCondition = ({
 
   const valueTypeError = getValueTypeError()
 
+  // $regex is applied per-token, so a multi-word pattern can never match. Warn the
+  // user instead of silently running a query that returns nothing.
+  const regexMultiWordError =
+    condition.operator === "regex" &&
+    typeof condition.value === "string" &&
+    condition.value.trim().includes(" ")
+      ? "$regex matches a single token and can't span multiple words — use the phrase operator instead."
+      : undefined
+
   // Normalize values based on field type changes
   useEffect(() => {
     if (currentFieldType === "boolean") {
@@ -482,17 +491,19 @@ export const QueryCondition = ({
             </SelectContent>
           </Select>
         ) : (
-          <input
-            type="text"
-            value={localValue}
-            onChange={(e) => handleValueChange(e.target.value)}
-            onBlur={handleValueBlur}
-            onFocus={handleValueFocus}
-            placeholder={condition.operator === "in" ? "value1, value2, ..." : "value"}
-            className={`h-[26px] min-w-0 flex-1 rounded-none rounded-r-md border border-zinc-200 bg-white px-2 text-sm transition-colors focus:border-zinc-400 focus:outline-none ${
-              valueTypeError ? "text-red-500" : ""
-            }`}
-          />
+          <SimpleTooltip content={regexMultiWordError} variant="error">
+            <input
+              type="text"
+              value={localValue}
+              onChange={(e) => handleValueChange(e.target.value)}
+              onBlur={handleValueBlur}
+              onFocus={handleValueFocus}
+              placeholder={condition.operator === "in" ? "value1, value2, ..." : "value"}
+              className={`h-[26px] min-w-0 flex-1 rounded-none rounded-r-md border border-zinc-200 bg-white px-2 text-sm transition-colors focus:border-zinc-400 focus:outline-none ${
+                valueTypeError || regexMultiWordError ? "text-red-500" : ""
+              }`}
+            />
+          </SimpleTooltip>
         )}
       </div>
 
@@ -556,6 +567,21 @@ export const QueryCondition = ({
             />
           )}
         </>
+      )}
+
+      {currentFieldInfo?.noTokenize && (
+        <SimpleTooltip content="This field is not tokenized — its text is matched as a single token.">
+          <span className="flex h-[26px] shrink-0 items-center rounded-md border border-zinc-300 bg-zinc-50 px-2 text-xs font-medium text-zinc-600">
+            no-tokenize
+          </span>
+        </SimpleTooltip>
+      )}
+      {currentFieldInfo?.noStem && (
+        <SimpleTooltip content="This field is not stemmed — words are matched without reducing them to their stem.">
+          <span className="flex h-[26px] shrink-0 items-center rounded-md border border-zinc-300 bg-zinc-50 px-2 text-xs font-medium text-zinc-600">
+            no-stem
+          </span>
+        </SimpleTooltip>
       )}
 
       {node.not && <NotBadge />}

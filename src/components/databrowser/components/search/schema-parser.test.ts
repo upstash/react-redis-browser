@@ -767,7 +767,7 @@ describe("Schema Parser - Malformed Inputs", () => {
     }
   })
 
-  test("handles field without value", () => {
+  test("errors on field without value", () => {
     const input = `
       const schema: Schema = s.object({
         name,
@@ -775,10 +775,11 @@ describe("Schema Parser - Malformed Inputs", () => {
       })
     `
     const result = parseSchemaFromEditorValue(input)
-    // Should skip invalid entries and parse valid ones
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.schema.age).toEqual({ type: "F64", fast: true })
+    // A malformed field (missing value) must surface an error instead of being
+    // silently dropped and committing an incomplete schema.
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      expect(result.error).toContain("name")
     }
   })
 

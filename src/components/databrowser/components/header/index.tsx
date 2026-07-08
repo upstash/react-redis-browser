@@ -5,25 +5,22 @@ import {
   IconCircleCheck,
   IconCirclePlus,
   IconLoader2,
-  IconPlus,
   IconSearch,
-  IconSparkles,
 } from "@tabler/icons-react"
 
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Segmented } from "@/components/ui/segmented"
-import { SimpleTooltip } from "@/components/ui/tooltip"
 
 import type { TabType } from "../.."
 import { useDebounce } from "../../hooks/use-debounce"
 import { useFetchSearchIndexes } from "../../hooks/use-fetch-search-indexes"
 import { AddKeyModal } from "../add-key-modal"
-import { QueryWizardPopover } from "../query-wizard/query-wizard-popover"
-import { useQueryWizardFn } from "../query-wizard/use-query-wizard"
+import { AddIndexKeyButton } from "../search/add-index-key-modal"
 import { CreateIndexModal } from "../search/create-index-modal"
 import { EditIndexModal } from "../search/edit-index-modal"
+import { ExportResultsButton } from "../search/export-results-button"
+import { IndexActionsMenu } from "../search/index-actions-menu"
 import { RefreshButton } from "./refresh-button"
 import { SearchInput } from "./search-input"
 import { DataTypeSelector } from "./type-selector"
@@ -43,14 +40,7 @@ export const Header = ({ tabType, allowSearch }: { tabType: TabType; allowSearch
               },
               {
                 key: "values",
-                label: (
-                  <div className="flex items-center gap-1">
-                    Search
-                    <div className="flex h-[18px] items-center rounded-md bg-emerald-100 px-[5px] text-[11px] text-emerald-700">
-                      NEW
-                    </div>
-                  </div>
-                ),
+                label: "Search",
               },
             ]}
             value={isValuesSearchSelected ? "values" : "keys"}
@@ -63,7 +53,10 @@ export const Header = ({ tabType, allowSearch }: { tabType: TabType; allowSearch
           />
         )}
         {isValuesSearchSelected ? (
-          <IndexSelector />
+          <>
+            <IndexSelector />
+            <IndexActionsMenu />
+          </>
         ) : (
           <>
             <DataTypeSelector allowSearch={allowSearch} />
@@ -74,9 +67,9 @@ export const Header = ({ tabType, allowSearch }: { tabType: TabType; allowSearch
 
       {/* Actions */}
       <div className="flex items-center gap-1.5">
-        {isValuesSearchSelected && <WizardButton />}
         <RefreshButton />
-        {isValuesSearchSelected ? <AddIndexButton /> : <AddKeyModal />}
+        {isValuesSearchSelected && <ExportResultsButton />}
+        {isValuesSearchSelected ? <AddIndexKeyButton /> : <AddKeyModal />}
       </div>
     </div>
   )
@@ -165,15 +158,19 @@ const IndexSelector = () => {
               {indexes?.map((idx) => (
                 <div
                   key={idx}
-                  className="flex h-9 items-center rounded-md px-2 transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-200"
+                  className="relative flex h-9 items-center rounded-md transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-200"
                 >
+                  {/* Full-row overlay so the whole option (including padding) is clickable */}
                   <button
+                    type="button"
+                    aria-label={`Select ${idx}`}
                     onClick={() => {
                       setValuesSearchIndex(idx)
                       setOpen(false)
                     }}
-                    className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm"
-                  >
+                    className="absolute inset-0 rounded-md"
+                  />
+                  <div className="pointer-events-none flex min-w-0 flex-1 items-center gap-2 px-2 text-left text-sm">
                     <span
                       className={cn(
                         "flex size-5 shrink-0 items-center justify-center",
@@ -183,14 +180,15 @@ const IndexSelector = () => {
                       <IconCircleCheck className="size-5" />
                     </span>
                     <span className="truncate">{idx}</span>
-                  </button>
+                  </div>
                   <button
+                    type="button"
                     onClick={(event) => {
                       event.stopPropagation()
                       event.preventDefault()
                       handleEditIndex(idx)
                     }}
-                    className="ml-2 text-sm text-zinc-500 underline hover:text-zinc-700"
+                    className="relative z-10 mr-2 text-sm text-zinc-500 underline hover:text-zinc-700"
                   >
                     Edit
                   </button>
@@ -237,53 +235,5 @@ const CreateIndexButton = () => {
       </button>
       <CreateIndexModal open={open} onOpenChange={setOpen} />
     </>
-  )
-}
-
-const AddIndexButton = () => {
-  const [open, setOpen] = useState(false)
-
-  return (
-    <>
-      <SimpleTooltip content="Create new Index">
-        <Button
-          variant="primary"
-          onClick={() => setOpen(true)}
-          className="flex h-8 select-none items-center gap-1 rounded-lg pl-2 pr-3 text-sm font-medium"
-        >
-          <IconPlus className="size-5" />
-          Index
-        </Button>
-      </SimpleTooltip>
-      <CreateIndexModal open={open} onOpenChange={setOpen} />
-    </>
-  )
-}
-
-const WizardButton = () => {
-  const queryWizard = useQueryWizardFn()
-  const [open, setOpen] = useState(false)
-
-  if (!queryWizard) return null
-
-  return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
-      <SimpleTooltip content="Query Wizard">
-        <PopoverTrigger asChild>
-          <Button size="icon" aria-label="Query Wizard">
-            <IconSparkles className="size-4 text-zinc-500" />
-          </Button>
-        </PopoverTrigger>
-      </SimpleTooltip>
-      <PopoverContent
-        side="bottom"
-        align="end"
-        alignOffset={-124}
-        avoidCollisions={false}
-        className="w-auto p-0"
-      >
-        <QueryWizardPopover onClose={() => setOpen(false)} />
-      </PopoverContent>
-    </Popover>
   )
 }

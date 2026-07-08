@@ -115,7 +115,9 @@ function parseFields(content: string, prefix: string, flatSchema: FlatSchema): v
 
   for (const entry of entries) {
     const colonIndex = findColonIndex(entry)
-    if (colonIndex === -1) continue
+    if (colonIndex === -1) {
+      throw new Error(`Malformed field "${entry}": expected "fieldName: s.string()" syntax`)
+    }
 
     // Extract field name (handle quoted names)
     let fieldName = entry.slice(0, colonIndex).trim()
@@ -146,10 +148,7 @@ function parseFields(content: string, prefix: string, flatSchema: FlatSchema): v
     }
 
     // Parse the field builder (s.string(), s.number(), etc.)
-    const fieldValue = parseFieldBuilder(valueStr, fullKey)
-    if (fieldValue) {
-      flatSchema[fullKey] = fieldValue
-    }
+    flatSchema[fullKey] = parseFieldBuilder(valueStr, fullKey)
   }
 }
 
@@ -278,7 +277,7 @@ function extractFromValue(str: string): string | undefined {
  * Parse a field builder like s.string().noTokenize()
  * Throws for unrecognized field types with field name context
  */
-function parseFieldBuilder(str: string, fieldName: string): FieldValue | undefined {
+function parseFieldBuilder(str: string, fieldName: string): FieldValue {
   str = str.trim().replace(/,\s*$/, "")
 
   // s.string()
@@ -363,5 +362,9 @@ function parseFieldBuilder(str: string, fieldName: string): FieldValue | undefin
     throw new Error(`Unknown field type "s.${typeName}()" for field "${fieldName}"`)
   }
 
-  return undefined
+  // Anything that is not a recognized builder is malformed — surface it instead
+  // of silently dropping the field and committing an incomplete schema.
+  throw new Error(
+    `Invalid definition for field "${fieldName}": expected a schema builder like s.string()`
+  )
 }

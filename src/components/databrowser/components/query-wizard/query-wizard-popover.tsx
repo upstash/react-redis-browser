@@ -6,7 +6,7 @@ import { IconChevronRight } from "@tabler/icons-react"
 import { useMutation } from "@tanstack/react-query"
 
 import { scanKeys } from "@/lib/scan-keys"
-import { toJsLiteral } from "@/lib/utils"
+import { parseJSObjectLiteral, toJsLiteral } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 
@@ -81,7 +81,13 @@ export const QueryWizardPopover = ({ onClose }: { onClose?: () => void }) => {
         sampleData: samples,
       })
 
-      const queryString = toJsLiteral(result.query)
+      // Format/beautify the generated query with the same formatter used elsewhere.
+      // Guard against the model returning an already-stringified query object.
+      const generated =
+        typeof result.query === "string"
+          ? (parseJSObjectLiteral<unknown>(result.query) ?? result.query)
+          : result.query
+      const queryString = toJsLiteral(generated)
       setValuesSearchQuery(queryString)
 
       setQueryBuilderMode("code")

@@ -171,7 +171,7 @@ const MonacoEditorWithTypes = ({
           definitionLinkOpensInPeek: false,
           contextmenu: false,
         }}
-        className="[&_.current-line]:!border-none [&_.current-line]:!bg-emerald-50 [&_.monaco-editor-background]:!bg-transparent [&_.monaco-editor]:!bg-transparent [&_[role='presentation']]:!bg-transparent"
+        className="[&_.current-line]:!border-none [&_.focused_.current-line]:!bg-emerald-50 [&_.monaco-editor-background]:!bg-transparent [&_.monaco-editor]:!bg-transparent [&_[role='presentation']]:!bg-transparent"
       />
     </div>
   )
