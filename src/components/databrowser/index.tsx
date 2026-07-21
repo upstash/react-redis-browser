@@ -27,6 +27,11 @@ export type RedisBrowserStorage = {
 
 export type TabType = "keys" | "search" | "all"
 
+// The url whose data currently populates the module-level query client's cache.
+// See the cache-clearing block in RedisBrowser. Module-level (not a ref)
+// because the cache itself is module-level and survives remounts.
+let cacheOwnerUrl: string | undefined
+
 export const RedisBrowser = ({
   url,
   token,
@@ -139,16 +144,19 @@ export const RedisBrowser = ({
   const credentials = useMemo(() => ({ token, url }), [token, url])
   const rootRef = useRef<HTMLDivElement>(null)
 
-  // Track the url the queries were last reset for so we only reset when the
-  // database actually changes. Resetting on the initial mount would refetch the
-  // keys query that has just started fetching, causing a duplicate first SCAN.
-  const lastResetUrl = useRef(credentials.url)
-
-  useEffect(() => {
-    if (lastResetUrl.current === credentials.url) return
-    lastResetUrl.current = credentials.url
-    queryClient.resetQueries()
-  }, [credentials.url])
+  // The query client is a module-level singleton, so its cache outlives this
+  // component — and query keys don't include the database url. Track which url
+  // the cache belongs to at module level too, and drop the cache before
+  // rendering anything when a different database shows up. A per-mount ref
+  // can't catch the unmount/remount path (db A details -> db list -> db B
+  // details), which would serve db A's cached keys to db B. Clearing
+  // synchronously (not in an effect) guarantees no child ever observes the
+  // previous database's cache, and on a fresh mount no query has started yet,
+  // so the first SCAN is not duplicated.
+  if (cacheOwnerUrl !== credentials.url) {
+    if (cacheOwnerUrl !== undefined) queryClient.clear()
+    cacheOwnerUrl = credentials.url
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
