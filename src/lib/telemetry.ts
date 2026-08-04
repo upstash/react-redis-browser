@@ -14,7 +14,8 @@ type TelemetryCapableRedis = {
  */
 const taggedClients = new WeakSet<object>()
 
-const getSafeEnv = (): Record<string, string | undefined> =>
+/** Browser-safe access to `process.env`, returns an empty object when there is no `process`. */
+export const getSafeEnv = (): Record<string, string | undefined> =>
   typeof process === "object" && process && typeof process.env === "object" ? process.env : {}
 
 /**

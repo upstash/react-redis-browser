@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "bun:test"
+import { afterEach, beforeEach, describe, expect, test } from "bun:test"
 
 import { VERSION } from "../version"
 import { addTelemetry } from "./telemetry"
@@ -16,8 +16,21 @@ const createRedisMock = () => {
 }
 
 describe("addTelemetry", () => {
-  afterEach(() => {
+  // Bun auto-loads .env, so the developer's or the CI runner's real
+  // UPSTASH_DISABLE_TELEMETRY must be snapshotted and restored around each test.
+  let originalDisableTelemetry: string | undefined
+
+  beforeEach(() => {
+    originalDisableTelemetry = process.env.UPSTASH_DISABLE_TELEMETRY
     delete process.env.UPSTASH_DISABLE_TELEMETRY
+  })
+
+  afterEach(() => {
+    if (originalDisableTelemetry === undefined) {
+      delete process.env.UPSTASH_DISABLE_TELEMETRY
+    } else {
+      process.env.UPSTASH_DISABLE_TELEMETRY = originalDisableTelemetry
+    }
   })
 
   test("sends the sdk name and version", () => {
