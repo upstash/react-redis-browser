@@ -4,6 +4,7 @@ import { Redis } from "@upstash/redis"
 
 import { toast } from "@/components/ui/use-toast"
 
+import { addTelemetry } from "./telemetry"
 import { formatUpstashErrorMessage } from "./utils"
 
 export const redisClient = ({
@@ -35,6 +36,8 @@ export const redisClient = ({
     keepAlive: false,
     enableTelemetry: telemetry,
   })
+
+  addTelemetry(redis, telemetry)
 
   return redis
 }
