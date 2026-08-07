@@ -4,6 +4,7 @@ import { Redis } from "@upstash/redis"
 
 import { toast } from "@/components/ui/use-toast"
 
+import { addTelemetry, getSafeEnv } from "./telemetry"
 import { formatUpstashErrorMessage } from "./utils"
 
 export const redisClient = ({
@@ -33,8 +34,12 @@ export const redisClient = ({
     enableAutoPipelining: pipelining,
     automaticDeserialization: false,
     keepAlive: false,
-    enableTelemetry: telemetry,
+    // An explicit boolean would override the redis client's own
+    // UPSTASH_DISABLE_TELEMETRY env default, so factor the env var in here.
+    enableTelemetry: telemetry && !getSafeEnv().UPSTASH_DISABLE_TELEMETRY,
   })
+
+  addTelemetry(redis, telemetry)
 
   return redis
 }
