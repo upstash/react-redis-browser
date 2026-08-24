@@ -1,5 +1,5 @@
 import { useDatabrowserStore } from "@/store"
-import { IconAlertCircleFilled } from "@tabler/icons-react"
+import IconAlertCircleFilled from "@tabler/icons-react/dist/esm/icons/IconAlertCircleFilled.mjs"
 
 export const ConsentPrompt = ({ onClose }: { onClose?: () => void }) => {
   const store = useDatabrowserStore()

@@ -2,7 +2,7 @@ import { useState } from "react"
 import { useRedis } from "@/redis-context"
 import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
-import { IconChevronRight } from "@tabler/icons-react"
+import IconChevronRight from "@tabler/icons-react/dist/esm/icons/IconChevronRight.mjs"
 import { useMutation } from "@tanstack/react-query"
 
 import { scanKeys } from "@/lib/scan-keys"

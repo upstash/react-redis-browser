@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { IconCheck, IconCopy } from "@tabler/icons-react"
+import IconCheck from "@tabler/icons-react/dist/esm/icons/IconCheck.mjs"
+import IconCopy from "@tabler/icons-react/dist/esm/icons/IconCopy.mjs"
 
 import { cn } from "@/lib/utils"
 import type { ButtonProps } from "@/components/ui/button"

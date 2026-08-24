@@ -1,6 +1,6 @@
 import { useTab } from "@/tab-provider"
 import { type DataType, type ListDataType } from "@/types"
-import { IconPlus } from "@tabler/icons-react"
+import IconPlus from "@tabler/icons-react/dist/esm/icons/IconPlus.mjs"
 
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"

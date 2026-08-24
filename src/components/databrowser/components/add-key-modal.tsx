@@ -2,7 +2,7 @@ import { useState } from "react"
 import { useTab } from "@/tab-provider"
 import { DATA_TYPES, type DataType } from "@/types"
 import { DialogDescription } from "@radix-ui/react-dialog"
-import { IconPlus } from "@tabler/icons-react"
+import IconPlus from "@tabler/icons-react/dist/esm/icons/IconPlus.mjs"
 import { Controller, useForm } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"

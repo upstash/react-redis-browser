@@ -14,7 +14,9 @@ import {
 import { restrictToHorizontalAxis } from "@dnd-kit/modifiers"
 import { horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { IconChevronDown, IconPlus, IconWindowMaximize } from "@tabler/icons-react"
+import IconChevronDown from "@tabler/icons-react/dist/esm/icons/IconChevronDown.mjs"
+import IconPlus from "@tabler/icons-react/dist/esm/icons/IconPlus.mjs"
+import IconWindowMaximize from "@tabler/icons-react/dist/esm/icons/IconWindowMaximize.mjs"
 
 import { Button } from "@/components/ui/button"
 import {

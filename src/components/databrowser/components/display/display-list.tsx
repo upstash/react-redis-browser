@@ -1,7 +1,7 @@
 import { useMemo } from "react"
 import { useTab } from "@/tab-provider"
 import type { ListDataType } from "@/types"
-import { IconTrash } from "@tabler/icons-react"
+import IconTrash from "@tabler/icons-react/dist/esm/icons/IconTrash.mjs"
 import type { InfiniteData, UseInfiniteQueryResult } from "@tanstack/react-query"
 
 import { cn } from "@/lib/utils"

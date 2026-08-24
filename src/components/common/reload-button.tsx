@@ -1,5 +1,6 @@
 import { useState } from "react"
-import { IconLoader2, IconRefresh } from "@tabler/icons-react"
+import IconLoader2 from "@tabler/icons-react/dist/esm/icons/IconLoader2.mjs"
+import IconRefresh from "@tabler/icons-react/dist/esm/icons/IconRefresh.mjs"
 
 import { Button } from "@/components/ui/button"
 import { SimpleTooltip } from "@/components/ui/tooltip"

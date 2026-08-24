@@ -1,7 +1,7 @@
 import type { PropsWithChildren, ReactNode } from "react"
 import { useEffect, useRef } from "react"
 import { useTab } from "@/tab-provider"
-import { IconLoader2 } from "@tabler/icons-react"
+import IconLoader2 from "@tabler/icons-react/dist/esm/icons/IconLoader2.mjs"
 import type { UseInfiniteQueryResult } from "@tanstack/react-query"
 
 import { cn } from "@/lib/utils"

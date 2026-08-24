@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react"
 import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
-import { IconX } from "@tabler/icons-react"
+import IconX from "@tabler/icons-react/dist/esm/icons/IconX.mjs"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

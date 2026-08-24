@@ -1,5 +1,7 @@
 import { useState } from "react"
-import { IconGripVertical, IconPlus, IconX } from "@tabler/icons-react"
+import IconGripVertical from "@tabler/icons-react/dist/esm/icons/IconGripVertical.mjs"
+import IconPlus from "@tabler/icons-react/dist/esm/icons/IconPlus.mjs"
+import IconX from "@tabler/icons-react/dist/esm/icons/IconX.mjs"
 
 import {
   DropdownMenu,

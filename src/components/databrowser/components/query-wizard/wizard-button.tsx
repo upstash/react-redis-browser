@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { IconSparkles } from "@tabler/icons-react"
+import IconSparkles from "@tabler/icons-react/dist/esm/icons/IconSparkles.mjs"
 
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"

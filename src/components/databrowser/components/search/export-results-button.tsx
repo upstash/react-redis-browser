@@ -1,7 +1,7 @@
 import { useRef, useState } from "react"
 import { useRedis } from "@/redis-context"
 import { useTab } from "@/tab-provider"
-import { IconDownload } from "@tabler/icons-react"
+import IconDownload from "@tabler/icons-react/dist/esm/icons/IconDownload.mjs"
 import bytesLib from "bytes"
 
 import type { ExportFormat } from "@/lib/export-search-results"

@@ -1,15 +1,13 @@
 import * as React from "react"
 import { DATA_TYPE_NAMES, type DataType } from "@/types"
-import {
-  IconArrowsSort,
-  IconCodeDots,
-  IconHash,
-  IconLayersIntersect,
-  IconList,
-  IconQuestionMark,
-  IconQuote,
-  IconSearch,
-} from "@tabler/icons-react"
+import IconArrowsSort from "@tabler/icons-react/dist/esm/icons/IconArrowsSort.mjs"
+import IconCodeDots from "@tabler/icons-react/dist/esm/icons/IconCodeDots.mjs"
+import IconHash from "@tabler/icons-react/dist/esm/icons/IconHash.mjs"
+import IconLayersIntersect from "@tabler/icons-react/dist/esm/icons/IconLayersIntersect.mjs"
+import IconList from "@tabler/icons-react/dist/esm/icons/IconList.mjs"
+import IconQuestionMark from "@tabler/icons-react/dist/esm/icons/IconQuestionMark.mjs"
+import IconQuote from "@tabler/icons-react/dist/esm/icons/IconQuote.mjs"
+import IconSearch from "@tabler/icons-react/dist/esm/icons/IconSearch.mjs"
 import { cva, type VariantProps } from "class-variance-authority"
 
 import { cn } from "@/lib/utils"

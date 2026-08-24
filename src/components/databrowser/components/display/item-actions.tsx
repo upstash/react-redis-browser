@@ -1,6 +1,6 @@
 import { useTab } from "@/tab-provider"
 import type { ListDataType } from "@/types"
-import { IconDotsVertical } from "@tabler/icons-react"
+import IconDotsVertical from "@tabler/icons-react/dist/esm/icons/IconDotsVertical.mjs"
 
 import { Button } from "@/components/ui/button"
 import {

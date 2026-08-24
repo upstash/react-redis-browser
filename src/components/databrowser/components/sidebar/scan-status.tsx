@@ -1,5 +1,5 @@
 import { useTab } from "@/tab-provider"
-import { IconLoader2 } from "@tabler/icons-react"
+import IconLoader2 from "@tabler/icons-react/dist/esm/icons/IconLoader2.mjs"
 
 import { useKeys } from "../../hooks/use-keys"
 

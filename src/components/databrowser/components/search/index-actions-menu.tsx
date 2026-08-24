@@ -1,6 +1,9 @@
 import { useState } from "react"
 import { useTab } from "@/tab-provider"
-import { IconCopy, IconDotsVertical, IconEdit, IconTrash } from "@tabler/icons-react"
+import IconCopy from "@tabler/icons-react/dist/esm/icons/IconCopy.mjs"
+import IconDotsVertical from "@tabler/icons-react/dist/esm/icons/IconDotsVertical.mjs"
+import IconEdit from "@tabler/icons-react/dist/esm/icons/IconEdit.mjs"
+import IconTrash from "@tabler/icons-react/dist/esm/icons/IconTrash.mjs"
 
 import { Button } from "@/components/ui/button"
 import {

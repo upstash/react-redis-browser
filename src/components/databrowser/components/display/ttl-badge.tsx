@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { IconChevronDown } from "@tabler/icons-react"
+import IconChevronDown from "@tabler/icons-react/dist/esm/icons/IconChevronDown.mjs"
 
 import { formatTime } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"

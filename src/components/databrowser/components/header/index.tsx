@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react"
 import { useTab } from "@/tab-provider"
-import {
-  IconChevronDown,
-  IconCircleCheck,
-  IconCirclePlus,
-  IconLoader2,
-  IconSearch,
-} from "@tabler/icons-react"
+import IconChevronDown from "@tabler/icons-react/dist/esm/icons/IconChevronDown.mjs"
+import IconCircleCheck from "@tabler/icons-react/dist/esm/icons/IconCircleCheck.mjs"
+import IconCirclePlus from "@tabler/icons-react/dist/esm/icons/IconCirclePlus.mjs"
+import IconLoader2 from "@tabler/icons-react/dist/esm/icons/IconLoader2.mjs"
+import IconSearch from "@tabler/icons-react/dist/esm/icons/IconSearch.mjs"
 
 import { cn } from "@/lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"

@@ -1,4 +1,4 @@
-import { IconExternalLink } from "@tabler/icons-react"
+import IconExternalLink from "@tabler/icons-react/dist/esm/icons/IconExternalLink.mjs"
 
 import { cn } from "@/lib/utils"
 

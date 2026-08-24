@@ -1,6 +1,6 @@
 import * as React from "react"
 import { type DialogProps } from "@radix-ui/react-dialog"
-import { IconSearch } from "@tabler/icons-react"
+import IconSearch from "@tabler/icons-react/dist/esm/icons/IconSearch.mjs"
 import { Command as CommandPrimitive } from "cmdk"
 
 import { cn } from "@/lib/utils"

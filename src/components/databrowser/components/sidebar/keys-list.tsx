@@ -1,7 +1,7 @@
 import { Fragment, useRef } from "react"
 import { useTab } from "@/tab-provider"
 import type { RedisKey } from "@/types"
-import { IconChevronRight } from "@tabler/icons-react"
+import IconChevronRight from "@tabler/icons-react/dist/esm/icons/IconChevronRight.mjs"
 
 import { cn } from "@/lib/utils"
 import { TypeTag } from "@/components/databrowser/components/type-tag"

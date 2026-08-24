@@ -2,7 +2,7 @@ import { useState } from "react"
 import { useTab } from "@/tab-provider"
 import type { DataType } from "@/types"
 import { DialogDescription } from "@radix-ui/react-dialog"
-import { IconPlus } from "@tabler/icons-react"
+import IconPlus from "@tabler/icons-react/dist/esm/icons/IconPlus.mjs"
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"

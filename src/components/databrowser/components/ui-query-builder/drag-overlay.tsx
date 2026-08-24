@@ -1,5 +1,5 @@
 import { DragOverlay as DndKitDragOverlay } from "@dnd-kit/core"
-import { IconGripVertical } from "@tabler/icons-react"
+import IconGripVertical from "@tabler/icons-react/dist/esm/icons/IconGripVertical.mjs"
 
 import { BoostBadge } from "./boost-badge"
 import { NotBadge } from "./not-badge"

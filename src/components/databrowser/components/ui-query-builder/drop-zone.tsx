@@ -1,5 +1,5 @@
 import { useDroppable } from "@dnd-kit/core"
-import { IconPlus } from "@tabler/icons-react"
+import IconPlus from "@tabler/icons-react/dist/esm/icons/IconPlus.mjs"
 
 import { cn } from "@/lib/utils"
 

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { IconDots } from "@tabler/icons-react"
+import IconDots from "@tabler/icons-react/dist/esm/icons/IconDots.mjs"
 
 import {
   DropdownMenu,

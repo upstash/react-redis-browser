@@ -1,5 +1,8 @@
 import { useState } from "react"
-import { IconCode, IconDatabase, IconSearch, IconSparkles } from "@tabler/icons-react"
+import IconCode from "@tabler/icons-react/dist/esm/icons/IconCode.mjs"
+import IconDatabase from "@tabler/icons-react/dist/esm/icons/IconDatabase.mjs"
+import IconSearch from "@tabler/icons-react/dist/esm/icons/IconSearch.mjs"
+import IconSparkles from "@tabler/icons-react/dist/esm/icons/IconSparkles.mjs"
 
 import { ImportSampleDatasetModal } from "./import-sample-dataset-modal"
 

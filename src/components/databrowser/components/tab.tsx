@@ -1,15 +1,13 @@
 import type { TabId } from "@/store"
 import { useDatabrowserRootRef, useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
-import {
-  IconArrowsMinimize,
-  IconCopyPlus,
-  IconPin,
-  IconRestore,
-  IconSearch,
-  IconSquareX,
-  IconX,
-} from "@tabler/icons-react"
+import IconArrowsMinimize from "@tabler/icons-react/dist/esm/icons/IconArrowsMinimize.mjs"
+import IconCopyPlus from "@tabler/icons-react/dist/esm/icons/IconCopyPlus.mjs"
+import IconPin from "@tabler/icons-react/dist/esm/icons/IconPin.mjs"
+import IconRestore from "@tabler/icons-react/dist/esm/icons/IconRestore.mjs"
+import IconSearch from "@tabler/icons-react/dist/esm/icons/IconSearch.mjs"
+import IconSquareX from "@tabler/icons-react/dist/esm/icons/IconSquareX.mjs"
+import IconX from "@tabler/icons-react/dist/esm/icons/IconX.mjs"
 
 import { cn } from "@/lib/utils"
 import { useOverflow } from "@/hooks/use-overflow"

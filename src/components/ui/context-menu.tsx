@@ -1,6 +1,8 @@
 import * as React from "react"
 import * as ContextMenuPrimitive from "@radix-ui/react-context-menu"
-import { IconCheck, IconChevronRight, IconCircleFilled } from "@tabler/icons-react"
+import IconCheck from "@tabler/icons-react/dist/esm/icons/IconCheck.mjs"
+import IconChevronRight from "@tabler/icons-react/dist/esm/icons/IconChevronRight.mjs"
+import IconCircleFilled from "@tabler/icons-react/dist/esm/icons/IconCircleFilled.mjs"
 
 import { portalRoot } from "@/lib/portal-root"
 import { cn } from "@/lib/utils"
