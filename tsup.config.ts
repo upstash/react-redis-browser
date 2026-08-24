@@ -3,7 +3,8 @@ import { defineConfig } from "tsup"
 export default defineConfig({
   entry: ["src/index.ts"],
   format: ["cjs", "esm"],
-  splitting: true,
+  splitting: false,
   clean: true,
   dts: true,
+  noExternal: ["@tabler/icons-react"],
 })
