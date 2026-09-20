@@ -80,7 +80,7 @@ export const SearchInput = () => {
   }
 
   return (
-    <div className="relative grow">
+    <div className="browser-search relative min-w-0 grow">
       <Popover open={isFocus && filteredHistory.length > 0}>
         <PopoverTrigger asChild>
           <div className="h-8 rounded-md border border-zinc-300 font-normal">

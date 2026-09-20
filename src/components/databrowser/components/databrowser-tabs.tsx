@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
+import { useCompactLayout } from "../hooks/use-compact-layout"
 import { Tab } from "./tab"
 
 const SortableTab = ({ id }: { id: TabId }) => {
@@ -34,10 +35,11 @@ const SortableTab = ({ id }: { id: TabId }) => {
   const { tabs } = useDatabrowserStore()
   const tabData = tabs.find(([tabId]) => tabId === id)?.[1]
   const isPinned = tabData?.pinned
+  const compact = useCompactLayout()
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
-    disabled: isPinned,
+    disabled: isPinned || compact,
     resizeObserverConfig: {
       disabled: true,
     },
@@ -113,7 +115,7 @@ const SortableTab = ({ id }: { id: TabId }) => {
       style={style}
       className={isDragging ? "cursor-grabbing" : isPinned ? "cursor-default" : "cursor-grab"}
       {...attributes}
-      {...(isPinned ? {} : listeners)}
+      {...(isPinned || compact ? {} : listeners)}
     >
       <TabIdProvider value={id as TabId}>
         <Tab id={id} />

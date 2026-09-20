@@ -16,6 +16,7 @@ import { DatabrowserInstance } from "./components/databrowser-instance"
 import { DatabrowserTabs } from "./components/databrowser-tabs"
 import type { UseQueryWizard } from "./components/query-wizard/types"
 import { QueryWizardProvider } from "./components/query-wizard/use-query-wizard"
+import { CompactLayoutContext, useCompactLayoutObserver } from "./hooks/use-compact-layout"
 
 /**
  * Persistence storage interface for the Databrowser.
@@ -195,6 +196,7 @@ const RedisBrowserRoot = ({
   onFullScreenClick?: () => void
 }) => {
   const theme = useTheme()
+  const compact = useCompactLayoutObserver(rootRef)
 
   useEffect(() => {
     portalWrapper.classList.add("text-zinc-700")
@@ -208,13 +210,18 @@ const RedisBrowserRoot = ({
       // isolation keeps internal z-indexes (tab scroll shadows, dragged tabs) from stacking above
       // the host page's own positioned elements, e.g. the console's sticky navbar. Inline because
       // prefixed css classes only match descendants of .ups-db, not the root itself.
-      style={{ height: "100%", isolation: "isolate" }}
+      style={{ height: "100%", minWidth: 0, isolation: "isolate" }}
       ref={rootRef}
     >
-      <div className="flex h-full flex-col rounded-[14px] border-[4px] border-zinc-300 text-zinc-700">
-        {!hideTabs && <DatabrowserTabs onFullScreenClick={onFullScreenClick} />}
-        <DatabrowserInstances tabType={tabType} allowSearch={allowSearch} />
-      </div>
+      <CompactLayoutContext.Provider value={compact}>
+        <div
+          data-compact={compact}
+          className="flex h-full min-h-0 min-w-0 flex-col rounded-[14px] border-[4px] border-zinc-300 text-zinc-700"
+        >
+          {!hideTabs && <DatabrowserTabs onFullScreenClick={onFullScreenClick} />}
+          <DatabrowserInstances tabType={tabType} allowSearch={allowSearch} />
+        </div>
+      </CompactLayoutContext.Provider>
     </div>
   )
 }

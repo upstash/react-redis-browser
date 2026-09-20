@@ -554,3 +554,89 @@ svg.tabler-icon {
     visibility: hidden;
   }
 }
+
+/* Compact embeds have one content pane and a toolbar that fits phone widths. */
+[data-compact="true"] .browser-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+[data-compact="true"] .browser-filters {
+  display: contents;
+}
+
+[data-compact="true"] .browser-mode {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+[data-compact="true"] .browser-search {
+  grid-column: 1 / -1;
+  order: 1;
+}
+
+[data-compact="true"] .browser-toolbar button,
+[data-compact="true"] .browser-search > div,
+[data-compact="true"] .browser-key-row,
+[data-compact="true"] .browser-item-row,
+[data-compact="true"] .browser-detail button {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+[data-compact="true"] .browser-toolbar input {
+  font-size: 16px;
+}
+
+[data-compact="true"] .browser-detail {
+  padding: 12px;
+}
+
+[data-compact="true"] .browser-detail-title {
+  height: auto;
+  min-height: 44px;
+  gap: 8px;
+}
+
+[data-compact="true"] [data-radix-scroll-area-viewport],
+[data-compact="true"] textarea {
+  overscroll-behavior: contain;
+}
+
+[data-compact="true"] .browser-actions button,
+[data-compact="true"] .browser-detail-title button {
+  min-width: 44px;
+}
+
+[data-compact="true"] [id^="tab-"] {
+  min-height: 44px;
+  touch-action: pan-x;
+}
+
+[data-compact="true"] .browser-detail-title {
+  align-items: flex-start;
+}
+
+[data-compact="true"] .browser-detail-title h2 {
+  padding-top: 12px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  max-height: 88px;
+  overflow-y: auto;
+}
+
+[data-compact="true"] .browser-search-toolbar .browser-actions {
+  grid-column: 1 / -1;
+  justify-self: end;
+}
+
+[data-compact="true"] .browser-index-selector button {
+  min-width: 0;
+  max-width: 100%;
+  flex: 1;
+}
+
+[data-compact="true"] .browser-item-row {
+  height: 44px;
+}

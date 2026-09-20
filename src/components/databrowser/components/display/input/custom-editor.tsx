@@ -6,6 +6,8 @@ import { Editor, useMonaco } from "@monaco-editor/react"
 import { cn, isTest } from "@/lib/utils"
 import { CopyButton } from "@/components/common/copy-button"
 
+import { useCompactLayout } from "../../../hooks/use-compact-layout"
+
 type CustomEditorProps = {
   language: string
   value: string
@@ -16,6 +18,9 @@ type CustomEditorProps = {
 }
 
 export const CustomEditor = (props: CustomEditorProps) => {
+  const compact = useCompactLayout()
+  if (compact) return <MobileEditor {...props} />
+
   // Avoid mounting Monaco at all during Playwright runs
   if (isTest) {
     return <TestEditor {...props} />
@@ -124,3 +129,24 @@ const TestEditor = ({ value, onChange, height, showCopyButton }: CustomEditorPro
     </div>
   )
 }
+
+// Native editing supports phone selection, keyboards, and scrolling without
+// Monaco intercepting touch gestures.
+const MobileEditor = ({ value, onChange, height, showCopyButton, readOnly }: CustomEditorProps) => (
+  <div className={cn("relative min-h-0", height === undefined && "h-full")} style={{ height }}>
+    <textarea
+      aria-label="editor"
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      readOnly={readOnly}
+      spellCheck={false}
+      autoCapitalize="off"
+      autoCorrect="off"
+      className={cn(
+        "h-full min-h-0 w-full resize-none rounded-md bg-transparent font-mono text-base outline-none",
+        showCopyButton && "pr-11"
+      )}
+    />
+    {showCopyButton && <CopyButton value={value} className="absolute right-0 top-0" />}
+  </div>
+)

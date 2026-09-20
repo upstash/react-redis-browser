@@ -44,6 +44,8 @@ export const InfiniteScroll = ({
     if (!scrollRef.current || !contentRef.current) return
 
     const viewportHeight = scrollRef.current.clientHeight
+    // Hidden mobile lists and inactive tabs must not drain the remaining pages.
+    if (viewportHeight === 0) return
     const contentHeight = contentRef.current.clientHeight
 
     // Fetch until it overflows a bit

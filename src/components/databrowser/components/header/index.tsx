@@ -29,8 +29,13 @@ export const Header = ({ tabType, allowSearch }: { tabType: TabType; allowSearch
   const { isValuesSearchSelected, setIsValuesSearchSelected } = useTab()
 
   return (
-    <div className="flex items-center justify-between gap-1.5">
-      <div className="flex grow items-center gap-1.5">
+    <div
+      className={cn(
+        "browser-toolbar flex items-center justify-between gap-1.5",
+        isValuesSearchSelected && "browser-search-toolbar"
+      )}
+    >
+      <div className="browser-filters flex min-w-0 grow items-center gap-1.5">
         {tabType === "all" && (
           <Segmented
             options={[
@@ -47,7 +52,7 @@ export const Header = ({ tabType, allowSearch }: { tabType: TabType; allowSearch
             onChange={(value) => {
               setIsValuesSearchSelected(value === "values")
             }}
-            className="bg-emerald-800"
+            className="browser-mode bg-emerald-800"
             unselectedClassName="text-emerald-100"
             selectedClassName="bg-emerald-50 text-emerald-800"
           />
@@ -66,7 +71,7 @@ export const Header = ({ tabType, allowSearch }: { tabType: TabType; allowSearch
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1.5">
+      <div className="browser-actions flex shrink-0 items-center gap-1.5">
         <RefreshButton />
         {isValuesSearchSelected && <ExportResultsButton />}
         {isValuesSearchSelected ? <AddIndexKeyButton /> : <AddKeyModal />}
@@ -110,7 +115,7 @@ const IndexSelector = () => {
   }
 
   return (
-    <div className="flex">
+    <div className="browser-index-selector flex min-w-0">
       <div className="flex items-center rounded-l-lg border border-r-0 border-zinc-300 bg-white px-3 text-sm text-zinc-700">
         Index
       </div>
