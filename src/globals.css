@@ -557,6 +557,8 @@ svg.tabler-icon {
 
 /* Compact embeds have one content pane and a toolbar that fits phone widths. */
 [data-compact="true"] {
+  /* Match the 10px inner panels plus the 2px frame. */
+  border-radius: 12px;
   border-width: 2px;
 }
 
