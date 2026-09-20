@@ -21,8 +21,8 @@ export function Sidebar() {
           autoFetch={!scan.paused}
           endSlot={scan.paused ? <KeepScanningSlot /> : undefined}
           disableRoundedInherit
-          className="h-full min-h-0 rounded-xl bg-zinc-100 px-2 py-5 pr-4 dark:bg-zinc-200"
-          scrollBarClassName="py-5"
+          className="browser-sidebar h-full min-h-0 rounded-xl bg-zinc-100 px-2 py-5 pr-4 dark:bg-zinc-200"
+          scrollBarClassName="browser-sidebar-scrollbar py-5"
         >
           <KeysList />
         </InfiniteScroll>

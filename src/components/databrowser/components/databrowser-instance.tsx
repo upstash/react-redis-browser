@@ -136,7 +136,7 @@ export const DatabrowserInstance = ({
       <div
         className={cn(
           "flex min-h-0 min-w-0 grow flex-col rounded-[10px] bg-white px-5 pb-5",
-          compact && "px-2 pb-2",
+          compact && "px-1.5 pb-1.5",
           hidden && "hidden"
         )}
       >
@@ -149,10 +149,11 @@ export const DatabrowserInstance = ({
           <div className="flex min-h-0 min-w-0 grow flex-col gap-2 text-sm antialiased">
             {showDetail && (
               <Button
-                className="h-11 shrink-0 gap-2 self-start"
+                variant="ghost"
+                className="h-8 shrink-0 gap-1.5 self-start px-1 shadow-none"
                 onClick={() => setSelectedKey(undefined)}
               >
-                <IconArrowLeft size={18} />
+                <IconArrowLeft size={16} />
                 {isValuesSearchSelected ? "Back to results" : "Back to keys"}
               </Button>
             )}

@@ -556,6 +556,10 @@ svg.tabler-icon {
 }
 
 /* Compact embeds have one content pane and a toolbar that fits phone widths. */
+[data-compact="true"] {
+  border-width: 2px;
+}
+
 [data-compact="true"] .browser-toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -576,13 +580,28 @@ svg.tabler-icon {
   order: 1;
 }
 
-[data-compact="true"] .browser-toolbar button,
-[data-compact="true"] .browser-search > div,
 [data-compact="true"] .browser-key-row,
-[data-compact="true"] .browser-item-row,
-[data-compact="true"] .browser-detail button {
+[data-compact="true"] .browser-item-row {
   min-height: 44px;
   touch-action: manipulation;
+}
+
+[data-compact="true"] .browser-toolbar button,
+[data-compact="true"] .browser-search > div {
+  min-height: 32px;
+  touch-action: manipulation;
+}
+
+[data-compact="true"] .browser-sidebar {
+  padding: 4px 10px 4px 4px;
+}
+
+[data-compact="true"] .browser-sidebar-scrollbar {
+  padding-block: 4px;
+}
+
+[data-compact="true"] .browser-key-row {
+  padding-inline: 8px;
 }
 
 [data-compact="true"] .browser-toolbar input {
@@ -590,13 +609,14 @@ svg.tabler-icon {
 }
 
 [data-compact="true"] .browser-detail {
-  padding: 12px;
+  padding: 8px;
 }
 
 [data-compact="true"] .browser-detail-title {
   height: auto;
-  min-height: 44px;
-  gap: 8px;
+  min-height: 32px;
+  gap: 6px;
+  align-items: flex-start;
 }
 
 [data-compact="true"] [data-radix-scroll-area-viewport],
@@ -606,20 +626,16 @@ svg.tabler-icon {
 
 [data-compact="true"] .browser-actions button,
 [data-compact="true"] .browser-detail-title button {
-  min-width: 44px;
+  min-width: 32px;
+  min-height: 32px;
 }
 
 [data-compact="true"] [id^="tab-"] {
-  min-height: 44px;
   touch-action: pan-x;
 }
 
-[data-compact="true"] .browser-detail-title {
-  align-items: flex-start;
-}
-
 [data-compact="true"] .browser-detail-title h2 {
-  padding-top: 12px;
+  padding-top: 6px;
   white-space: normal;
   overflow-wrap: anywhere;
   max-height: 88px;
