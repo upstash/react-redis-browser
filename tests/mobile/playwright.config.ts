@@ -6,6 +6,8 @@ export default defineConfig({
   testDir: ".",
   testMatch: "mobile.spec.ts",
   fullyParallel: true,
+  // A cold Vite dependency build can exceed 30 seconds on CI runners.
+  timeout: 60_000,
   reporter: "list",
   use: { baseURL, trace: "retain-on-failure" },
   projects: [
