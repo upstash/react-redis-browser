@@ -1,5 +1,5 @@
 import type { PropsWithChildren, ReactNode } from "react"
-import { useEffect, useRef } from "react"
+import { useCallback, useEffect, useRef } from "react"
 import { useTab } from "@/tab-provider"
 import { IconLoader2 } from "@tabler/icons-react"
 import type { UseInfiniteQueryResult } from "@tanstack/react-query"
@@ -28,7 +28,7 @@ export const InfiniteScroll = ({
 
   // Fetch more on scroll
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (!autoFetch) return
+    if (!active || !autoFetch || e.currentTarget.clientHeight === 0) return
     const { scrollTop, clientHeight, scrollHeight } = e.currentTarget
     if (scrollTop + clientHeight > scrollHeight - 100) {
       if (query.isFetching || !query.hasNextPage) {
@@ -39,8 +39,8 @@ export const InfiniteScroll = ({
   }
 
   // Check if viewport is filled and fetch more if needed
-  const checkAndFetchMore = () => {
-    if (!autoFetch) return
+  const checkAndFetchMore = useCallback(() => {
+    if (!active || !autoFetch) return
     if (!scrollRef.current || !contentRef.current) return
 
     const viewportHeight = scrollRef.current.clientHeight
@@ -54,14 +54,24 @@ export const InfiniteScroll = ({
     if (contentHeight < overflowThreshold && query.hasNextPage && !query.isFetching) {
       query.fetchNextPage()
     }
-  }
+  }, [active, autoFetch, query.hasNextPage, query.isFetching, query.fetchNextPage])
 
   useEffect(() => {
-    if (!active) return
-    // Timeout for dom update
-    const timer = setTimeout(checkAndFetchMore, 100)
-    return () => clearTimeout(timer)
-  }, [active, query.data])
+    const viewport = scrollRef.current
+    if (!active || !viewport) return
+
+    // Back navigation and resizing can reveal a list without changing query data.
+    let timer = setTimeout(checkAndFetchMore, 100)
+    const observer = new ResizeObserver(() => {
+      clearTimeout(timer)
+      timer = setTimeout(checkAndFetchMore, 100)
+    })
+    observer.observe(viewport)
+    return () => {
+      clearTimeout(timer)
+      observer.disconnect()
+    }
+  }, [active, checkAndFetchMore, query.data])
 
   return (
     <ScrollArea

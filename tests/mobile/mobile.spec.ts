@@ -176,3 +176,73 @@ test("empty key names open on touch", async ({ page }) => {
   await row.tap()
   await expect(page.getByRole("textbox", { name: "editor" })).toHaveValue("Value for ")
 })
+
+test("unsaved string edits survive rotation in both directions", async ({ page }) => {
+  await page.getByRole("button", { name: keys[0], exact: true }).tap()
+  const editor = page.getByRole("textbox", { name: "editor" })
+  const draft = "Unsaved string draft"
+  await editor.fill(draft)
+  await page.setViewportSize({ width: 844, height: 390 })
+  await expect(page.getByRole("button", { name: "Back to keys" })).not.toBeVisible()
+  await expect(editor).toHaveValue(draft)
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeEnabled()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(editor).toHaveValue(draft)
+  await page.getByRole("button", { name: "Cancel", exact: true }).tap()
+  await expect(editor).toHaveValue(`Value for ${keys[0]}`)
+})
+
+test("unsaved hash field and value edits survive rotation", async ({ page }) => {
+  await page.getByPlaceholder("Search").fill(hashKey)
+  await page.getByPlaceholder("Search").press("Enter")
+  await page.getByRole("button", { name: hashKey, exact: true }).tap()
+  await page.getByRole("row", { name: "field-0 Value for field-0", exact: true }).tap()
+  const editors = page.getByRole("textbox", { name: "editor" })
+  await editors.nth(0).fill("renamed-field")
+  await editors.nth(1).fill("Unsaved hash value")
+  await page.setViewportSize({ width: 844, height: 390 })
+  await expect(page.getByRole("button", { name: "Back to keys" })).not.toBeVisible()
+  await expect(editors.nth(0)).toHaveValue("renamed-field")
+  await expect(editors.nth(1)).toHaveValue("Unsaved hash value")
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(editors.nth(0)).toHaveValue("renamed-field")
+  await expect(editors.nth(1)).toHaveValue("Unsaved hash value")
+  await expect(page.getByRole("button", { name: "Save", exact: true })).toBeEnabled()
+})
+
+test("Back resumes pagination after an in-flight page finishes while hidden", async ({ page }) => {
+  const cursors: string[] = []
+  let releaseSecondPage!: () => void
+  const secondPage = new Promise<void>((resolve) => {
+    releaseSecondPage = resolve
+  })
+  await page.route("https://mobile-test.invalid/**", async (route) => {
+    const command = route.request().postDataJSON() as string[]
+    if (
+      typeof command[0] !== "string" ||
+      command[0].toUpperCase() !== "SCAN" ||
+      !command.includes("sparse:*")
+    ) {
+      return route.fallback()
+    }
+    const cursor = command[1]
+    cursors.push(cursor)
+    if (cursor === "1") await secondPage
+    const nextCursor = cursor === "2" ? "0" : String(Number(cursor) + 1)
+    await route.fulfill({
+      json: { result: encode([nextCursor, [`sparse:00${cursor}`, "string"]]) },
+    })
+  })
+  await page.getByPlaceholder("Search").fill("sparse:")
+  await page.getByPlaceholder("Search").press("Enter")
+  await expect.poll(() => cursors).toEqual(["0", "1"])
+  await page.getByRole("button", { name: "sparse:000", exact: true }).tap()
+  releaseSecondPage()
+  await expect(page.locator('[data-key="sparse:001"]')).toBeAttached()
+  // Allow the viewport-fill timer to run while the list is hidden.
+  await page.waitForTimeout(250)
+  expect(cursors).toEqual(["0", "1"])
+  await page.getByRole("button", { name: "Back to keys" }).tap()
+  await expect(page.getByRole("button", { name: "sparse:002", exact: true })).toBeVisible()
+  expect(cursors).toEqual(["0", "1", "2"])
+})

@@ -145,76 +145,60 @@ export const DatabrowserInstance = ({
           {!isValuesSearchSelected && <HeaderError />}
         </div>
 
-        {compact ? (
-          <div className="flex min-h-0 min-w-0 grow flex-col gap-2 text-sm antialiased">
-            {showDetail && (
-              <Button
-                variant="ghost"
-                className="h-8 shrink-0 gap-1.5 self-start px-1 shadow-none"
-                onClick={() => setSelectedKey(undefined)}
-              >
-                <IconArrowLeft size={16} />
-                {isValuesSearchSelected ? "Back to results" : "Back to keys"}
-              </Button>
-            )}
-            {/* Keep the list mounted to preserve its scroll position on Back. */}
-            <div className={cn("flex min-h-0 grow flex-col gap-2", showDetail && "hidden")}>
-              {isValuesSearchSelected && !showEmptyState && (
-                <div className="h-48 shrink-0 overflow-auto rounded-xl border border-zinc-200">
-                  <SearchContent />
-                </div>
-              )}
-              <div className="min-h-0 grow">
-                {showEmptyState ? <SearchEmptyState /> : <Sidebar />}
-              </div>
-            </div>
-            {showDetail && (
-              <div className="min-h-0 min-w-0 grow">
-                <DataDisplay />
-              </div>
-            )}
-          </div>
-        ) : showEmptyState ? (
+        {showDetail && (
+          <Button
+            variant="ghost"
+            className="mb-2 h-8 shrink-0 gap-1.5 self-start px-1 shadow-none"
+            onClick={() => setSelectedKey(undefined)}
+          >
+            <IconArrowLeft size={16} />
+            {isValuesSearchSelected ? "Back to results" : "Back to keys"}
+          </Button>
+        )}
+        {showEmptyState ? (
           <SearchEmptyState />
-        ) : isValuesSearchSelected ? (
+        ) : (
+          // Keep the panel tree stable across breakpoints so editor forms and
+          // list scroll positions survive rotation and container resizing.
           <PanelGroup
             autoSaveId="search-layout"
             direction="vertical"
             className="h-full w-full !overflow-visible text-sm antialiased"
           >
-            <Panel
-              defaultSize={30}
-              minSize={15}
-              maxSize={60}
-              className={queryBuilderMode === "code" ? "!overflow-visible" : ""}
-            >
-              <SearchContent />
-            </Panel>
-            <ResizeHandle direction="vertical" />
-            <Panel minSize={30}>
+            {isValuesSearchSelected && (
+              <Panel
+                defaultSize={30}
+                minSize={15}
+                maxSize={60}
+                className={cn(
+                  queryBuilderMode === "code" && "!overflow-visible",
+                  compact &&
+                    "mb-2 !flex-[0_0_12rem] !overflow-auto rounded-xl border border-zinc-200",
+                  showDetail && "hidden"
+                )}
+              >
+                <SearchContent />
+              </Panel>
+            )}
+            {isValuesSearchSelected && !compact && <ResizeHandle direction="vertical" />}
+            <Panel minSize={30} className={cn(compact && "!flex-1")}>
               <PanelGroup autoSaveId="persistence" direction="horizontal" className="h-full w-full">
-                <Panel defaultSize={30} minSize={30}>
+                {/* Hide the mobile list without unmounting its scroll area. */}
+                <Panel
+                  defaultSize={30}
+                  minSize={30}
+                  className={cn(compact && "!flex-1", showDetail && "hidden")}
+                >
                   <Sidebar />
                 </Panel>
-                <ResizeHandle />
-                <Panel minSize={40}>
+                {!compact && <ResizeHandle />}
+                <Panel
+                  minSize={40}
+                  className={cn(compact && "!flex-1", compact && !showDetail && "hidden")}
+                >
                   <DataDisplay />
                 </Panel>
               </PanelGroup>
-            </Panel>
-          </PanelGroup>
-        ) : (
-          <PanelGroup
-            autoSaveId="persistence"
-            direction="horizontal"
-            className="h-full w-full text-sm antialiased"
-          >
-            <Panel defaultSize={30} minSize={30}>
-              <Sidebar />
-            </Panel>
-            <ResizeHandle />
-            <Panel minSize={40}>
-              <DataDisplay />
             </Panel>
           </PanelGroup>
         )}
