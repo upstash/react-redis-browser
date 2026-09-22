@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useTab } from "@/tab-provider"
 import { IconCopy, IconDotsVertical, IconEdit, IconTrash } from "@tabler/icons-react"
 
@@ -28,6 +28,7 @@ export const IndexActionsMenu = () => {
   const { valuesSearch, setValuesSearchIndex } = useTab()
   const indexName = valuesSearch.index
 
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
@@ -37,11 +38,17 @@ export const IndexActionsMenu = () => {
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <Button size="icon" aria-label="Index actions" disabled={!indexName}>
+          <Button ref={triggerRef} size="icon" aria-label="Index actions" disabled={!indexName}>
             <IconDotsVertical className="size-4 text-zinc-500" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent
+          align="end"
+          onFocusOutside={(event) => {
+            // Safari can focus the trigger after its touch pointerdown opens the menu.
+            if (triggerRef.current?.contains(event.target as Node)) event.preventDefault()
+          }}
+        >
           <DropdownMenuItem
             onClick={() => {
               navigator.clipboard.writeText(indexName)
