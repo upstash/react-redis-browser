@@ -1,4 +1,8 @@
-import { expect, test } from "@playwright/test"
+import { test as base, expect } from "@playwright/test"
+
+const test = base.extend<{ searchMode: boolean }>({
+  searchMode: [false, { option: true }],
+})
 
 const keys = Array.from({ length: 100 }, (_, index) => `customer:${String(index).padStart(3, "0")}`)
 const hashKey = "customer:profile"
@@ -11,7 +15,7 @@ const encode = (value: unknown): unknown => {
   return value
 }
 
-test.beforeEach(async ({ page, baseURL }) => {
+test.beforeEach(async ({ page, baseURL, searchMode }) => {
   await page.addInitScript(() => {
     ;(window as any).__PLAYWRIGHT__ = true
   })
@@ -92,7 +96,7 @@ test.beforeEach(async ({ page, baseURL }) => {
       : { result: encode(execute(body)) }
     await route.fulfill({ json: result })
   })
-  await page.goto("/tests/mobile/index.html")
+  await page.goto(`/tests/mobile/index.html${searchMode ? "?search" : ""}`)
   await expect(page.getByRole("button", { name: keys[0], exact: true })).toBeVisible()
 })
 
@@ -267,63 +271,69 @@ test("Back resumes pagination after an in-flight page finishes while hidden", as
   expect(cursors).toEqual(["0", "1", "2"])
 })
 
-test("dynamic search panels retain their identities and resize after mode changes", async ({
-  page,
-}) => {
-  const warnings: string[] = []
-  page.on("console", (message) => {
-    if (message.type() === "warning" && message.text().includes("Panel id and order")) {
-      warnings.push(message.text())
-    }
-  })
-  await page.setViewportSize({ width: 1200, height: 900 })
-  await page.goto("/tests/mobile/index.html?search")
-  const results = page.locator('[data-panel-id$="-results"]')
-  await expect(results).toBeVisible()
-  const resultId = await results.getAttribute("data-panel-id")
-  for (let cycle = 0; cycle < 2; cycle++) {
-    await page.getByRole("button", { name: "Search", exact: true }).click()
-    const query = page.locator('[data-panel-id$="-query"]')
-    await expect(query).toBeVisible()
-    await expect(page.getByRole("button", { name: "Index actions", exact: true })).toBeEnabled()
-    await expect(results).toHaveAttribute("data-panel-id", resultId!)
-    const before = await query.boundingBox()
-    const handle = page.locator(
-      '[data-panel-group-direction="vertical"] > [data-panel-resize-handle-id]'
-    )
-    const handleBox = await handle.boundingBox()
-    await page.mouse.move(handleBox!.x + handleBox!.width / 2, handleBox!.y + handleBox!.height / 2)
-    await page.mouse.down()
-    await page.mouse.move(
-      handleBox!.x + handleBox!.width / 2,
-      handleBox!.y + handleBox!.height / 2 + 40,
-      { steps: 5 }
-    )
-    await page.mouse.up()
-    await expect
-      .poll(async () => (await query.boundingBox())!.height)
-      .toBeGreaterThan(before!.height + 20)
-    await page.getByRole("button", { name: "Keys", exact: true }).click()
-    await expect(query).not.toBeAttached()
-    await expect(results).toHaveAttribute("data-panel-id", resultId!)
-  }
-  expect(warnings).toEqual([])
-})
+test.describe("search", () => {
+  test.use({ searchMode: true })
 
-test("edit-index dialog fits a short landscape phone viewport", async ({ page }) => {
-  await page.setViewportSize({ width: 844, height: 390 })
-  await page.goto("/tests/mobile/index.html?search")
-  await page.getByRole("button", { name: "Search", exact: true }).tap()
-  await page.getByRole("button", { name: "Index actions", exact: true }).tap()
-  await page.getByRole("menuitem", { name: "Edit Index...", exact: true }).tap()
-  const dialog = page.getByRole("dialog", { name: "Edit Index", exact: true })
-  await expect(dialog).toBeVisible()
-  // Wait for the opening animation before measuring the actual bounds.
-  await expect.poll(async () => (await dialog.boundingBox())!.y).toBeGreaterThanOrEqual(15)
-  const box = await dialog.boundingBox()
-  expect(box!.y + box!.height).toBeLessThanOrEqual(375)
-  expect(box!.x).toBeGreaterThanOrEqual(0)
-  expect(box!.x + box!.width).toBeLessThanOrEqual(844)
-  await dialog.getByRole("button", { name: "Close", exact: true }).tap()
-  await expect(dialog).not.toBeVisible()
+  test("dynamic search panels retain their identities and resize after mode changes", async ({
+    page,
+  }) => {
+    const warnings: string[] = []
+    page.on("console", (message) => {
+      if (message.type() === "warning" && message.text().includes("Panel id and order")) {
+        warnings.push(message.text())
+      }
+    })
+    await page.setViewportSize({ width: 1200, height: 900 })
+    const results = page.locator('[data-panel-id^="panel-results-"]')
+    await expect(results).toBeVisible()
+    const resultId = await results.getAttribute("data-panel-id")
+    for (let cycle = 0; cycle < 2; cycle++) {
+      await page.getByRole("button", { name: "Search", exact: true }).click()
+      const query = page.locator('[data-panel-id^="panel-query-"]')
+      await expect(query).toBeVisible()
+      await expect(page.getByRole("button", { name: "Index actions", exact: true })).toBeEnabled()
+      await expect(results).toHaveAttribute("data-panel-id", resultId!)
+      const before = await query.boundingBox()
+      const handle = page.locator(
+        '[data-panel-group-direction="vertical"] > [data-panel-resize-handle-id]'
+      )
+      const handleBox = await handle.boundingBox()
+      await page.mouse.move(
+        handleBox!.x + handleBox!.width / 2,
+        handleBox!.y + handleBox!.height / 2
+      )
+      await page.mouse.down()
+      await page.mouse.move(
+        handleBox!.x + handleBox!.width / 2,
+        handleBox!.y + handleBox!.height / 2 + 40,
+        { steps: 5 }
+      )
+      await page.mouse.up()
+      await expect
+        .poll(async () => (await query.boundingBox())!.height)
+        .toBeGreaterThan(before!.height + 20)
+      await page.getByRole("button", { name: "Keys", exact: true }).click()
+      await expect(query).not.toBeAttached()
+      await expect(results).toHaveAttribute("data-panel-id", resultId!)
+    }
+    expect(warnings).toEqual([])
+  })
+
+  test("edit-index dialog fits a short landscape phone viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 844, height: 390 })
+    await page.getByRole("button", { name: "Search", exact: true }).tap()
+    await expect(page.getByRole("button", { name: "customer:000 1.00", exact: true })).toBeVisible()
+    await page.getByRole("button", { name: "Index actions", exact: true }).tap()
+    await page.getByRole("menuitem", { name: "Edit Index...", exact: true }).tap()
+    const dialog = page.getByRole("dialog", { name: "Edit Index", exact: true })
+    await expect(dialog).toBeVisible()
+    // Wait for the opening animation before measuring the actual bounds.
+    await expect.poll(async () => (await dialog.boundingBox())!.y).toBeGreaterThanOrEqual(15)
+    const box = await dialog.boundingBox()
+    expect(box!.y + box!.height).toBeLessThanOrEqual(375)
+    expect(box!.x).toBeGreaterThanOrEqual(0)
+    expect(box!.x + box!.width).toBeLessThanOrEqual(844)
+    await dialog.getByRole("button", { name: "Close", exact: true }).tap()
+    await expect(dialog).not.toBeVisible()
+  })
 })

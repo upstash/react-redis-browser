@@ -168,7 +168,7 @@ export const DatabrowserInstance = ({
           >
             {isValuesSearchSelected && (
               <Panel
-                id={`${tabId}-query`}
+                id={`panel-query-${tabId}`}
                 order={1}
                 defaultSize={30}
                 minSize={15}
@@ -185,7 +185,7 @@ export const DatabrowserInstance = ({
             )}
             {isValuesSearchSelected && !compact && <ResizeHandle direction="vertical" />}
             <Panel
-              id={`${tabId}-results`}
+              id={`panel-results-${tabId}`}
               order={2}
               minSize={30}
               className={cn(compact && "!flex-1")}
