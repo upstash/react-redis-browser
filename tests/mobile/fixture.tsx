@@ -7,7 +7,7 @@ createRoot(document.querySelector("#root")!).render(
   <RedisBrowser
     url="https://mobile-test.invalid"
     token="mock-token"
-    tabType="keys"
+    tabType={new URLSearchParams(window.location.search).has("search") ? "all" : "keys"}
     disableTelemetry
   />
 )

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useTab } from "@/tab-provider"
+import { useTab, useTabId } from "@/tab-provider"
 import { IconArrowLeft } from "@tabler/icons-react"
 import { Panel, PanelGroup } from "react-resizable-panels"
 
@@ -116,6 +116,7 @@ export const DatabrowserInstance = ({
   } = useTab()
   const compact = useCompactLayout()
   const showDetail = compact && selectedKey !== undefined
+  const tabId = useTabId()
   const { data: indexes, isLoading } = useFetchSearchIndexes({
     enabled: tabType === "search",
   })
@@ -167,6 +168,8 @@ export const DatabrowserInstance = ({
           >
             {isValuesSearchSelected && (
               <Panel
+                id={`${tabId}-query`}
+                order={1}
                 defaultSize={30}
                 minSize={15}
                 maxSize={60}
@@ -181,7 +184,12 @@ export const DatabrowserInstance = ({
               </Panel>
             )}
             {isValuesSearchSelected && !compact && <ResizeHandle direction="vertical" />}
-            <Panel minSize={30} className={cn(compact && "!flex-1")}>
+            <Panel
+              id={`${tabId}-results`}
+              order={2}
+              minSize={30}
+              className={cn(compact && "!flex-1")}
+            >
               <PanelGroup autoSaveId="persistence" direction="horizontal" className="h-full w-full">
                 {/* Hide the mobile list without unmounting its scroll area. */}
                 <Panel
