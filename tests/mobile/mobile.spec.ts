@@ -325,8 +325,9 @@ test.describe("search", () => {
     await expect(page.getByRole("button", { name: "customer:000 1.00", exact: true })).toBeVisible()
     await page.getByRole("button", { name: "Index actions", exact: true }).tap()
     // Safari can deliver focus to the trigger after opening on touch pointerdown.
+    await page.getByRole("menu").focus()
     await page.getByRole("button", { name: "Index actions", exact: true }).focus()
-    await expect(page.getByRole("menu")).toBeVisible()
+    await expect(page.getByRole("menu")).toHaveAttribute("data-state", "open")
     await page.keyboard.press("Escape")
     await expect(page.getByRole("menu")).not.toBeVisible()
     await page.getByRole("button", { name: "Index actions", exact: true }).tap()
