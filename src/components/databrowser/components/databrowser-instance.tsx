@@ -164,7 +164,11 @@ export const DatabrowserInstance = ({
           <PanelGroup
             autoSaveId="search-layout"
             direction="vertical"
-            className="h-full w-full !overflow-visible text-sm antialiased"
+            className={cn(
+              "h-full w-full !overflow-visible text-sm antialiased",
+              // Fill the space left under the header instead of the whole frame.
+              compact && "min-h-0 flex-1"
+            )}
           >
             {isValuesSearchSelected && (
               <Panel
@@ -175,8 +179,9 @@ export const DatabrowserInstance = ({
                 maxSize={60}
                 className={cn(
                   queryBuilderMode === "code" && "!overflow-visible",
+                  // Short embeds shrink the query panel so results stay in the frame.
                   compact &&
-                    "mb-2 !flex-[0_0_12rem] !overflow-auto rounded-xl border border-zinc-200",
+                    "mb-2 min-h-20 !flex-[0_1_12rem] !overflow-auto rounded-xl border border-zinc-200",
                   showDetail && "hidden"
                 )}
               >
@@ -188,7 +193,7 @@ export const DatabrowserInstance = ({
               id={`panel-results-${tabId}`}
               order={2}
               minSize={30}
-              className={cn(compact && "!flex-1")}
+              className={cn(compact && "min-h-24 !flex-1")}
             >
               <PanelGroup autoSaveId="persistence" direction="horizontal" className="h-full w-full">
                 {/* Hide the mobile list without unmounting its scroll area. */}

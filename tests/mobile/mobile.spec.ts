@@ -199,6 +199,7 @@ test("empty key names open on touch", async ({ page }) => {
   await row.scrollIntoViewIfNeeded()
   await row.tap()
   await expect(page.getByRole("textbox", { name: "editor" })).toHaveValue("Value for ")
+  await expect(page.locator('[id^="tab-"]')).toContainText("(Empty Key)")
 })
 
 test("unsaved string edits survive rotation in both directions", async ({ page }) => {
@@ -271,6 +272,35 @@ test("Back resumes pagination after an in-flight page finishes while hidden", as
   expect(cursors).toEqual(["0", "1", "2"])
 })
 
+test("a failed next page waits for an explicit retry", async ({ page }) => {
+  const cursors: string[] = []
+  await page.route("https://mobile-test.invalid/**", async (route) => {
+    const command = route.request().postDataJSON() as string[]
+    if (
+      typeof command[0] !== "string" ||
+      command[0].toUpperCase() !== "SCAN" ||
+      !command.includes("denied:*")
+    ) {
+      return route.fallback()
+    }
+    cursors.push(command[1])
+    if (command[1] === "0") {
+      return route.fulfill({ json: { result: encode(["1", ["denied:000", "string"]]) } })
+    }
+    await route.fulfill({ status: 400, json: { error: "NOPERM this user has no permissions" } })
+  })
+  await page.getByPlaceholder("Search").fill("denied:")
+  await page.getByPlaceholder("Search").press("Enter")
+  await expect.poll(() => cursors).toEqual(["0", "1"])
+  // Rerenders and viewport-fill timers must not reissue the failed page.
+  await page.waitForTimeout(1000)
+  expect(cursors).toEqual(["0", "1"])
+  await page.getByRole("button", { name: "Retry", exact: true }).tap()
+  await expect.poll(() => cursors).toEqual(["0", "1", "1"])
+  await page.waitForTimeout(500)
+  expect(cursors).toEqual(["0", "1", "1"])
+})
+
 test.describe("search", () => {
   test.use({ searchMode: true })
 
@@ -317,6 +347,21 @@ test.describe("search", () => {
       await expect(results).toHaveAttribute("data-panel-id", resultId!)
     }
     expect(warnings).toEqual([])
+  })
+
+  test("search results stay inside a short mobile embed", async ({ page }) => {
+    await page.locator("#root").evaluate((element) => {
+      element.style.height = "384px"
+    })
+    await page.getByRole("button", { name: "Search", exact: true }).tap()
+    const result = page.getByRole("button", { name: "customer:000 1.00", exact: true })
+    await expect(result).toBeVisible()
+    const frame = (await page.locator("#root").boundingBox())!
+    const box = (await result.boundingBox())!
+    expect(box.y + box.height).toBeLessThanOrEqual(frame.y + frame.height)
+    expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(
+      await page.evaluate(() => window.innerHeight)
+    )
   })
 
   test("edit-index dialog fits a short landscape phone viewport", async ({ page }) => {
