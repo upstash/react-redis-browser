@@ -1,10 +1,11 @@
 import type { PropsWithChildren, ReactNode } from "react"
-import { useEffect, useRef } from "react"
+import { useCallback, useEffect, useRef } from "react"
 import { useTab } from "@/tab-provider"
 import { IconLoader2 } from "@tabler/icons-react"
 import type { UseInfiniteQueryResult } from "@tanstack/react-query"
 
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 export const InfiniteScroll = ({
@@ -23,12 +24,14 @@ export const InfiniteScroll = ({
 }> &
   React.ComponentProps<typeof ScrollArea>) => {
   const { active } = useTab()
+  // A failed page waits for the retry button instead of refetching on every render.
+  const canAutoFetch = active && autoFetch && !query.isFetchNextPageError
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
   // Fetch more on scroll
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (!autoFetch) return
+    if (!canAutoFetch || e.currentTarget.clientHeight === 0) return
     const { scrollTop, clientHeight, scrollHeight } = e.currentTarget
     if (scrollTop + clientHeight > scrollHeight - 100) {
       if (query.isFetching || !query.hasNextPage) {
@@ -39,11 +42,13 @@ export const InfiniteScroll = ({
   }
 
   // Check if viewport is filled and fetch more if needed
-  const checkAndFetchMore = () => {
-    if (!autoFetch) return
+  const checkAndFetchMore = useCallback(() => {
+    if (!canAutoFetch) return
     if (!scrollRef.current || !contentRef.current) return
 
     const viewportHeight = scrollRef.current.clientHeight
+    // Hidden mobile lists and inactive tabs must not drain the remaining pages.
+    if (viewportHeight === 0) return
     const contentHeight = contentRef.current.clientHeight
 
     // Fetch until it overflows a bit
@@ -52,14 +57,24 @@ export const InfiniteScroll = ({
     if (contentHeight < overflowThreshold && query.hasNextPage && !query.isFetching) {
       query.fetchNextPage()
     }
-  }
+  }, [canAutoFetch, query.hasNextPage, query.isFetching, query.fetchNextPage])
 
   useEffect(() => {
-    if (!active) return
-    // Timeout for dom update
-    const timer = setTimeout(checkAndFetchMore, 100)
-    return () => clearTimeout(timer)
-  }, [active, query.data])
+    const viewport = scrollRef.current
+    if (!active || !viewport) return
+
+    // Back navigation and resizing can reveal a list without changing query data.
+    let timer = setTimeout(checkAndFetchMore, 100)
+    const observer = new ResizeObserver(() => {
+      clearTimeout(timer)
+      timer = setTimeout(checkAndFetchMore, 100)
+    })
+    observer.observe(viewport)
+    return () => {
+      clearTimeout(timer)
+      observer.disconnect()
+    }
+  }, [active, checkAndFetchMore, query.data])
 
   return (
     <ScrollArea
@@ -73,7 +88,15 @@ export const InfiniteScroll = ({
         {children}
 
         <div className="flex h-[100px] justify-center py-2 text-zinc-300">
-          {query.isFetching ? <IconLoader2 className="animate-spin" size={16} /> : endSlot}
+          {query.isFetching ? (
+            <IconLoader2 className="animate-spin" size={16} />
+          ) : query.isFetchNextPageError ? (
+            <Button size="default" className="text-zinc-700" onClick={() => query.fetchNextPage()}>
+              Retry
+            </Button>
+          ) : (
+            endSlot
+          )}
         </div>
       </div>
     </ScrollArea>

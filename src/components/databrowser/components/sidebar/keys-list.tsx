@@ -91,7 +91,7 @@ const KeyItem = ({
     <button
       data-key={dataKey}
       className={cn(
-        "relative flex h-10 w-full items-center justify-start gap-2 rounded-lg px-3 py-0 !ring-0 transition-colors focus-visible:bg-zinc-50",
+        "browser-key-row relative flex h-10 w-full items-center justify-start gap-2 rounded-lg px-3 py-0 !ring-0 transition-colors focus-visible:bg-zinc-50",
         "-my-px select-none border border-transparent text-left",
         isKeySelected && "shadow-sm",
         isKeySelected && (keyStyles[dataType] ?? defaultKeyStyle)
@@ -99,7 +99,7 @@ const KeyItem = ({
       onClick={handleClick}
     >
       <TypeTag variant={dataType} type="icon" />
-      <p className="grow truncate whitespace-nowrap">{dataKey}</p>
+      <p className="min-w-0 grow truncate whitespace-nowrap">{dataKey || "(Empty Key)"}</p>
       {score !== undefined && (
         <span className="shrink-0 text-xs text-zinc-400">{score.toFixed(2)}</span>
       )}

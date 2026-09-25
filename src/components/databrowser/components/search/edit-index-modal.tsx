@@ -34,7 +34,7 @@ export const EditIndexModal = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="min-h-[500px] max-w-2xl"
+        className="min-h-[min(500px,calc(100dvh-2rem))] max-w-2xl"
         onEscapeKeyDown={(e) => {
           // Prevent ESC from closing modal when focused inside the editor
           const active = document.activeElement

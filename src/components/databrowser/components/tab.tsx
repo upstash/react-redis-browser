@@ -56,7 +56,8 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
     }, 20)
   }
 
-  const label = isValuesSearchSelected ? valuesSearch.index : search.key || selectedKey
+  const keyLabel = selectedKey === "" ? "(Empty Key)" : selectedKey
+  const label = isValuesSearchSelected ? valuesSearch.index : search.key || keyLabel
   const iconNode = isValuesSearchSelected ? (
     <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-emerald-200 text-emerald-800">
       <IconSearch size={14} />
@@ -65,9 +66,9 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
     <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-zinc-100 text-zinc-600">
       <IconSearch size={14} />
     </div>
-  ) : selectedKey ? (
+  ) : selectedKey === undefined ? undefined : (
     <TabTypeIcon selectedKey={selectedKey} />
-  ) : undefined
+  )
 
   const tabNode = (
     <div

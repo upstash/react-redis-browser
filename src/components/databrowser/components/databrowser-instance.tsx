@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react"
-import { useTab } from "@/tab-provider"
+import { useTab, useTabId } from "@/tab-provider"
+import { IconArrowLeft } from "@tabler/icons-react"
 import { Panel, PanelGroup } from "react-resizable-panels"
 
 import { cn, formatUpstashErrorMessage } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 import { ResizeHandle } from "@/components/ui/resize-handle"
 import { Segmented } from "@/components/ui/segmented"
 import { Toaster } from "@/components/ui/toaster"
 
 import type { TabType } from ".."
+import { useCompactLayout } from "../hooks/use-compact-layout"
 import { useFetchSearchIndexes } from "../hooks/use-fetch-search-indexes"
 import { KeysProvider, useKeys } from "../hooks/use-keys"
 import { DataDisplay } from "./display"
@@ -27,6 +30,7 @@ export const PREFIX = "const query: Query = "
 type QueryBuilderMode = "ui" | "code"
 
 const QueryBuilderContent = () => {
+  const compact = useCompactLayout()
   const { valuesSearch, queryBuilderMode, setQueryBuilderMode } = useTab()
   const { query } = useKeys()
   const [switchError, setSwitchError] = useState<string>()
@@ -52,7 +56,12 @@ const QueryBuilderContent = () => {
 
   return (
     <div className="relative flex h-full min-h-0 flex-col">
-      <div className="absolute right-4 top-4 z-[2] flex items-center gap-2">
+      <div
+        className={cn(
+          "absolute right-4 top-4 z-[2] flex items-center gap-2",
+          compact && "static shrink-0 flex-wrap p-2"
+        )}
+      >
         <WizardButton />
         <Segmented
           options={[
@@ -64,7 +73,9 @@ const QueryBuilderContent = () => {
           buttonClassName="h-6"
         />
       </div>
-      {queryBuilderMode === "ui" ? <UIQueryBuilder /> : <QueryBuilder />}
+      <div className="min-h-0 grow">
+        {queryBuilderMode === "ui" ? <UIQueryBuilder /> : <QueryBuilder />}
+      </div>
       <QueryBuilderError error={errorMessage} autoHide={Boolean(switchError)} />
       <DocsLink
         className="absolute bottom-2 right-2 text-sm"
@@ -96,7 +107,16 @@ export const DatabrowserInstance = ({
   tabType: TabType
   allowSearch: boolean
 }) => {
-  const { isValuesSearchSelected, queryBuilderMode, setIsValuesSearchSelected } = useTab()
+  const {
+    isValuesSearchSelected,
+    queryBuilderMode,
+    setIsValuesSearchSelected,
+    selectedKey,
+    setSelectedKey,
+  } = useTab()
+  const compact = useCompactLayout()
+  const showDetail = compact && selectedKey !== undefined
+  const tabId = useTabId()
   const { data: indexes, isLoading } = useFetchSearchIndexes({
     enabled: tabType === "search",
   })
@@ -116,56 +136,82 @@ export const DatabrowserInstance = ({
     <KeysProvider>
       <div
         className={cn(
-          "flex min-h-0 grow flex-col rounded-[10px] bg-white px-5 pb-5",
+          "flex min-h-0 min-w-0 grow flex-col rounded-[10px] bg-white px-5 pb-5",
+          compact && "px-1.5 pb-1.5",
           hidden && "hidden"
         )}
       >
-        <div className="space-y-3 py-5">
+        <div className={cn("shrink-0 space-y-3 py-5", compact && "py-2", showDetail && "hidden")}>
           <Header tabType={tabType} allowSearch={allowSearch} />
           {!isValuesSearchSelected && <HeaderError />}
         </div>
 
+        {showDetail && (
+          <Button
+            variant="ghost"
+            className="mb-2 h-8 shrink-0 gap-1.5 self-start px-1 shadow-none"
+            onClick={() => setSelectedKey(undefined)}
+          >
+            <IconArrowLeft size={16} />
+            {isValuesSearchSelected ? "Back to results" : "Back to keys"}
+          </Button>
+        )}
         {showEmptyState ? (
           <SearchEmptyState />
-        ) : isValuesSearchSelected ? (
+        ) : (
+          // Keep the panel tree stable across breakpoints so editor forms and
+          // list scroll positions survive rotation and container resizing.
           <PanelGroup
             autoSaveId="search-layout"
             direction="vertical"
-            className="h-full w-full !overflow-visible text-sm antialiased"
+            className={cn(
+              "h-full w-full !overflow-visible text-sm antialiased",
+              // Fill the space left under the header instead of the whole frame.
+              compact && "min-h-0 flex-1"
+            )}
           >
+            {isValuesSearchSelected && (
+              <Panel
+                id={`panel-query-${tabId}`}
+                order={1}
+                defaultSize={30}
+                minSize={15}
+                maxSize={60}
+                className={cn(
+                  queryBuilderMode === "code" && "!overflow-visible",
+                  // Short embeds shrink the query panel so results stay in the frame.
+                  compact &&
+                    "mb-2 min-h-20 !flex-[0_1_12rem] !overflow-auto rounded-xl border border-zinc-200",
+                  showDetail && "hidden"
+                )}
+              >
+                <SearchContent />
+              </Panel>
+            )}
+            {isValuesSearchSelected && !compact && <ResizeHandle direction="vertical" />}
             <Panel
-              defaultSize={30}
-              minSize={15}
-              maxSize={60}
-              className={queryBuilderMode === "code" ? "!overflow-visible" : ""}
+              id={`panel-results-${tabId}`}
+              order={2}
+              minSize={30}
+              className={cn(compact && "min-h-24 !flex-1")}
             >
-              <SearchContent />
-            </Panel>
-            <ResizeHandle direction="vertical" />
-            <Panel minSize={30}>
               <PanelGroup autoSaveId="persistence" direction="horizontal" className="h-full w-full">
-                <Panel defaultSize={30} minSize={30}>
+                {/* Hide the mobile list without unmounting its scroll area. */}
+                <Panel
+                  defaultSize={30}
+                  minSize={30}
+                  className={cn(compact && "!flex-1", showDetail && "hidden")}
+                >
                   <Sidebar />
                 </Panel>
-                <ResizeHandle />
-                <Panel minSize={40}>
+                {!compact && <ResizeHandle />}
+                <Panel
+                  minSize={40}
+                  className={cn(compact && "!flex-1", compact && !showDetail && "hidden")}
+                >
                   <DataDisplay />
                 </Panel>
               </PanelGroup>
-            </Panel>
-          </PanelGroup>
-        ) : (
-          <PanelGroup
-            autoSaveId="persistence"
-            direction="horizontal"
-            className="h-full w-full text-sm antialiased"
-          >
-            <Panel defaultSize={30} minSize={30}>
-              <Sidebar />
-            </Panel>
-            <ResizeHandle />
-            <Panel minSize={40}>
-              <DataDisplay />
             </Panel>
           </PanelGroup>
         )}

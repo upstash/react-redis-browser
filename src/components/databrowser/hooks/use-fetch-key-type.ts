@@ -9,7 +9,7 @@ export const useFetchKeyType = (key: string | undefined) => {
   return useQuery({
     queryKey: [FETCH_KEY_TYPE_QUERY_KEY, key],
     queryFn: async () => {
-      if (!key) return "none"
+      if (key === undefined) return "none"
 
       return await redis.type(key)
     },

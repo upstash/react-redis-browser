@@ -26,6 +26,7 @@
     "fmt": "prettier --write ./src",
     "test": "bun test src",
     "test:e2e": "playwright test",
+    "test:e2e:mobile": "playwright test --config tests/mobile/playwright.config.ts",
     "prepare": "husky"
   },
   "lint-staged": {

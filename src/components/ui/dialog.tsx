@@ -45,10 +45,10 @@ const DialogContent = React.forwardRef<
         "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 ",
         "data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%]",
         "data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg ",
+        "fixed left-[50%] top-[50%] z-50 grid max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-lg overflow-y-auto ",
         "translate-x-[-50%] translate-y-[-50%] gap-4",
-        "bg-white p-8 shadow-lg duration-200 ",
-        "rounded-2xl md:w-full",
+        "bg-white p-5 shadow-lg duration-200 sm:p-8 ",
+        "rounded-2xl max-sm:!max-w-[calc(100vw-2rem)]",
         className
       )}
       {...props}

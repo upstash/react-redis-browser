@@ -32,9 +32,9 @@ export const DisplayHeader = ({
   }
 
   return (
-    <div className="rounded-lg">
+    <div className="browser-detail-header shrink-0 rounded-lg">
       {/* Key title and actions */}
-      <div className="flex h-[26px] items-center justify-between gap-4">
+      <div className="browser-detail-title flex h-[26px] items-center justify-between gap-4">
         <h2 className="min-w-0 grow truncate text-sm">
           {dataKey.trim() === "" ? (
             <span className="ml-1 text-zinc-500">(Empty Key)</span>

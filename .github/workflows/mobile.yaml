@@ -1,0 +1,26 @@
+name: Mobile browser tests
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium webkit
+      - run: bun run test:e2e:mobile
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: mobile-test-results
+          path: test-results/
+          retention-days: 7

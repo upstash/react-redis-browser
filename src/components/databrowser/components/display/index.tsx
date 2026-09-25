@@ -15,8 +15,8 @@ export const DataDisplay = () => {
   const type = useKeyType(selectedKey)
 
   return (
-    <div className="h-full rounded-xl bg-zinc-100 p-5 dark:bg-zinc-200">
-      {!selectedKey ? (
+    <div className="browser-detail h-full min-h-0 min-w-0 rounded-xl bg-zinc-100 p-5 dark:bg-zinc-200">
+      {selectedKey === undefined ? (
         <div />
       ) : !type ? (
         query.isLoading ? (

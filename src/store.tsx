@@ -395,7 +395,7 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
     },
 
     setSelectedKey: (tabId, key) => {
-      get().setSelectedKeys(tabId, key ? [key] : [])
+      get().setSelectedKeys(tabId, key === undefined ? [] : [key])
     },
 
     setSelectedKeys: (tabId, keys) => {
