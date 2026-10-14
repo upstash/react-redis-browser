@@ -1,4 +1,5 @@
 import type { DataType } from "@/types"
+import { errors, type Redis, type Requester, type UpstashResponse } from "@upstash/redis"
 
 export const DEFAULT_FOLDER_DELIMITER = ":"
 
@@ -103,6 +104,34 @@ export const parseFolderScan = (values: unknown[]): KeyListEntry[] => {
  */
 export const isFolderScanUnsupported = (error: unknown) =>
   error instanceof Error && /\bsyntax error\b/i.test(error.message.split(", command was:")[0])
+
+/**
+ * Minimal shape of the redis client that `execFolderScan` needs. `client` is `protected`
+ * in `@upstash/redis`, so it is not part of the public types.
+ */
+type RequesterRedis = { client: Requester }
+
+/**
+ * Runs a folder SCAN like `redis.exec`, but through the REST pipeline endpoint. A server
+ * without folder support answers the single command endpoint with an HTTP 400, which
+ * browsers log as a failed request, while the pipeline endpoint returns the error inside
+ * a 200 response. Errors throw the same way as `redis.exec`.
+ */
+export const execFolderScan = async <TResult>(
+  redis: Redis,
+  command: [string, ...string[]]
+): Promise<TResult> => {
+  const { client } = redis as unknown as RequesterRedis
+  const response = (await client.request({ path: ["pipeline"], body: [command] })) as unknown
+  const { result, error } = (Array.isArray(response) ? response[0] : response) as UpstashResponse<
+    TResult | undefined
+  >
+
+  if (error) throw new errors.UpstashError(`${error}, command was: ${JSON.stringify(command)}`)
+  if (result === undefined) throw new TypeError("Request did not return a result")
+
+  return result
+}
 
 /** Formats a folder count for its badge, large counts show as "99+". */
 export const formatFolderCount = ({ n, atLeast }: FolderCount) =>

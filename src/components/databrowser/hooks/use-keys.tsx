@@ -7,6 +7,7 @@ import { useInfiniteQuery, useQuery, type UseInfiniteQueryResult } from "@tansta
 
 import { queryClient } from "@/lib/clients"
 import {
+  execFolderScan,
   getFolderMatch,
   getFolderQuery,
   getKeysStaleTime,
@@ -80,7 +81,7 @@ export const useFolderSupport = ({
     meta: { hideToast: true },
     queryFn: async () => {
       try {
-        await redis.exec(["SCAN", "0", "COUNT", "1", "DELIMITER", ":", "WITHCOUNT"])
+        await execFolderScan(redis, ["SCAN", "0", "COUNT", "1", "DELIMITER", ":", "WITHCOUNT"])
         return true
       } catch (error) {
         if (isFolderScanUnsupported(error)) return false
@@ -167,7 +168,7 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
 
     let result: [string, unknown[]]
     try {
-      result = await redis.exec<[string, unknown[]]>(args)
+      result = await execFolderScan<[string, unknown[]]>(redis, args)
     } catch (error) {
       if (!isFolderScanUnsupported(error)) throw error
 

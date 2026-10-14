@@ -1,8 +1,10 @@
+import type { Redis } from "@upstash/redis"
 import { describe, expect, test } from "bun:test"
 
 import {
   collapseCrumbs,
   escapeGlob,
+  execFolderScan,
   FOLDER_KEYS_STALE_TIME_MS,
   formatFolderCount,
   getEntryLabel,
@@ -152,6 +154,56 @@ describe("isFolderScanUnsupported", () => {
       )
     ).toBe(false)
     expect(isFolderScanUnsupported("ERR syntax error")).toBe(false)
+  })
+})
+
+// A redis client whose REST requests answer with `response`
+const fakeRedis = (response: unknown) => {
+  const requests: unknown[] = []
+  const client = {
+    request: async (request: unknown) => {
+      requests.push(request)
+      return response
+    },
+  }
+  return { redis: { client } as unknown as Redis, requests }
+}
+
+describe("execFolderScan", () => {
+  const command: [string, ...string[]] = ["SCAN", "0", "DELIMITER", ":", "WITHCOUNT"]
+
+  test("sends the command through the pipeline endpoint", async () => {
+    const values = ["a", "string", "1", "big:", "folder", "100+"]
+    const { redis, requests } = fakeRedis([{ result: ["0", values] }])
+
+    const [cursor, result] = await execFolderScan<[string, unknown[]]>(redis, command)
+
+    expect(requests).toEqual([{ path: ["pipeline"], body: [command] }])
+    expect(cursor).toBe("0")
+    expect(parseFolderScan(result)).toEqual([
+      { kind: "key", key: "a", type: "string" },
+      { kind: "folder", key: "big:", count: { n: 100, atLeast: true } },
+    ])
+  })
+
+  test("throws errors from inside the pipeline response like redis.exec", async () => {
+    const { redis } = fakeRedis([{ error: "ERR syntax error" }])
+    const error = await execFolderScan(redis, command).catch((error: unknown) => error)
+
+    expect(error).toBeInstanceOf(Error)
+    expect((error as Error).name).toBe("UpstashError")
+    expect((error as Error).message).toBe(
+      `ERR syntax error, command was: ${JSON.stringify(command)}`
+    )
+    expect(isFolderScanUnsupported(error)).toBe(true)
+  })
+
+  test("keeps other errors", async () => {
+    const { redis } = fakeRedis([{ error: "NOPERM this user has no permissions" }])
+    const error = await execFolderScan(redis, command).catch((error: unknown) => error)
+
+    expect(error).toBeInstanceOf(Error)
+    expect(isFolderScanUnsupported(error)).toBe(false)
   })
 })
 
