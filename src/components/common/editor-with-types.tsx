@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useId, useRef } from "react"
 import { useTheme } from "@/dark-mode-context"
 import { Editor, useMonaco, type BeforeMount, type Monaco } from "@monaco-editor/react"
 
@@ -14,6 +14,8 @@ type EditorWithTypesProps = {
   filePath: string
   testLabel: string
   showFunctions?: boolean
+  // Type definitions are global to Monaco, so only the visible editor should register them
+  active?: boolean
 }
 
 export const EditorWithTypes = (props: EditorWithTypesProps) => {
@@ -33,24 +35,24 @@ const MonacoEditorWithTypes = ({
   typeDefinitions,
   validateValue,
   defaultValue,
-  filePath,
+  filePath: baseFilePath,
   showFunctions,
+  active = true,
 }: EditorWithTypesProps) => {
   const monaco = useMonaco()
   const editorRef = useRef<unknown>(null)
-  const extraLibRef = useRef<{ dispose: () => void } | null>(null)
+  // Monaco shares models by path, so every editor instance needs its own path
+  const instanceId = useId().replaceAll(/\W/g, "")
+  const filePath = baseFilePath.replace(".ts", `-${instanceId}.ts`)
   const valueRef = useRef(value)
   valueRef.current = value
   const theme = useTheme()
 
   // Update type definitions when they change
   useEffect(() => {
-    if (!monaco) return
+    if (!monaco || !active) return
 
-    // Dispose previous extraLib if it exists
-    extraLibRef.current?.dispose()
-
-    extraLibRef.current = monaco.languages.typescript.typescriptDefaults.addExtraLib(
+    const extraLib = monaco.languages.typescript.typescriptDefaults.addExtraLib(
       typeDefinitions,
       `file:///${filePath.replace(".ts", "-types.d.ts")}`
     )
@@ -66,12 +68,13 @@ const MonacoEditorWithTypes = ({
         model.setValue(currentValue)
       }
     })
-  }, [monaco, typeDefinitions, filePath])
+
+    return () => extraLib.dispose()
+  }, [monaco, typeDefinitions, filePath, active])
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      extraLibRef.current?.dispose()
       if (monaco) {
         const model = monaco.editor.getModel(monaco.Uri.parse(filePath))
         model?.dispose()
@@ -188,6 +191,8 @@ const handleBeforeMount: BeforeMount = (monaco: Monaco) => {
     esModuleInterop: true,
     strict: true,
     allowJs: true,
+    // Treat each model as a module so top-level consts of different editors don't collide
+    moduleDetection: 3, // ModuleDetectionKind.Force
   })
 
   monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
