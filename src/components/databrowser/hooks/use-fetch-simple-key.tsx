@@ -25,15 +25,12 @@ export const useFetchSimpleKey = (dataKey: string, type: DataType) => {
 }
 
 // Add recursive key sorting to a JSON object
-const sortObject = (obj: unknown): unknown => {
+export const sortObject = (obj: unknown): unknown => {
+  if (Array.isArray(obj)) return obj.map((item) => sortObject(item))
   if (typeof obj !== "object" || obj === null) return obj
   return Object.fromEntries(
     Object.entries(obj)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([key, value]) =>
-        typeof value === "object" && !Array.isArray(value) && value !== null
-          ? [key, sortObject(value)]
-          : [key, value]
-      )
+      .map(([key, value]) => [key, sortObject(value)])
   )
 }
