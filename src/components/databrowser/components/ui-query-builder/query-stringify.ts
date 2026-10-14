@@ -2,6 +2,13 @@ import { toJsLiteral } from "@/lib/utils"
 
 import type { FieldOperator, QueryNode, QueryState } from "./types"
 
+/** Boost 1 is the default and can be omitted, but 0 (or any other value) must be kept */
+const hasBoost = (boost: number | undefined): boost is number => boost !== undefined && boost !== 1
+
+/** A group with no conditions anywhere inside it adds no constraint, so it is skipped */
+const isEmptyGroup = (node: QueryNode): boolean =>
+  node.type === "group" && node.children.every((child) => isEmptyGroup(child))
+
 /** Build the operator value for a condition (handles fuzzy and phrase specially) */
 const buildOperatorValue = (
   operator: FieldOperator,
@@ -40,7 +47,7 @@ const conditionToObject = (node: QueryNode & { type: "condition" }): Record<stri
   // Shorthand for $smart without boost, or $eq on boolean/number without boost
   const isCollapsibleEq =
     operator === "eq" && (typeof value === "boolean" || typeof value === "number")
-  if ((operator === "smart" || isCollapsibleEq) && !effectiveBoost) {
+  if ((operator === "smart" || isCollapsibleEq) && !hasBoost(effectiveBoost)) {
     return { [field]: value }
   }
 
@@ -50,9 +57,8 @@ const conditionToObject = (node: QueryNode & { type: "condition" }): Record<stri
   }
 
   // Apply boost to the field condition - node.boost takes priority over conditionBoost
-  const finalBoost = node.boost ?? conditionBoost
-  if (finalBoost && finalBoost !== 1) {
-    fieldCondition.$boost = finalBoost
+  if (hasBoost(effectiveBoost)) {
+    fieldCondition.$boost = effectiveBoost
   }
 
   return { [field]: fieldCondition }
@@ -73,13 +79,17 @@ const mergeConditions = (children: QueryNode[], boost?: number): Record<string, 
       Object.assign(merged, conditionToObject(child as QueryNode & { type: "condition" }))
     }
   }
-  if (boost && boost !== 1) {
+  if (hasBoost(boost)) {
     merged.$boost = boost
   }
   return merged
 }
 
-/** Build $mustNot value: object form for single item, array for multiple */
+/**
+ * Build $mustNot value: object form for a single item with a single key, array otherwise.
+ * The server excludes each key of an object form separately, so an item with multiple
+ * keys (e.g. { $and: [{}], $mustNot: ... }) must stay one array item.
+ */
 const buildMustNot = (
   negatedChildren: QueryNode[]
 ): Record<string, unknown> | Record<string, unknown>[] => {
@@ -87,7 +97,9 @@ const buildMustNot = (
     const withoutNot = { ...child, not: undefined }
     return queryNodeToObject(withoutNot, false)
   })
-  return negatedObjects.length === 1 ? negatedObjects[0] : negatedObjects
+  return negatedObjects.length === 1 && Object.keys(negatedObjects[0]).length === 1
+    ? negatedObjects[0]
+    : negatedObjects
 }
 
 /** Convert a group node to a query object */
@@ -96,14 +108,15 @@ const groupToObject = (
   isRoot: boolean,
   forArray: boolean = false
 ): Record<string, unknown> => {
-  const { groupOperator, children, boost, not } = node
+  const { groupOperator, boost, not } = node
+  const children = node.children.filter((c) => !isEmptyGroup(c))
 
   // Separate children into normal and negated ($mustNot)
   const normalChildren = children.filter((c) => !c.not)
   const negatedChildren = children.filter((c) => c.not)
 
   // Empty root group should return empty object, not $and: []
-  if (isRoot && children.length === 0 && !not && !boost) {
+  if (isRoot && children.length === 0) {
     return {}
   }
 
@@ -112,7 +125,7 @@ const groupToObject = (
     const withoutNot = { ...node, not: undefined } as QueryNode & { type: "group" }
     const inner = groupToObject(withoutNot, false)
     // OR group with not and no negated children → flatten to $mustNot array
-    if (groupOperator === "or" && !boost && negatedChildren.length === 0) {
+    if (groupOperator === "or" && !hasBoost(boost) && negatedChildren.length === 0) {
       const childObjects = normalChildren.map((child) => queryNodeToObject(child, false))
       return { $mustNot: childObjects }
     }
@@ -125,7 +138,7 @@ const groupToObject = (
     // Single child: just unwrap it
     if (normalChildren.length === 1) {
       const result = queryNodeToObject(normalChildren[0], false)
-      if (boost && boost !== 1) result.$boost = boost
+      if (hasBoost(boost)) result.$boost = boost
       return result
     }
 
@@ -137,27 +150,28 @@ const groupToObject = (
     // Don't flatten if a group child has same operator, multiple children, and boost
     // (would create confusing nested $and inside root AND)
     const hasConflictingGroupChild = groupChildren.some(
-      (c) => c.groupOperator === groupOperator && c.children.length > 1 && c.boost
+      (c) => c.groupOperator === groupOperator && c.children.length > 1 && hasBoost(c.boost)
     )
 
     if (!hasConflictingGroupChild) {
-      // Check for key conflicts: duplicate fields or duplicate group operators
-      const fields = conditionChildren.map(
-        (c) => (c as QueryNode & { type: "condition" }).condition.field
-      )
-      const groupOps = groupChildren.map((c) => `$${c.groupOperator}`)
-      const allKeys = [...fields, ...groupOps]
-      const hasConflicts = new Set(allKeys).size !== allKeys.length
+      const childObjects = [
+        ...conditionChildren.map((c) => conditionToObject(c as QueryNode & { type: "condition" })),
+        ...groupChildren.map((c) => groupToObject(c, false)),
+      ]
+      const keys = childObjects.flatMap((obj) => Object.keys(obj))
+      // Next to other keys, a top-level $or only boosts the score instead of filtering,
+      // and a child's $boost would apply to the whole query, so those can't be flattened.
+      // A child's $mustNot is kept with its group so the builder tree parses back the same.
+      // Duplicate keys (fields or group operators) would overwrite each other.
+      const canFlatten =
+        !keys.includes("$or") &&
+        !keys.includes("$boost") &&
+        !keys.includes("$mustNot") &&
+        new Set(keys).size === keys.length
 
-      if (!hasConflicts) {
-        const result: Record<string, unknown> = {}
-        for (const child of conditionChildren) {
-          Object.assign(result, conditionToObject(child as QueryNode & { type: "condition" }))
-        }
-        for (const child of groupChildren) {
-          Object.assign(result, groupToObject(child, false))
-        }
-        if (boost && boost !== 1) result.$boost = boost
+      if (canFlatten) {
+        const result: Record<string, unknown> = Object.assign({}, ...childObjects)
+        if (hasBoost(boost)) result.$boost = boost
         return result
       }
     }
@@ -174,7 +188,7 @@ const groupToObject = (
     if (forArray) {
       // Array context: boost goes outside as sibling of $op key
       result[`$${groupOperator}`] = mergeConditions(normalChildren)
-      if (boost && boost !== 1) result.$boost = boost
+      if (hasBoost(boost)) result.$boost = boost
     } else {
       // Standalone/merged context: boost goes inside the operator value
       result[`$${groupOperator}`] = mergeConditions(normalChildren, boost)
@@ -190,15 +204,17 @@ const groupToObject = (
 
   if (normalChildren.length > 0) {
     result[`$${groupOperator}`] = normalChildren.map((child) => {
-      // Same-operator group with multiple mergeable conditions: flatten to merged object
-      // (avoids redundant nesting like $and: [{ $and: { ... } }] inside $and array)
+      // AND group inside AND with multiple mergeable conditions: flatten to merged object
+      // (avoids redundant nesting like $and: [{ $and: { ... } }] inside $and array).
+      // Not done for OR, since the fields of a plain object are always ANDed.
       if (child.type === "group") {
         const groupChild = child as QueryNode & { type: "group" }
-        const gc = groupChild.children
+        const gc = groupChild.children.filter((c) => !isEmptyGroup(c))
         const gcNormal = gc.filter((c) => !c.not)
         const gcNegated = gc.filter((c) => c.not)
         if (
-          groupChild.groupOperator === groupOperator &&
+          groupOperator === "and" &&
+          groupChild.groupOperator === "and" &&
           gc.length > 1 &&
           gcNegated.length === 0 &&
           canMergeChildren(gcNormal)
@@ -209,15 +225,16 @@ const groupToObject = (
       return queryNodeToObject(child, false, true)
     })
   } else if (negatedChildren.length > 0) {
-    // Preserve empty group operator when there are negated children
-    result[`$${groupOperator}`] = {}
+    // Only negated children: $mustNot alone has nothing to exclude from, so match all
+    // documents with [{}] (an empty object is rejected by the server)
+    result[`$${groupOperator}`] = [{}]
   }
 
   if (negatedChildren.length > 0) {
     result.$mustNot = buildMustNot(negatedChildren)
   }
 
-  if (boost && boost !== 1) {
+  if (hasBoost(boost)) {
     result.$boost = boost
   }
 
