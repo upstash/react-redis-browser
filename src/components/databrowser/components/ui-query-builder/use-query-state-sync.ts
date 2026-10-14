@@ -17,9 +17,10 @@ export const useQueryStateSync = () => {
     return parseQueryString(valuesSearch.query) ?? createInitialQueryState()
   })
 
-  // Track our own updates to avoid re-parsing on our changes
+  // The last query string we parsed or wrote, so our own updates are not re-parsed.
+  // A flag set on write would get stuck when the written string equals the stored one
+  // (the store doesn't change, so the effect never runs) and swallow the next external change.
   const lastSyncedQuery = useRef<string>(valuesSearch.query)
-  const isOurUpdate = useRef(false)
 
   // Mirror of the latest state so setQueryState can compute the next state without
   // running side effects inside the useState updater (which executes during render).
@@ -28,13 +29,6 @@ export const useQueryStateSync = () => {
 
   // Sync FROM zustand only when it changes from an external source
   useEffect(() => {
-    // If this change was caused by us, skip re-parsing
-    if (isOurUpdate.current) {
-      isOurUpdate.current = false
-      lastSyncedQuery.current = valuesSearch.query
-      return
-    }
-
     // External change - re-parse the query
     if (valuesSearch.query !== lastSyncedQuery.current) {
       const parsed = parseQueryString(valuesSearch.query)
@@ -54,7 +48,6 @@ export const useQueryStateSync = () => {
       queryStateRef.current = newState
 
       const newQueryString = stringifyQueryState(newState)
-      isOurUpdate.current = true
       lastSyncedQuery.current = newQueryString
 
       setQueryStateInternal(newState)
