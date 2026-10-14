@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTab } from "@/tab-provider"
 
-import { createInitialQueryState, parseQueryString } from "./query-parser"
+import { createInitialQueryState, getQueryBuilderError, parseQueryString } from "./query-parser"
 import { stringifyQueryState } from "./query-stringify"
 import { type QueryState } from "./types"
 
@@ -16,6 +16,12 @@ export const useQueryStateSync = () => {
   const [queryState, setQueryStateInternal] = useState<QueryState>(() => {
     return parseQueryString(valuesSearch.query) ?? createInitialQueryState()
   })
+
+  // Set when a query from outside the builder can't be represented without changing it.
+  // The builder must then leave the query untouched.
+  const [unsupportedError, setUnsupportedError] = useState(() =>
+    getQueryBuilderError(valuesSearch.query)
+  )
 
   // Track our own updates to avoid re-parsing on our changes
   const lastSyncedQuery = useRef<string>(valuesSearch.query)
@@ -37,7 +43,9 @@ export const useQueryStateSync = () => {
 
     // External change - re-parse the query
     if (valuesSearch.query !== lastSyncedQuery.current) {
-      const parsed = parseQueryString(valuesSearch.query)
+      const error = getQueryBuilderError(valuesSearch.query)
+      setUnsupportedError(error)
+      const parsed = error ? undefined : parseQueryString(valuesSearch.query)
       if (parsed) {
         setQueryStateInternal(parsed)
       }
@@ -66,5 +74,6 @@ export const useQueryStateSync = () => {
   return {
     queryState,
     setQueryState,
+    unsupportedError,
   }
 }

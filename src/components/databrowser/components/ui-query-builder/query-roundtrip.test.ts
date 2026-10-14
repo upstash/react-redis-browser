@@ -71,8 +71,6 @@ const queries: (Record<string, unknown> | [Record<string, unknown>, Record<strin
   [{ $or: { name: "foo", $boost: 2 } }, { $or: { name: "foo", $boost: 2 } }],
 
   // do not flatten
-  { name: "foo", $or: { age: 18, $boost: 2 } },
-  { name: "foo", $or: { age: 18, $boost: 2 }, $boost: 3 },
   { name: "foo", $and: { age: 18, $boost: 2 }, $boost: 3 },
 
   // flatten the $boost

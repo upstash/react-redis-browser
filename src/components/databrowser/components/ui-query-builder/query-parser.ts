@@ -23,7 +23,28 @@ import {
 
 export type ParseResult = { success: true; state: QueryState } | { success: false; error: string }
 
+const MUST_SHOULD_ERROR =
+  "Queries using both $must and $should are not supported in the UI query builder"
+
+/**
+ * Thrown for queries the UI builder can't represent without changing their meaning,
+ * so switching to the builder never silently rewrites the query.
+ */
+class UnsupportedQueryError extends Error {}
+
+const unsupported = (message: string): never => {
+  throw new UnsupportedQueryError(`${message} is not supported in the UI query builder`)
+}
+
 const isOperatorKey = (key: string): boolean => key.startsWith("$")
+
+const isPlainObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+
+const parseBoost = (value: unknown): number => {
+  if (typeof value !== "number") return unsupported("A non-numeric $boost")
+  return value
+}
 
 /**
  * Check if an object contains both $must and $should at the same level,
@@ -79,23 +100,68 @@ const normalizeOperators = (obj: unknown): unknown => {
     if (key === "$must") normalizedKey = "$and"
     if (key === "$should") normalizedKey = "$or"
 
+    if (normalizedKey in result) unsupported(`Using both ${key} and ${normalizedKey}`)
     result[normalizedKey] = normalizeOperators(value)
   }
 
   return result
 }
 
-/** Check if an object has $operator keys (like $eq, $in, $fuzzy) */
-const isFieldConditionObject = (obj: unknown): obj is Record<string, unknown> => {
-  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false
-  const keys = Object.keys(obj)
-  return keys.some((key) => ALL_OPERATORS.some((op) => key === `$${op}`))
+/** Parse a single operator of a field condition into a condition node */
+const parseOperator = (field: string, op: FieldOperator, opValue: unknown): QueryNode => {
+  let operator = op
+  let value = opValue
+  let fuzzyDistance: 1 | 2 | undefined
+  let phraseSlop: number | undefined
+  let phrasePrefix: boolean | undefined
+
+  // Handle fuzzy: { $fuzzy: { value: "x", distance: 2 } }
+  if (op === "fuzzy" && isPlainObject(value)) {
+    const { value: fuzzyValue, distance, ...rest } = value
+    if (
+      Object.keys(rest).length > 0 ||
+      (distance !== undefined && distance !== 1 && distance !== 2)
+    ) {
+      unsupported("This $fuzzy option")
+    }
+    value = fuzzyValue ?? ""
+    fuzzyDistance = (distance as 1 | 2 | undefined) ?? 1
+  }
+
+  // Handle phrase: { $phrase: "text" } or { $phrase: { value: "text", slop?: n, prefix?: bool } }
+  if (op === "phrase" && isPlainObject(value)) {
+    const { value: phraseValue, slop, prefix, ...rest } = value
+    if (Object.keys(rest).length > 0) unsupported("This $phrase option")
+    value = phraseValue ?? ""
+    // The server rejects slop with prefix, slop 0 is the default and can be dropped
+    if (typeof slop === "number" && slop > 0 && prefix) unsupported("$phrase with slop and prefix")
+    phraseSlop = slop === 0 && prefix ? undefined : (slop as number | undefined)
+    phrasePrefix = prefix as boolean | undefined
+  }
+
+  // Auto-fix: $smart on boolean/number → $eq (smart is only meaningful for strings)
+  if (operator === "smart" && (typeof value === "boolean" || typeof value === "number")) {
+    operator = "eq"
+  }
+
+  return {
+    id: generateId(),
+    type: "condition",
+    condition: {
+      field,
+      operator,
+      value: value as string | number | boolean | string[],
+      fuzzyDistance,
+      phraseSlop,
+      phrasePrefix,
+    },
+  }
 }
 
 /** Parse a single field condition into a QueryNode */
 const parseFieldCondition = (field: string, fieldValue: unknown): QueryNode => {
   // Shorthand: { field: "value" } → $eq for boolean/number, $smart for strings
-  if (!isFieldConditionObject(fieldValue)) {
+  if (!isPlainObject(fieldValue)) {
     const operator: FieldOperator =
       typeof fieldValue === "boolean" || typeof fieldValue === "number" ? "eq" : "smart"
     return {
@@ -109,237 +175,201 @@ const parseFieldCondition = (field: string, fieldValue: unknown): QueryNode => {
     }
   }
 
-  // Full format: { field: { $operator: value } }
-  const fieldObj = fieldValue as Record<string, unknown>
-  let operator: FieldOperator = "eq"
-  let value: unknown = ""
-  let fuzzyDistance: 1 | 2 | undefined
-  let phraseSlop: number | undefined
-  let phrasePrefix: boolean | undefined
-  let boost: number | undefined
+  // Full format: { field: { $operator: value, $boost?: n } }
+  const boost = "$boost" in fieldValue ? parseBoost(fieldValue.$boost) : undefined
+  const conditions = Object.entries(fieldValue)
+    .filter(([key]) => key !== "$boost")
+    .map(([key, value]) => {
+      const op = ALL_OPERATORS.find((op) => key === `$${op}`)
+      return op ? parseOperator(field, op, value) : unsupported(`The "${key}" operator`)
+    })
 
-  for (const op of ALL_OPERATORS) {
-    const key = `$${op}`
-    if (key in fieldObj) {
-      operator = op
-      value = fieldObj[key]
+  if (conditions.length === 0) return unsupported("A field without an operator")
 
-      // Handle fuzzy: { $fuzzy: { value: "x", distance: 2 } }
-      if (op === "fuzzy" && typeof value === "object" && value !== null) {
-        const fuzzyObj = value as { value?: unknown; distance?: number }
-        value = fuzzyObj.value ?? ""
-        fuzzyDistance = (fuzzyObj.distance as 1 | 2) ?? 1
-      }
-
-      // Handle phrase: { $phrase: "text" } or { $phrase: { value: "text", slop?: n, prefix?: bool } }
-      if (op === "phrase" && typeof value === "object" && value !== null) {
-        const phraseObj = value as { value?: unknown; slop?: number; prefix?: boolean }
-        value = phraseObj.value ?? ""
-        phraseSlop = phraseObj.slop
-        phrasePrefix = phraseObj.prefix
-      }
-      break
-    }
+  // The server rejects two lower or two upper bounds on the same field
+  const ops = new Set(conditions.map((c) => (c.type === "condition" ? c.condition.operator : "")))
+  if ((ops.has("gt") && ops.has("gte")) || (ops.has("lt") && ops.has("lte"))) {
+    unsupported("Two lower or upper bounds on one field")
   }
 
-  // Auto-fix: $smart on boolean/number → $eq (smart is only meaningful for strings)
-  if (operator === "smart" && (typeof value === "boolean" || typeof value === "number")) {
-    operator = "eq"
+  if (conditions.length === 1) {
+    return { ...conditions[0], boost }
   }
 
-  if ("$boost" in fieldObj) {
-    boost = fieldObj.$boost as number
-  }
-
-  return {
-    id: generateId(),
-    type: "condition",
-    boost,
-    condition: {
-      field,
-      operator,
-      value: value as string | number | boolean | string[],
-      fuzzyDistance,
-      phraseSlop,
-      phrasePrefix,
-    },
-  }
+  // Multiple operators: { price: { $gte: 10, $lte: 100 } } → all of them must match
+  return { id: generateId(), type: "group", groupOperator: "and", children: conditions, boost }
 }
 
-/** Convert multiple field keys into an AND/OR group */
+/** Convert the keys of an object body ({ $and: { ... } } or { $or: { ... } }) into a group */
 const parseMultiFieldObject = (
   obj: Record<string, unknown>,
   operator: GroupOperator
 ): QueryNode & { type: "group" } => {
-  const children: QueryNode[] = []
-  let boost: number | undefined
+  if ("$and" in obj && "$or" in obj) unsupported("Using $and and $or on the same level")
+
+  const group: QueryNode & { type: "group" } = {
+    id: generateId(),
+    type: "group",
+    groupOperator: operator,
+    children: [],
+  }
 
   for (const [key, value] of Object.entries(obj)) {
-    if (key === "$boost") {
-      boost = value as number
-    } else if (key === "$and" || key === "$or") {
-      const nestedOp: GroupOperator = key === "$and" ? "and" : "or"
-      const nestedGroup = parseGroup(value, nestedOp)
-      if (nestedGroup) children.push(nestedGroup)
-    } else if (!isOperatorKey(key)) {
-      children.push(parseFieldCondition(key, value))
+    switch (key) {
+      case "$boost": {
+        group.boost = parseBoost(value)
+        break
+      }
+      case "$and":
+      case "$or": {
+        group.children.push(parseGroup(value, key === "$and" ? "and" : "or"))
+        break
+      }
+      case "$mustNot": {
+        if (operator === "and") {
+          addMustNotChildren(group, value)
+        } else {
+          // Inside $or, $mustNot is one more alternative: everything except the given documents
+          group.children.push(parseMustNotOnly(value))
+        }
+        break
+      }
+      default: {
+        if (isOperatorKey(key)) {
+          unsupported(`The ${key} operator`)
+        } else {
+          group.children.push(parseFieldCondition(key, value))
+        }
+      }
     }
   }
 
-  return { id: generateId(), type: "group", groupOperator: operator, children, boost }
+  return group
 }
 
-/** Parse $mustNot wrapper, returns node with not=true */
-const parseMustNot = (notValue: unknown): QueryNode | null => {
-  if (Array.isArray(notValue)) {
-    if (notValue.length === 0) return null
-
-    if (notValue.length === 1) {
-      const innerNode = objectToQueryNode(notValue[0] as Record<string, unknown>)
-      if (innerNode) innerNode.not = true
-      return innerNode
-    }
-
-    // Multiple elements: OR semantics within $mustNot
-    const children = notValue
-      .map((child) => objectToQueryNode(child as Record<string, unknown>))
-      .filter((n): n is QueryNode => n !== null)
-
-    if (children.length === 0) return null
-    return { id: generateId(), type: "group", groupOperator: "or", children, not: true }
+/** Parse an object that only has $mustNot into an AND group with negated children */
+const parseMustNotOnly = (mustNotValue: unknown): QueryNode & { type: "group" } => {
+  const group: QueryNode & { type: "group" } = {
+    id: generateId(),
+    type: "group",
+    groupOperator: "and",
+    children: [],
   }
-
-  // Object form: { $mustNot: { field: value } }
-  if (typeof notValue === "object" && notValue !== null) {
-    const innerNode = objectToQueryNode(notValue as Record<string, unknown>)
-    if (innerNode) innerNode.not = true
-    return innerNode
-  }
-
-  return null
+  addMustNotChildren(group, mustNotValue)
+  return group
 }
+
+const isMustNotOnly = (value: unknown): value is { $mustNot: unknown } =>
+  isPlainObject(value) && Object.keys(value).length === 1 && "$mustNot" in value
 
 /** Parse $and/$or group */
 const parseGroup = (
   groupValue: unknown,
-  operator: GroupOperator,
-  boost?: number
-): QueryNode | null => {
+  operator: GroupOperator
+): QueryNode & { type: "group" } => {
   // Array-based: { $and: [{ ... }, { ... }] }
   if (Array.isArray(groupValue)) {
-    return {
+    if (groupValue.length === 0) return unsupported(`An empty $${operator} array`)
+    const group: QueryNode & { type: "group" } = {
       id: generateId(),
       type: "group",
       groupOperator: operator,
-      children: groupValue
-        .map((child) => objectToQueryNode(child as Record<string, unknown>))
-        .filter((n): n is QueryNode => n !== null),
-      boost,
+      children: [],
     }
-  }
 
-  // Object-based: { $and: { field1: v1, field2: v2 } }
-  if (typeof groupValue === "object" && groupValue !== null) {
-    const group = parseMultiFieldObject(groupValue as Record<string, unknown>, operator)
-    if (boost !== undefined) group.boost = boost
+    for (const child of groupValue) {
+      if (!isPlainObject(child)) return unsupported("A non-object group item")
+
+      // An $and item with only $mustNot adds its exclusions to the group
+      if (operator === "and" && isMustNotOnly(child)) {
+        addMustNotChildren(group, child.$mustNot)
+        continue
+      }
+
+      const node = objectToQueryNode(child)
+      if (node) {
+        group.children.push(node)
+      } else if (operator === "or" && groupValue.length > 1) {
+        // {} matches every document, which an OR group of the builder can't express
+        unsupported("An empty object inside $or")
+      }
+    }
+
     return group
   }
 
-  return null
+  // Object-based: { $and: { field1: v1, field2: v2 } }
+  if (isPlainObject(groupValue)) {
+    return parseMultiFieldObject(groupValue, operator)
+  }
+
+  return unsupported(`A non-object $${operator} value`)
 }
 
 /** Add $mustNot entries as negated children to a group */
 const addMustNotChildren = (group: QueryNode & { type: "group" }, mustNotValue: unknown): void => {
-  if (Array.isArray(mustNotValue)) {
-    for (const item of mustNotValue) {
-      const child = objectToQueryNode(item as Record<string, unknown>)
-      if (child) {
-        child.not = true
-        group.children.push(child)
-      }
-    }
-  } else if (typeof mustNotValue === "object" && mustNotValue !== null) {
-    const child = objectToQueryNode(mustNotValue as Record<string, unknown>)
-    if (child) {
-      child.not = true
-      group.children.push(child)
-    }
+  // Array form excludes documents matching any item.
+  // Object form excludes documents matching any of its keys, each key is its own item.
+  if (Array.isArray(mustNotValue) && mustNotValue.length === 0) {
+    return unsupported("An empty $mustNot array")
   }
+  const items = Array.isArray(mustNotValue)
+    ? mustNotValue
+    : isPlainObject(mustNotValue)
+      ? Object.entries(mustNotValue).map(([key, value]) =>
+          key === "$boost" ? unsupported("$boost inside $mustNot") : { [key]: value }
+        )
+      : unsupported("A non-object $mustNot value")
+
+  for (const item of items) {
+    if (!isPlainObject(item)) unsupported("A non-object $mustNot item")
+    const child = objectToQueryNode(item as Record<string, unknown>)
+    if (!child) return unsupported("An empty object inside $mustNot")
+    child.not = true
+    group.children.push(child)
+  }
+}
+
+/** Apply a $boost to a node, wrapping it if it already has its own boost */
+const withBoost = (node: QueryNode, boost: number | undefined): QueryNode => {
+  if (boost === undefined) return node
+  if (node.boost === undefined) return { ...node, boost }
+  return { id: generateId(), type: "group", groupOperator: "and", children: [node], boost }
 }
 
 /** Parse a raw query object into a QueryNode */
 const objectToQueryNode = (obj: Record<string, unknown>): QueryNode | null => {
-  if (!obj || typeof obj !== "object") return null
-
   const keys = Object.keys(obj)
   if (keys.length === 0) return null
 
-  const hasGroup = "$and" in obj || "$or" in obj
-  const hasMustNot = "$mustNot" in obj
-  const nonOperatorKeys = keys.filter((key) => !isOperatorKey(key))
+  if ("$and" in obj && "$or" in obj) unsupported("Using $and and $or on the same level")
 
-  // Handle $and/$or groups (possibly with $mustNot or field conditions as siblings)
-  if (hasGroup) {
-    const operator: GroupOperator = "$and" in obj ? "and" : "or"
-    const groupValue = obj["$and"] ?? obj["$or"]
-    const boost = "$boost" in obj ? (obj.$boost as number) : undefined
-    const groupNode = parseGroup(
-      groupValue,
-      operator,
-      nonOperatorKeys.length === 0 ? boost : undefined
-    )
+  const boost = "$boost" in obj ? parseBoost(obj.$boost) : undefined
+  const positiveKeys = keys.filter((key) => key !== "$boost" && key !== "$mustNot")
 
-    if (groupNode && groupNode.type === "group" && hasMustNot) {
-      addMustNotChildren(groupNode, obj.$mustNot)
-    }
+  // Next to other conditions, $or only boosts the score of documents that match it
+  if ("$or" in obj && positiveKeys.length > 1) unsupported("$or next to other conditions")
 
-    // No sibling field conditions → return group directly
-    if (!groupNode || nonOperatorKeys.length === 0) {
-      return groupNode
-    }
-
-    // Sibling field conditions: { field: value, $and: [...] } → wrap in AND
-    const fieldChildren = nonOperatorKeys.map((key) => parseFieldCondition(key, obj[key]))
-    const group: QueryNode & { type: "group" } = {
-      id: generateId(),
-      type: "group",
-      groupOperator: "and",
-      children: [...fieldChildren, groupNode],
-      boost,
-    }
-
-    if (hasMustNot) {
-      addMustNotChildren(group, obj.$mustNot)
-    }
-
-    return group
+  // Only $mustNot: everything except the excluded documents
+  if (positiveKeys.length === 0) {
+    if (!("$mustNot" in obj)) return unsupported("$boost without a query")
+    return withBoost(parseMustNotOnly(obj.$mustNot), boost)
   }
 
-  // Handle $mustNot (possibly with field conditions at the same level)
-  if (hasMustNot) {
-    if (nonOperatorKeys.length > 0) {
-      // Field conditions + $mustNot → AND group with negated children
-      const group = parseMultiFieldObject(obj, "and")
-      addMustNotChildren(group, obj.$mustNot)
-      return group
-    }
-    // Standalone $mustNot
-    return parseMustNot(obj.$mustNot)
+  // A single $and/$or group, possibly with $mustNot as sibling
+  if (positiveKeys.length === 1 && (positiveKeys[0] === "$and" || positiveKeys[0] === "$or")) {
+    const operator: GroupOperator = positiveKeys[0] === "$and" ? "and" : "or"
+    const group = parseGroup(obj[positiveKeys[0]], operator)
+    if ("$mustNot" in obj) addMustNotChildren(group, obj.$mustNot)
+    return withBoost(group, boost)
   }
 
-  // Field conditions only
-  if (nonOperatorKeys.length === 0) return null
-
-  const nodeBoost = "$boost" in obj ? (obj.$boost as number) : undefined
-
-  if (nonOperatorKeys.length === 1) {
-    const field = nonOperatorKeys[0]
-    const condition = parseFieldCondition(field, obj[field])
-    if (nodeBoost !== undefined) condition.boost = nodeBoost
-    return condition
+  // A single field condition
+  if (positiveKeys.length === 1 && !isOperatorKey(positiveKeys[0]) && !("$mustNot" in obj)) {
+    return withBoost(parseFieldCondition(positiveKeys[0], obj[positiveKeys[0]]), boost)
   }
 
-  // Multiple fields at root → implicit AND
+  // Multiple fields, possibly with $and/$mustNot → implicit AND
   return parseMultiFieldObject(obj, "and")
 }
 
@@ -361,36 +391,45 @@ export const parseQueryStringWithError = (queryString: string): ParseResult => {
     return { success: true, state: createInitialQueryState() }
   }
 
-  try {
-    const obj = parseJSObjectLiteral<Record<string, unknown>>(queryString)
-    if (!obj) return { success: false, error: "Invalid query syntax" }
+  const obj = parseJSObjectLiteral<Record<string, unknown>>(queryString)
+  if (!isPlainObject(obj)) return { success: false, error: "Invalid query syntax" }
 
+  try {
     // Normalize $must → $and, $should → $or
     const normalizedObj = normalizeOperators(obj) as Record<string, unknown>
 
     const root = objectToQueryNode(normalizedObj)
-    if (root) {
-      // Ensure root is always a group
-      if (root.type === "condition") {
-        return {
-          success: true,
-          state: {
-            root: {
-              id: generateId(),
-              type: "group",
-              groupOperator: "and",
-              children: [root],
-            },
-          },
-        }
-      }
-      return { success: true, state: { root } }
-    }
-  } catch {
-    // Failed to parse
-  }
+    if (!root) return { success: true, state: createInitialQueryState() }
 
-  return { success: false, error: "Failed to parse query" }
+    // Ensure root is always a group
+    if (root.type === "condition") {
+      return {
+        success: true,
+        state: {
+          root: {
+            id: generateId(),
+            type: "group",
+            groupOperator: "and",
+            children: [root],
+          },
+        },
+      }
+    }
+    return { success: true, state: { root } }
+  } catch (error) {
+    if (error instanceof UnsupportedQueryError) return { success: false, error: error.message }
+    return { success: false, error: "Failed to parse query" }
+  }
+}
+
+/**
+ * Returns why a query can't be opened in the UI query builder without changing it,
+ * or undefined if it can
+ */
+export const getQueryBuilderError = (queryString: string): string | undefined => {
+  if (hasMustShouldCombination(queryString)) return MUST_SHOULD_ERROR
+  const result = parseQueryStringWithError(queryString)
+  return result.success ? undefined : result.error
 }
 
 // ============================================================================

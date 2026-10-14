@@ -13,16 +13,102 @@ export function safeParseJSON<T>(value: string): T | undefined {
   }
 }
 
+/** Index of the next character that is not whitespace or a comment */
+const skipWhitespaceAndComments = (value: string, index: number): number => {
+  while (index < value.length) {
+    if (/\s/.test(value[index])) {
+      index++
+    } else if (value.startsWith("//", index)) {
+      const end = value.indexOf("\n", index)
+      index = end === -1 ? value.length : end + 1
+    } else if (value.startsWith("/*", index)) {
+      const end = value.indexOf("*/", index + 2)
+      index = end === -1 ? value.length : end + 2
+    } else {
+      break
+    }
+  }
+  return index
+}
+
 /**
- * Parses a JavaScript object literal string (with unquoted keys) into a JS object.
- * Adds double quotes around unquoted keys like `$and:` -> `"$and":`
+ * Parses a JavaScript object literal string into a JS object.
+ * Supports unquoted keys like `$and:`, single quoted strings, comments, and trailing commas.
+ * String contents are never rewritten. Returns undefined if the value is not valid.
  */
 export function parseJSObjectLiteral<T>(value: string): T | undefined {
-  // Add double quotes around unquoted keys (handles $ prefixed and regular identifiers)
-  let jsonified = value.replaceAll(/([,{]\s*)(\$?[A-Z_a-z]\w*)\s*:/g, '$1"$2":')
-  // Remove trailing commas before closing braces/brackets (valid in JS, invalid in JSON)
-  jsonified = jsonified.replaceAll(/,\s*([\]}])/g, "$1")
-  return safeParseJSON(jsonified)
+  let json = ""
+  let index = 0
+
+  while (index < value.length) {
+    const char = value[index]
+
+    if (char === '"' || char === "'") {
+      // Copy the string as a double quoted JSON string
+      let content = ""
+      index++
+      while (index < value.length && value[index] !== char) {
+        if (value[index] === "\\") {
+          const escaped = value[index + 1] ?? ""
+          // \' is valid JS in any string but not JSON
+          content += escaped === "'" ? "'" : `\\${escaped}`
+          index += 2
+        } else {
+          content += value[index] === '"' ? String.raw`\"` : value[index]
+          index++
+        }
+      }
+      if (index >= value.length) return
+      index++
+      json += `"${content}"`
+      continue
+    }
+
+    const next = skipWhitespaceAndComments(value, index)
+    if (next !== index) {
+      json += " "
+      index = next
+      continue
+    }
+
+    const identifier = /^[$A-Z_a-z][\w$]*/.exec(value.slice(index))?.[0]
+    if (identifier) {
+      index += identifier.length
+      // An identifier followed by a colon is an unquoted key
+      json +=
+        value[skipWhitespaceAndComments(value, index)] === ":" ? `"${identifier}"` : identifier
+      continue
+    }
+
+    // Drop trailing commas before closing braces/brackets (valid in JS, invalid in JSON),
+    // but not a lone comma like {,} which is invalid in JS too
+    if (char === ",") {
+      const after = value[skipWhitespaceAndComments(value, index + 1)]
+      const before = json.trimEnd().at(-1)
+      if ((after === "}" || after === "]") && before !== "{" && before !== "[" && before !== ",") {
+        index++
+        continue
+      }
+    }
+
+    json += char
+    index++
+  }
+
+  return safeParseJSON(json)
+}
+
+export const INVALID_QUERY_MESSAGE = "Invalid query syntax"
+
+/**
+ * Parses a search query string into a filter object. An empty query matches everything,
+ * undefined means the query is invalid and must not be run.
+ */
+export const parseSearchQuery = (query: string): Record<string, unknown> | undefined => {
+  if (!query.trim()) return {}
+  const parsed = parseJSObjectLiteral<unknown>(query)
+  if (typeof parsed !== "object" || !parsed || Array.isArray(parsed)) return
+  return parsed as Record<string, unknown>
 }
 
 const units = {
