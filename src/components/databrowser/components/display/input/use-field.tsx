@@ -1,8 +1,9 @@
-import { useEffect, useLayoutEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useController, type UseFormReturn } from "react-hook-form"
 
 import { ContentTypeSelect, type ContentType } from "./content-type-select"
 import { CustomEditor } from "./custom-editor"
+import { checkIsValidJSON, formatJSON, getJSONSource, toStoredValue } from "./format-json"
 
 export const useField = ({
   name,
@@ -19,7 +20,7 @@ export const useField = ({
   readOnly?: boolean
   data: string
 }) => {
-  const { field, fieldState } = useController<Record<string, string>>({
+  const { field } = useController<Record<string, string>>({
     name,
     control: form.control,
   })
@@ -28,40 +29,37 @@ export const useField = ({
     checkIsValidJSON(field.value) ? "JSON" : "Text"
   )
 
-  // Attempt to format JSON everytime the underlying data changes
+  // The form keeps the stored value, JSON is only formatted for display. The last editor text is
+  // kept with the value it was stored as, so the editor keeps showing what was typed.
+  const source = useMemo(() => getJSONSource(data), [data])
+  const [edit, setEdit] = useState<{ text: string; value: string; data: string }>()
+
   useEffect(() => {
-    if (contentType === "JSON" && checkIsValidJSON(data)) {
-      form.setValue(name, formatJSON(data), {
-        shouldDirty: false,
-      })
-    } else {
-      form.setValue(name, data, {
-        shouldDirty: false,
-      })
-    }
+    form.setValue(name, data, {
+      shouldDirty: false,
+    })
   }, [data])
+
+  const handleChange = (text: string, type = contentType) => {
+    const value = type === "JSON" && source ? toStoredValue(text, source) : text
+    setEdit({ text, value, data })
+    field.onChange(value)
+  }
 
   const handleTypeChange = (type: ContentType) => {
     setContentType(type)
-    if (type === "JSON") {
-      form.setValue(name, formatJSON(field.value), {
-        shouldDirty: false,
-      })
-    } else {
-      if (!fieldState.isDirty) {
-        form.resetField(name)
-      }
+    setEdit(undefined)
+    if (type === "JSON" && field.value !== data && checkIsValidJSON(field.value)) {
+      handleChange(formatJSON(field.value), type)
     }
   }
 
-  // Runs the JSON formatting when "Cancel" is clicked
-  useLayoutEffect(() => {
-    if (!fieldState.isDirty && contentType === "JSON" && checkIsValidJSON(data)) {
-      form.setValue(name, formatJSON(data), {
-        shouldDirty: false,
-      })
-    }
-  }, [data, fieldState.isDirty])
+  const editorValue =
+    edit && edit.data === data && edit.value === field.value
+      ? edit.text
+      : field.value === data && contentType === "JSON" && source
+        ? source.formatted
+        : field.value
 
   return {
     selector: (
@@ -71,24 +69,13 @@ export const useField = ({
       <>
         <CustomEditor
           language={contentType === "JSON" ? "json" : "plaintext"}
-          value={field.value}
-          onChange={field.onChange}
+          value={editorValue}
+          onChange={(text) => handleChange(text)}
           height={height}
           showCopyButton={showCopyButton}
           readOnly={readOnly}
         />
       </>
     ),
-  }
-}
-
-const formatJSON = (value: string) => JSON.stringify(JSON.parse(value), null, 2)
-
-export const checkIsValidJSON = (value: string) => {
-  try {
-    JSON.parse(value)
-    return true
-  } catch {
-    return false
   }
 }
