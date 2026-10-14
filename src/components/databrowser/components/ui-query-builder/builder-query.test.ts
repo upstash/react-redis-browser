@@ -29,12 +29,10 @@ describe("getQueryBuilderError (code editor → builder)", () => {
     `{ name: "a" }`,
     `{ name: { $smart: "a" } }`,
     `{ age: 25 }`,
-    `{ age: { $smart: 25, $boost: 1 } }`,
+    `{ age: { $eq: 25 } }`,
     `{ title: "Error, code: 42" }`,
-    `{ $must: { name: "a", age: 1 } }`,
-    `{ $must: { inStock: true }, $mustNot: { category: "electronics" } }`,
-    `{ name: { $fuzzy: { value: "a" } } }`,
-    `{ name: { $phrase: { value: "a b" } } }`,
+    `{ $and: { inStock: true }, $mustNot: { category: "electronics" } }`,
+    `{ $or: { name: "a", age: 1 } }`,
   ]
   for (const query of accepted) {
     test(`accepts ${query}`, () => {
@@ -51,6 +49,18 @@ describe("getQueryBuilderError (code editor → builder)", () => {
     `{ $or: [{ f3: "x" }, { $and: [{}] }] }`,
     `{ $must: { name: "a" }, $should: { title: "b" } }`,
     `{ name: { $fuzzy: { value: "a", prefix: true } } }`,
+    // A $mustNot object excludes each key, an $and body inside it is not a query node
+    `{ $and: { f3: 1 }, $mustNot: { f1: 1, f2: 1 } }`,
+    `{ $mustNot: { $and: { f1: 1 } } }`,
+    // The builder keeps one operator per field
+    `{ f1: { $eq: 0, $smart: 1 } }`,
+    // A lone $boost is not match-all
+    `{ $boost: 1 }`,
+    `{ $and: { $boost: 1 } }`,
+    // Only the builder's own output shapes are accepted, not equivalent spellings
+    `{ $must: { name: "a", age: 1 } }`,
+    `{ age: { $smart: 25 } }`,
+    `{ age: { $eq: 25, $boost: 1 } }`,
   ]
   for (const query of refused) {
     test(`refuses ${query}`, () => {
@@ -109,15 +119,22 @@ describe("resolveBuilderQuery (stored query → builder)", () => {
     [`{ $boost: 2 }`, { op: "and", children: [] }],
   ]
   for (const [query, expected] of legacy) {
-    for (const writtenBy of ["ui", undefined] as const) {
-      test(`loads ${query} written by ${writtenBy ?? "an older version"}`, () => {
-        const result = resolveBuilderQuery(query, writtenBy)
-        if (!result.success) throw new Error(result.error)
-        expect(shape(result.state.root)).toEqual(expected)
-        // What is stored afterwards is exactly what the builder shows
-        expect(result.rewrite ?? query).toBe(stringifyQueryState(result.state))
-      })
-    }
+    test(`loads ${query} written by the builder`, () => {
+      const result = resolveBuilderQuery(query, "ui")
+      if (!result.success) throw new Error(result.error)
+      expect(shape(result.state.root)).toEqual(expected)
+      // What is stored afterwards is exactly what the builder shows
+      expect(result.rewrite ?? query).toBe(stringifyQueryState(result.state))
+    })
+  }
+
+  // The builder writes these, the guard alone would refuse them
+  for (const query of [`{ f1: 1, $boost: 2 }`, `{ $and: [{ $or: { f1: 1 } }] }`]) {
+    test(`opens ${query} without the guard when the builder wrote it`, () => {
+      expect(getQueryBuilderError(query)).toBeDefined()
+      expect(resolveBuilderQuery(query, "ui").success).toBe(true)
+      expect(resolveBuilderQuery(query, "code").success).toBe(false)
+    })
   }
 
   test("an empty query is not rewritten", () => {

@@ -12,8 +12,8 @@ import { createInitialQueryState, parseQueryString } from "./query-parser"
 import { stringifyQueryState } from "./query-stringify"
 import type { QueryState } from "./types"
 
-/** Which editor wrote a stored query, undefined for queries stored before this was tracked */
-export type QueryWrittenBy = "ui" | "code" | undefined
+/** Which editor wrote a stored query */
+export type QueryWrittenBy = "ui" | "code"
 
 export const UNSUPPORTED_QUERY_MESSAGE =
   "This query can't be shown in the Query Builder without changing it. Keep editing it in the Code Editor."
@@ -21,8 +21,7 @@ export const UNSUPPORTED_QUERY_MESSAGE =
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value)
 
-const ALIASES: Record<string, string> = { $must: "$and", $should: "$or" }
-const GROUP_KEYS = new Set(["$and", "$or", "$must", "$should", "$mustNot"])
+const GROUP_KEYS = new Set(["$and", "$or", "$must", "$should"])
 
 const sortKeys = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map((item) => sortKeys(item))
@@ -34,66 +33,32 @@ const sortKeys = (value: unknown): unknown => {
   )
 }
 
-/** Canonical form of a field value. Each rewrite here matches the server exactly. */
-const canonicalField = (value: unknown): unknown => {
-  // Shorthand: strings are $smart, numbers and booleans are $eq
-  if (typeof value === "string") return { $smart: value }
-  if (typeof value === "number" || typeof value === "boolean") return { $eq: value }
-  if (!isPlainObject(value)) return value
+/**
+ * Canonical form of a query node (the root, a list item, or an $and/$or body), so the
+ * shorthand the builder writes compares equal to the long form. This is the only rewrite:
+ * the server parses { f: "x" } like { f: { $smart: "x" } } and { f: 1 } like { f: { $eq: 1 } }.
+ * Everything else, including key names, must match exactly.
+ */
+export const canonicalQuery = (node: unknown): unknown => {
+  if (!isPlainObject(node)) return node
 
   const result: Record<string, unknown> = {}
-  for (const [op, opValue] of Object.entries(value)) {
-    // $smart and $eq only differ for text
-    if (op === "$smart" && (typeof opValue === "number" || typeof opValue === "boolean")) {
-      result.$eq = opValue
-    } else if (op === "$boost" && opValue === 1) {
-      // A boost of 1 doesn't change the score
-    } else if (op === "$fuzzy" && isPlainObject(opValue) && !("distance" in opValue)) {
-      // The default distance is 1
-      result.$fuzzy = { ...opValue, distance: 1 }
-    } else if (
-      op === "$phrase" &&
-      isPlainObject(opValue) &&
-      Object.keys(opValue).length === 1 &&
-      "value" in opValue
-    ) {
-      result.$phrase = opValue.value
-    } else {
-      result[op] = opValue
-    }
-  }
-  return result
-}
-
-/** Canonical form of a query object, so equivalent spellings compare equal */
-export const canonicalQuery = (query: unknown): unknown => {
-  if (Array.isArray(query)) return query.map((item) => canonicalQuery(item))
-  if (!isPlainObject(query)) return query
-
-  // $must/$should mean the same as $and/$or when used alone. Next to each other the server
-  // treats them differently (e.g. $must with $or is allowed, $and with $or is an error).
-  const groupCount = ["$and", "$or", "$must", "$should"].filter((key) => key in query).length
-
-  const result: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(query)) {
-    const name = groupCount === 1 ? (ALIASES[key] ?? key) : key
-
-    if (GROUP_KEYS.has(key)) {
-      result[name] = canonicalQuery(value)
-    } else if (key === "$boost") {
-      if (value !== 1) result.$boost = value
+  for (const [key, value] of Object.entries(node)) {
+    if (GROUP_KEYS.has(key) || (key === "$mustNot" && Array.isArray(value))) {
+      result[key] = Array.isArray(value)
+        ? value.map((item) => canonicalQuery(item))
+        : canonicalQuery(value)
     } else if (key.startsWith("$")) {
+      // Includes a $mustNot object, whose keys the server excludes one by one
       result[key] = value
+    } else if (typeof value === "string") {
+      result[key] = { $smart: value }
+    } else if (typeof value === "number" || typeof value === "boolean") {
+      result[key] = { $eq: value }
     } else {
-      result[key] = canonicalField(value)
+      result[key] = value
     }
   }
-
-  // { $and: { ... } } alone is its body: nested clauses of an $and body are required, like
-  // the top-level ones. Not with $or inside, which is only optional at the top level.
-  const body = result.$and
-  if (Object.keys(result).length === 1 && isPlainObject(body) && !("$or" in body)) return body
-
   return result
 }
 

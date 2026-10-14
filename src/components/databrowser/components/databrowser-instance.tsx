@@ -23,7 +23,7 @@ import { WizardButton } from "./query-wizard/wizard-button"
 import { SearchEmptyState } from "./search-empty-state"
 import { Sidebar } from "./sidebar"
 import { UIQueryBuilder } from "./ui-query-builder"
-import { getQueryBuilderError } from "./ui-query-builder/builder-query"
+import { resolveBuilderQuery } from "./ui-query-builder/builder-query"
 
 export const PREFIX = "const query: Query = "
 
@@ -46,10 +46,11 @@ const QueryBuilderContent = () => {
   const handleModeChange = (value: string) => {
     const newMode = value as QueryBuilderMode
     if (newMode === "ui") {
-      // Never open a query in the builder if it would be rewritten with a different meaning
-      const error = getQueryBuilderError(valuesSearch.query)
-      if (error) {
-        setSwitchError(error)
+      // Queries typed in the code editor are only opened if the builder keeps them unchanged,
+      // queries the builder wrote are opened as it wrote them
+      const result = resolveBuilderQuery(valuesSearch.query, valuesSearch.queryWrittenBy)
+      if (!result.success) {
+        setSwitchError(result.error)
         return
       }
       setSwitchError(undefined)

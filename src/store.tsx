@@ -45,7 +45,7 @@ export const DatabrowserProvider = ({
           setItem: (_name, value) => storage.set(JSON.stringify(value)),
           removeItem: () => {},
         },
-        version: 9,
+        version: 10,
         migrate: (originalState, version) => {
           const state = originalState as DatabrowserStore
 
@@ -98,6 +98,16 @@ export const DatabrowserProvider = ({
             state.closedTabs = state.closedTabs ?? []
           }
 
+          if (version <= 9) {
+            // Record which editor wrote each stored query
+            const tag = (data: TabData): TabData => ({
+              ...data,
+              valuesSearch: tagStoredQueries(data.valuesSearch),
+            })
+            state.tabs = state.tabs.map(([id, data]) => [id, tag(data)])
+            state.closedTabs = state.closedTabs.map((group) => group.map((data) => tag(data)))
+          }
+
           return state
         },
       })
@@ -126,6 +136,23 @@ export const useDatabrowserStore = () => {
   const { store } = useDatabrowser()
 
   return useStore(store)
+}
+
+/**
+ * Tags queries stored before the editor that wrote them was recorded. The query of the
+ * current index was last written by the editor the tab is in, other queries could have been
+ * typed in the code editor, so they are tagged "code" and never rewritten.
+ */
+export const tagStoredQueries = (valuesSearch: ValuesSearchFilter): ValuesSearchFilter => {
+  if (!valuesSearch?.queries) return valuesSearch
+  const queryWrittenBy: Record<string, "ui" | "code"> = {}
+  for (const index of Object.keys(valuesSearch.queries)) {
+    queryWrittenBy[index] =
+      index === valuesSearch.index && (valuesSearch.queryBuilderMode ?? "ui") === "ui"
+        ? "ui"
+        : "code"
+  }
+  return { ...valuesSearch, queryWrittenBy: { ...queryWrittenBy, ...valuesSearch.queryWrittenBy } }
 }
 
 export type SearchFilter = {

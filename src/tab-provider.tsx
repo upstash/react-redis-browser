@@ -50,7 +50,8 @@ export const useTab = () => {
       valuesSearch: {
         ...tabData.valuesSearch,
         query: tabData.valuesSearch.queries[tabData.valuesSearch.index] ?? "",
-        queryWrittenBy: tabData.valuesSearch.queryWrittenBy?.[tabData.valuesSearch.index],
+        // Queries without a tag could have been typed in the code editor
+        queryWrittenBy: tabData.valuesSearch.queryWrittenBy?.[tabData.valuesSearch.index] ?? "code",
       },
       isValuesSearchSelected: tabData.isValuesSearchSelected,
       queryBuilderMode: tabData.valuesSearch.queryBuilderMode ?? "ui",
