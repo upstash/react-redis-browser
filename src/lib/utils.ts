@@ -143,3 +143,53 @@ export const formatUpstashErrorMessage = (error: Error): string => {
 
   return message
 }
+
+const escapeRegExp = (char: string) => char.replaceAll(/[$()*+./?[\\\]^{|}-]/g, String.raw`\$&`)
+
+/**
+ * Checks whether a string matches a Redis glob pattern (as used by SCAN MATCH).
+ * Supports `*`, `?`, `[abc]`, `[^abc]`, `[a-z]` and `\` escapes.
+ */
+export function matchesGlob(pattern: string, value: string) {
+  let regex = ""
+
+  for (let i = 0; i < pattern.length; i++) {
+    const char = pattern[i]
+
+    if (char === "*") {
+      regex += String.raw`[\s\S]*`
+    } else if (char === "?") {
+      regex += String.raw`[\s\S]`
+    } else if (char === "\\" && i + 1 < pattern.length) {
+      regex += escapeRegExp(pattern[++i])
+    } else if (char === "[") {
+      let j = i + 1
+      const negate = pattern[j] === "^"
+      if (negate) j++
+
+      let charClass = ""
+      while (j < pattern.length && pattern[j] !== "]") {
+        if (pattern[j] === "\\" && j + 1 < pattern.length) {
+          charClass += escapeRegExp(pattern[j + 1])
+          j += 2
+        } else if (pattern[j + 1] === "-" && j + 2 < pattern.length && pattern[j + 2] !== "]") {
+          // Reversed ranges match nothing
+          if (pattern[j] <= pattern[j + 2]) {
+            charClass += `${escapeRegExp(pattern[j])}-${escapeRegExp(pattern[j + 2])}`
+          }
+          j += 3
+        } else {
+          charClass += escapeRegExp(pattern[j])
+          j++
+        }
+      }
+      i = j
+
+      regex += charClass ? `[${negate ? "^" : ""}${charClass}]` : String.raw`[^\s\S]`
+    } else {
+      regex += escapeRegExp(char)
+    }
+  }
+
+  return new RegExp(`^${regex}$`).test(value)
+}
