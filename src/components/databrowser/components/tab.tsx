@@ -57,8 +57,9 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
   }
 
   const keyLabel = selectedKey === "" ? "(Empty Key)" : selectedKey
-  // Show the search as typed, not the escaped glob ("*" alone maps to empty text)
-  const searchLabel = search.key && (fromKeySearchPattern(search.key) || search.key)
+  // Show plain-text searches unescaped with their trailing "*", user globs as written
+  const searchText = fromKeySearchPattern(search.key)
+  const searchLabel = search.key && (searchText === search.key ? search.key : `${searchText}*`)
   const label = isValuesSearchSelected ? valuesSearch.index : searchLabel || keyLabel
   const iconNode = isValuesSearchSelected ? (
     <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-emerald-200 text-emerald-800">
