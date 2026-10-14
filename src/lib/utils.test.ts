@@ -26,6 +26,16 @@ describe("matchesGlob", () => {
     ["a(b)|c", "a(b)|c", true],
     ["a\\", "a\\", true],
     ["a[bc", "ab", true],
+    ["?", "😀", true],
+    ["a?b", "a😀b", true],
+    ["a??b", "a😀b", false],
+    ["a[😀]b", "a😀b", true],
+    ["[", "[", true],
+    ["a[", "a[", true],
+    ["a[^", "a[^", false],
+    ["a[\\", "a\\", false],
+    ["a[\\", "a[\\", true],
+    ["a[b\\", "ab", false],
   ])("%p matches %p: %p", (pattern, value, expected) => {
     expect(matchesGlob(pattern, value)).toBe(expected)
   })

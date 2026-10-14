@@ -144,52 +144,72 @@ export const formatUpstashErrorMessage = (error: Error): string => {
   return message
 }
 
-const escapeRegExp = (char: string) => char.replaceAll(/[$()*+./?[\\\]^{|}-]/g, String.raw`\$&`)
+const ANY_CHAR = String.raw`[\s\S]`
+const NO_CHAR = String.raw`[^\s\S]`
+const literal = (char: string) => String.raw`\u{${char.codePointAt(0)!.toString(16)}}`
 
 /**
- * Checks whether a string matches a Redis glob pattern (as used by SCAN MATCH).
- * Supports `*`, `?`, `[abc]`, `[^abc]`, `[a-z]` and `\` escapes.
+ * Parses a `[...]` class starting right after the `[`. Returns undefined when Upstash treats
+ * the `[` as a literal: at the end of the pattern or when the class ends with a lone `\`.
  */
-export function matchesGlob(pattern: string, value: string) {
-  let regex = ""
+const parseCharClass = (chars: string[], start: number) => {
+  if (start >= chars.length) return
 
-  for (let i = 0; i < pattern.length; i++) {
-    const char = pattern[i]
+  let j = start
+  const negate = chars[j] === "^"
+  if (negate) j++
 
-    if (char === "*") {
-      regex += String.raw`[\s\S]*`
-    } else if (char === "?") {
-      regex += String.raw`[\s\S]`
-    } else if (char === "\\" && i + 1 < pattern.length) {
-      regex += escapeRegExp(pattern[++i])
-    } else if (char === "[") {
-      let j = i + 1
-      const negate = pattern[j] === "^"
-      if (negate) j++
-
-      let charClass = ""
-      while (j < pattern.length && pattern[j] !== "]") {
-        if (pattern[j] === "\\" && j + 1 < pattern.length) {
-          charClass += escapeRegExp(pattern[j + 1])
-          j += 2
-        } else if (pattern[j + 1] === "-" && j + 2 < pattern.length && pattern[j + 2] !== "]") {
-          // Reversed ranges match nothing
-          if (pattern[j] <= pattern[j + 2]) {
-            charClass += `${escapeRegExp(pattern[j])}-${escapeRegExp(pattern[j + 2])}`
-          }
-          j += 3
-        } else {
-          charClass += escapeRegExp(pattern[j])
-          j++
-        }
+  let charClass = ""
+  while (j < chars.length && chars[j] !== "]") {
+    if (chars[j] === "\\") {
+      if (j + 1 >= chars.length) return
+      charClass += literal(chars[j + 1])
+      j += 2
+    } else if (chars[j + 1] === "-" && j + 2 < chars.length && chars[j + 2] !== "]") {
+      // Reversed ranges match nothing
+      if (chars[j].codePointAt(0)! <= chars[j + 2].codePointAt(0)!) {
+        charClass += `${literal(chars[j])}-${literal(chars[j + 2])}`
       }
-      i = j
-
-      regex += charClass ? `[${negate ? "^" : ""}${charClass}]` : String.raw`[^\s\S]`
+      j += 3
     } else {
-      regex += escapeRegExp(char)
+      charClass += literal(chars[j])
+      j++
     }
   }
 
-  return new RegExp(`^${regex}$`).test(value)
+  // An unterminated class runs until the end of the pattern
+  return { regex: charClass ? `[${negate ? "^" : ""}${charClass}]` : NO_CHAR, end: j }
+}
+
+/**
+ * Checks whether a string matches a glob pattern the way Upstash SCAN MATCH does.
+ * Supports `*`, `?`, `[abc]`, `[^abc]`, `[a-z]` and `\` escapes, matching by code point.
+ */
+export function matchesGlob(pattern: string, value: string) {
+  const chars = [...pattern]
+  let regex = ""
+
+  for (let i = 0; i < chars.length; i++) {
+    const char = chars[i]
+
+    if (char === "*") {
+      regex += `${ANY_CHAR}*`
+    } else if (char === "?") {
+      regex += ANY_CHAR
+    } else if (char === "\\" && i + 1 < chars.length) {
+      regex += literal(chars[++i])
+    } else if (char === "[") {
+      const charClass = parseCharClass(chars, i + 1)
+      if (charClass) {
+        regex += charClass.regex
+        i = charClass.end
+      } else {
+        regex += literal(char)
+      }
+    } else {
+      regex += literal(char)
+    }
+  }
+
+  return new RegExp(`^${regex}$`, "u").test(value)
 }
