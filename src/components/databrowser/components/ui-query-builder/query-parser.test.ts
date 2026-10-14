@@ -144,3 +144,72 @@ describe("getQueryBuilderError", () => {
     })
   }
 })
+
+const legacy = (query: string) => {
+  const state = parseQueryString(query, { allowLegacy: true })
+  if (!state) throw new Error(`Failed to parse ${query}`)
+  return shape(state.root)
+}
+const x = (field: string, extra = {}) => cond(field, "smart", "x", extra)
+
+describe("legacy builder output", () => {
+  // What older builder versions wrote, and the builder tree they were written from
+  const cases: [string, unknown][] = [
+    [
+      `{ a: "x", $or: { b: "x", c: "x" } }`,
+      { op: "and", children: [x("a"), { op: "or", children: [x("b"), x("c")] }] },
+    ],
+    [
+      `{ $and: { a: "x", b: "x" }, $or: { c: "x", d: "x" } }`,
+      {
+        op: "and",
+        children: [
+          { op: "and", children: [x("a"), x("b")] },
+          { op: "or", children: [x("c"), x("d")] },
+        ],
+      },
+    ],
+    [`{ $or: [{ a: "x" }, {}] }`, { op: "or", children: [x("a")] }],
+    [`{ $or: [{ a: "x" }, { $boost: 2 }] }`, { op: "or", children: [x("a")] }],
+    [
+      `{ a: "x", $mustNot: { $and: [{ b: "x" }, { $or: { c: "x", d: "x" } }], $boost: 2 } }`,
+      {
+        op: "and",
+        children: [
+          x("a"),
+          {
+            op: "and",
+            not: true,
+            boost: 2,
+            children: [x("b"), { op: "or", children: [x("c"), x("d")] }],
+          },
+        ],
+      },
+    ],
+  ]
+
+  for (const [query, expected] of cases) {
+    test(`reads ${query} with the builder's intent`, () => {
+      expect(getQueryBuilderError(query)).toBeString()
+      expect(getQueryBuilderError(query, { allowLegacy: true })).toBeUndefined()
+      expect(legacy(query)).toEqual(expected)
+    })
+  }
+
+  test("never changes a query the strict parser accepts", () => {
+    const query = `{ $mustNot: { $and: { b: "x" }, c: "x" } }`
+    expect(legacy(query)).toEqual(parse(query))
+  })
+})
+
+describe("error messages", () => {
+  test("say what to change", () => {
+    expect(getQueryBuilderError(`{ a: "x", $or: { b: "x" } }`)).toContain("$and: [")
+    expect(getQueryBuilderError(`{ $must: { a: "x" }, $and: { b: "x" } }`)).toContain(
+      "$must and $and"
+    )
+    expect(getQueryBuilderError(`{ $and: { a: "x" }, $must: { b: "x" } }`)).toContain(
+      "$must and $and"
+    )
+  })
+})

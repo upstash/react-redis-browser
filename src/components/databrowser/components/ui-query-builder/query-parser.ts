@@ -24,7 +24,7 @@ import {
 export type ParseResult = { success: true; state: QueryState } | { success: false; error: string }
 
 const MUST_SHOULD_ERROR =
-  "Queries using both $must and $should are not supported in the UI query builder"
+  "Queries using both $must and $should are not supported in the UI query builder. Next to $must, $should only boosts the score."
 
 /**
  * Thrown for queries the UI builder can't represent without changing their meaning,
@@ -32,9 +32,17 @@ const MUST_SHOULD_ERROR =
  */
 class UnsupportedQueryError extends Error {}
 
-const unsupported = (message: string): never => {
-  throw new UnsupportedQueryError(`${message} is not supported in the UI query builder`)
+/** Throw for an unsupported query part, with a hint on what to change */
+const unsupported = (part: string, hint: string): never => {
+  throw new UnsupportedQueryError(`${part} is not supported in the UI query builder. ${hint}`)
 }
+
+/**
+ * Set while re-parsing a query the previous builder version wrote, see parseQueryStringWithError.
+ * Older builders wrote some shapes that the server reads differently from the builder tree,
+ * e.g. { field, $or } for "field AND (a OR b)". This mode reads them with the builder's intent.
+ */
+let legacy = false
 
 const isOperatorKey = (key: string): boolean => key.startsWith("$")
 
@@ -42,7 +50,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value)
 
 const parseBoost = (value: unknown): number => {
-  if (typeof value !== "number") return unsupported("A non-numeric $boost")
+  if (typeof value !== "number") return unsupported("A non-numeric $boost", "Use a number.")
   return value
 }
 
@@ -100,7 +108,10 @@ const normalizeOperators = (obj: unknown): unknown => {
     if (key === "$must") normalizedKey = "$and"
     if (key === "$should") normalizedKey = "$or"
 
-    if (normalizedKey in result) unsupported(`Using both ${key} and ${normalizedKey}`)
+    if (normalizedKey in result) {
+      const alias = normalizedKey === "$and" ? "$must" : "$should"
+      unsupported(`Using both ${alias} and ${normalizedKey}`, "Merge them into one of the two.")
+    }
     result[normalizedKey] = normalizeOperators(value)
   }
 
@@ -122,7 +133,7 @@ const parseOperator = (field: string, op: FieldOperator, opValue: unknown): Quer
       Object.keys(rest).length > 0 ||
       (distance !== undefined && distance !== 1 && distance !== 2)
     ) {
-      unsupported("This $fuzzy option")
+      unsupported("This $fuzzy option", "Only value and distance (1 or 2) can be used.")
     }
     value = fuzzyValue ?? ""
     fuzzyDistance = (distance as 1 | 2 | undefined) ?? 1
@@ -131,10 +142,14 @@ const parseOperator = (field: string, op: FieldOperator, opValue: unknown): Quer
   // Handle phrase: { $phrase: "text" } or { $phrase: { value: "text", slop?: n, prefix?: bool } }
   if (op === "phrase" && isPlainObject(value)) {
     const { value: phraseValue, slop, prefix, ...rest } = value
-    if (Object.keys(rest).length > 0) unsupported("This $phrase option")
+    if (Object.keys(rest).length > 0) {
+      unsupported("This $phrase option", "Only value, slop and prefix can be used.")
+    }
     value = phraseValue ?? ""
     // The server rejects slop with prefix, slop 0 is the default and can be dropped
-    if (typeof slop === "number" && slop > 0 && prefix) unsupported("$phrase with slop and prefix")
+    if (typeof slop === "number" && slop > 0 && prefix) {
+      unsupported("$phrase with both slop and prefix", "Use either slop or prefix.")
+    }
     phraseSlop = slop === 0 && prefix ? undefined : (slop as number | undefined)
     phrasePrefix = prefix as boolean | undefined
   }
@@ -181,15 +196,22 @@ const parseFieldCondition = (field: string, fieldValue: unknown): QueryNode => {
     .filter(([key]) => key !== "$boost")
     .map(([key, value]) => {
       const op = ALL_OPERATORS.find((op) => key === `$${op}`)
-      return op ? parseOperator(field, op, value) : unsupported(`The "${key}" operator`)
+      return op
+        ? parseOperator(field, op, value)
+        : unsupported(
+            `The "${key}" operator`,
+            `Use one of ${ALL_OPERATORS.map((o) => `$${o}`).join(", ")}.`
+          )
     })
 
-  if (conditions.length === 0) return unsupported("A field without an operator")
+  if (conditions.length === 0) {
+    return unsupported("A field without an operator", "Add an operator like $eq.")
+  }
 
   // The server rejects two lower or two upper bounds on the same field
   const ops = new Set(conditions.map((c) => (c.type === "condition" ? c.condition.operator : "")))
   if ((ops.has("gt") && ops.has("gte")) || (ops.has("lt") && ops.has("lte"))) {
-    unsupported("Two lower or upper bounds on one field")
+    unsupported("Two lower or upper bounds on one field", "Use one of $gt/$gte and $lt/$lte.")
   }
 
   if (conditions.length === 1) {
@@ -205,7 +227,7 @@ const parseMultiFieldObject = (
   obj: Record<string, unknown>,
   operator: GroupOperator
 ): QueryNode & { type: "group" } => {
-  if ("$and" in obj && "$or" in obj) unsupported("Using $and and $or on the same level")
+  if ("$and" in obj && "$or" in obj && !legacy) unsupportedAndOr()
 
   const group: QueryNode & { type: "group" } = {
     id: generateId(),
@@ -236,7 +258,7 @@ const parseMultiFieldObject = (
       }
       default: {
         if (isOperatorKey(key)) {
-          unsupported(`The ${key} operator`)
+          unsupported(`The ${key} operator`, "Keep using the Code Editor for this query.")
         } else {
           group.children.push(parseFieldCondition(key, value))
         }
@@ -269,7 +291,9 @@ const parseGroup = (
 ): QueryNode & { type: "group" } => {
   // Array-based: { $and: [{ ... }, { ... }] }
   if (Array.isArray(groupValue)) {
-    if (groupValue.length === 0) return unsupported(`An empty $${operator} array`)
+    if (groupValue.length === 0) {
+      return unsupported(`An empty $${operator} array`, "Add a condition or remove it.")
+    }
     const group: QueryNode & { type: "group" } = {
       id: generateId(),
       type: "group",
@@ -278,7 +302,9 @@ const parseGroup = (
     }
 
     for (const child of groupValue) {
-      if (!isPlainObject(child)) return unsupported("A non-object group item")
+      if (!isPlainObject(child)) {
+        return unsupported(`A non-object $${operator} item`, "Use objects as items.")
+      }
 
       // An $and item with only $mustNot adds its exclusions to the group
       if (operator === "and" && isMustNotOnly(child)) {
@@ -289,9 +315,10 @@ const parseGroup = (
       const node = objectToQueryNode(child)
       if (node) {
         group.children.push(node)
-      } else if (operator === "or" && groupValue.length > 1) {
-        // {} matches every document, which an OR group of the builder can't express
-        unsupported("An empty object inside $or")
+      } else if (operator === "or" && groupValue.length > 1 && !legacy) {
+        // {} matches every document, which an OR group of the builder can't express.
+        // Older builders wrote empty groups this way, which meant no constraint.
+        unsupported("An empty object inside $or", "It matches every document, remove it.")
       }
     }
 
@@ -303,7 +330,7 @@ const parseGroup = (
     return parseMultiFieldObject(groupValue, operator)
   }
 
-  return unsupported(`A non-object $${operator} value`)
+  return unsupported(`A non-object $${operator} value`, "Use an object or an array of objects.")
 }
 
 /** Add $mustNot entries as negated children to a group */
@@ -311,24 +338,41 @@ const addMustNotChildren = (group: QueryNode & { type: "group" }, mustNotValue: 
   // Array form excludes documents matching any item.
   // Object form excludes documents matching any of its keys, each key is its own item.
   if (Array.isArray(mustNotValue) && mustNotValue.length === 0) {
-    return unsupported("An empty $mustNot array")
+    return unsupported("An empty $mustNot array", "Add a condition or remove it.")
   }
   const items = Array.isArray(mustNotValue)
     ? mustNotValue
     : isPlainObject(mustNotValue)
-      ? Object.entries(mustNotValue).map(([key, value]) =>
-          key === "$boost" ? unsupported("$boost inside $mustNot") : { [key]: value }
-        )
-      : unsupported("A non-object $mustNot value")
+      ? // Older builders wrote a negated group as one object, e.g. { $and: ..., $boost: 2 }
+        legacy && Object.keys(mustNotValue).some((key) => isOperatorKey(key))
+        ? [mustNotValue]
+        : Object.entries(mustNotValue).map(([key, value]) =>
+            key === "$boost"
+              ? unsupported(
+                  "$boost inside $mustNot",
+                  "Remove it, excluded documents aren't scored."
+                )
+              : { [key]: value }
+          )
+      : unsupported("A non-object $mustNot value", "Use an object or an array of objects.")
 
   for (const item of items) {
-    if (!isPlainObject(item)) unsupported("A non-object $mustNot item")
+    if (!isPlainObject(item)) unsupported("A non-object $mustNot item", "Use objects as items.")
     const child = objectToQueryNode(item as Record<string, unknown>)
-    if (!child) return unsupported("An empty object inside $mustNot")
+    if (!child) {
+      if (legacy) continue
+      return unsupported("An empty object inside $mustNot", "Remove it.")
+    }
     child.not = true
     group.children.push(child)
   }
 }
+
+const unsupportedAndOr = (): never =>
+  unsupported(
+    "Using $and and $or on the same level",
+    "Put them in an array: $and: [{ $and: ... }, { $or: ... }]."
+  )
 
 /** Apply a $boost to a node, wrapping it if it already has its own boost */
 const withBoost = (node: QueryNode, boost: number | undefined): QueryNode => {
@@ -342,18 +386,28 @@ const objectToQueryNode = (obj: Record<string, unknown>): QueryNode | null => {
   const keys = Object.keys(obj)
   if (keys.length === 0) return null
 
-  if ("$and" in obj && "$or" in obj) unsupported("Using $and and $or on the same level")
-
   const boost = "$boost" in obj ? parseBoost(obj.$boost) : undefined
   const positiveKeys = keys.filter((key) => key !== "$boost" && key !== "$mustNot")
 
-  // Next to other conditions, $or only boosts the score of documents that match it
-  if ("$or" in obj && positiveKeys.length > 1) unsupported("$or next to other conditions")
+  if ("$or" in obj && positiveKeys.length > 1) {
+    // Older builders meant AND here, parseMultiFieldObject reads it that way
+    if (!legacy) {
+      if ("$and" in obj) unsupportedAndOr()
+      // Next to other conditions, $or only boosts the score of documents that match it
+      unsupported(
+        "$or next to other conditions",
+        "To require it, use $and: [{ ...other conditions }, { $or: ... }]."
+      )
+    }
+    return parseMultiFieldObject(obj, "and")
+  }
 
   // Only $mustNot: everything except the excluded documents
   if (positiveKeys.length === 0) {
-    if (!("$mustNot" in obj)) return unsupported("$boost without a query")
-    return withBoost(parseMustNotOnly(obj.$mustNot), boost)
+    if ("$mustNot" in obj) return withBoost(parseMustNotOnly(obj.$mustNot), boost)
+    // Older builders wrote an empty group with a boost this way
+    if (legacy) return null
+    return unsupported("$boost without a query", "Add a condition next to it.")
   }
 
   // A single $and/$or group, possibly with $mustNot as sibling
@@ -377,16 +431,41 @@ const objectToQueryNode = (obj: Record<string, unknown>): QueryNode | null => {
  * Parse a query string into a QueryState object
  * Returns null if parsing fails
  */
-export const parseQueryString = (queryString: string): QueryState | null => {
-  const result = parseQueryStringWithError(queryString)
+export const parseQueryString = (
+  queryString: string,
+  options?: ParseOptions
+): QueryState | null => {
+  const result = parseQueryStringWithError(queryString, options)
   return result.success ? result.state : null
+}
+
+export type ParseOptions = {
+  /**
+   * Also accept the shapes older builder versions wrote, read with the builder's intent.
+   * Only for queries the builder itself stored (builder mode on load or index switch),
+   * never for an explicit switch from the code editor, where the user may mean e.g.
+   * { field, $or } as an optional score boost.
+   */
+  allowLegacy?: boolean
 }
 
 /**
  * Parse a query string with detailed error information
  * Use this when you need to know why parsing failed
  */
-export const parseQueryStringWithError = (queryString: string): ParseResult => {
+export const parseQueryStringWithError = (
+  queryString: string,
+  { allowLegacy = false }: ParseOptions = {}
+): ParseResult => {
+  const result = parseQueryStringWithMode(queryString, false)
+  if (result.success || !allowLegacy) return result
+  // Fall back to the legacy reading only when the strict one fails, so it never changes
+  // the meaning of a query the strict parser accepts
+  const legacyResult = parseQueryStringWithMode(queryString, true)
+  return legacyResult.success ? legacyResult : result
+}
+
+const parseQueryStringWithMode = (queryString: string, legacyMode: boolean): ParseResult => {
   if (!queryString || queryString.trim() === "" || queryString.trim() === "{}") {
     return { success: true, state: createInitialQueryState() }
   }
@@ -395,6 +474,7 @@ export const parseQueryStringWithError = (queryString: string): ParseResult => {
   if (!isPlainObject(obj)) return { success: false, error: "Invalid query syntax" }
 
   try {
+    legacy = legacyMode
     // Normalize $must → $and, $should → $or
     const normalizedObj = normalizeOperators(obj) as Record<string, unknown>
 
@@ -419,6 +499,8 @@ export const parseQueryStringWithError = (queryString: string): ParseResult => {
   } catch (error) {
     if (error instanceof UnsupportedQueryError) return { success: false, error: error.message }
     return { success: false, error: "Failed to parse query" }
+  } finally {
+    legacy = false
   }
 }
 
@@ -426,9 +508,12 @@ export const parseQueryStringWithError = (queryString: string): ParseResult => {
  * Returns why a query can't be opened in the UI query builder without changing it,
  * or undefined if it can
  */
-export const getQueryBuilderError = (queryString: string): string | undefined => {
+export const getQueryBuilderError = (
+  queryString: string,
+  options?: ParseOptions
+): string | undefined => {
   if (hasMustShouldCombination(queryString)) return MUST_SHOULD_ERROR
-  const result = parseQueryStringWithError(queryString)
+  const result = parseQueryStringWithError(queryString, options)
   return result.success ? undefined : result.error
 }
 

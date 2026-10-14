@@ -9,18 +9,23 @@ import { type QueryState } from "./types"
  * Hook that manages query state synchronization with zustand store.
  * Handles bidirectional sync between local QueryState and the zustand query string.
  */
+// Queries reach the builder here either after the code editor switch accepted them, or
+// because the builder wrote them (builder mode on load or index switch), so the shapes older
+// builder versions wrote are accepted too
+const PARSE_OPTIONS = { allowLegacy: true }
+
 export const useQueryStateSync = () => {
   const { valuesSearch, setValuesSearchQuery } = useTab()
 
   // Local state for the query - this is our source of truth for rendering
   const [queryState, setQueryStateInternal] = useState<QueryState>(() => {
-    return parseQueryString(valuesSearch.query) ?? createInitialQueryState()
+    return parseQueryString(valuesSearch.query, PARSE_OPTIONS) ?? createInitialQueryState()
   })
 
   // Set when a query from outside the builder can't be represented without changing it.
   // The builder must then leave the query untouched.
   const [unsupportedError, setUnsupportedError] = useState(() =>
-    getQueryBuilderError(valuesSearch.query)
+    getQueryBuilderError(valuesSearch.query, PARSE_OPTIONS)
   )
 
   // Track our own updates to avoid re-parsing on our changes
@@ -43,9 +48,9 @@ export const useQueryStateSync = () => {
 
     // External change - re-parse the query
     if (valuesSearch.query !== lastSyncedQuery.current) {
-      const error = getQueryBuilderError(valuesSearch.query)
+      const error = getQueryBuilderError(valuesSearch.query, PARSE_OPTIONS)
       setUnsupportedError(error)
-      const parsed = error ? undefined : parseQueryString(valuesSearch.query)
+      const parsed = error ? undefined : parseQueryString(valuesSearch.query, PARSE_OPTIONS)
       if (parsed) {
         setQueryStateInternal(parsed)
       }
