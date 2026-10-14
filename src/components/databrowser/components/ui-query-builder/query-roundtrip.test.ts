@@ -288,17 +288,13 @@ const builderStates: [QueryNode, Record<string, unknown>][] = [
     group("and", [cond("a", "1"), group("or", [cond("b", "2"), cond("c", "3")], 0)]),
     { $and: [{ a: { $eq: "1" } }, { $or: { b: { $eq: "2" }, c: { $eq: "3" } }, $boost: 0 }] },
   ],
-]
 
-// Empty groups add no constraint and are dropped
-builderStates.push(
+  // Empty groups add no constraint and are dropped
   [group("or", [cond("a", "1"), group("and", [])]), { $or: { a: { $eq: "1" } } }],
-  [group("and", [group("or", []), group("and", [group("or", [])])]), {}]
-)
+  [group("and", [group("or", []), group("and", [group("or", [])])]), {}],
 
-// Negated groups with more than one key stay array items, since the server excludes
-// each key of a $mustNot object separately
-const negatedGroupStates: [QueryNode, Record<string, unknown>][] = [
+  // Negated groups with more than one key stay array items, since the server excludes
+  // each key of a $mustNot object separately
   [
     group("and", [cond("a", "1"), { ...group("and", [cond("b", "2", true)]), not: true }]),
     {
@@ -322,7 +318,6 @@ const negatedGroupStates: [QueryNode, Record<string, unknown>][] = [
     { $and: [{ a: { $eq: "1" } }, { $and: [{}], $mustNot: { b: { $eq: "2" } } }] },
   ],
 ]
-builderStates.push(...negatedGroupStates)
 
 describe("builder → stringify → parse → stringify is stable", () => {
   for (const [root, expected] of builderStates) {
