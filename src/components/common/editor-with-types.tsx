@@ -46,6 +46,7 @@ const MonacoEditorWithTypes = ({
   const filePath = baseFilePath.replace(".ts", `-${instanceId}.ts`)
   const valueRef = useRef(value)
   valueRef.current = value
+  const refreshedTypesRef = useRef<string>()
   const theme = useTheme()
 
   // Update type definitions when they change
@@ -57,17 +58,22 @@ const MonacoEditorWithTypes = ({
       `file:///${filePath.replace(".ts", "-types.d.ts")}`
     )
 
+    // Re-activating a tab re-adds the same types, and setValue would wipe its undo history
+    const typesChanged = refreshedTypesRef.current !== typeDefinitions
+    refreshedTypesRef.current = typeDefinitions
+
     // Force Monaco to re-validate by triggering a no-op edit on the model
     // This is a workaround for Monaco not auto-refreshing after addExtraLib
     // See: https://github.com/microsoft/monaco-editor/issues/208
-    requestAnimationFrame(() => {
-      // @ts-expect-error editor type not fully typed
-      const model = editorRef.current?.getModel?.()
-      if (model) {
-        const currentValue = model.getValue()
-        model.setValue(currentValue)
-      }
-    })
+    if (typesChanged)
+      requestAnimationFrame(() => {
+        // @ts-expect-error editor type not fully typed
+        const model = editorRef.current?.getModel?.()
+        if (model) {
+          const currentValue = model.getValue()
+          model.setValue(currentValue)
+        }
+      })
 
     return () => extraLib.dispose()
   }, [monaco, typeDefinitions, filePath, active])
