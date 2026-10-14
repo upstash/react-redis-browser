@@ -25,8 +25,9 @@ export const UIQueryBuilder = ({
     if (unsupportedError) onUnsupportedQuery(unsupportedError)
   }, [unsupportedError, onUnsupportedQuery])
 
-  // Normalize query state values on mount (when switching from text editor to UI builder)
-  const hasNormalized = useRef(false)
+  // Normalize query state values on mount (when switching from text editor to UI builder).
+  // Queries typed in the code editor are opened unchanged, so they are not normalized.
+  const hasNormalized = useRef(valuesSearch.queryWrittenBy === "code")
   useEffect(() => {
     if (hasNormalized.current || fieldInfos.length === 0 || unsupportedError) return
     hasNormalized.current = true

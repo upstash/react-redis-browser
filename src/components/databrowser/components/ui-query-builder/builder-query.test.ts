@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test"
 
-import { INVALID_QUERY_MESSAGE } from "@/lib/utils"
+import { INVALID_QUERY_MESSAGE, parseJSObjectLiteral } from "@/lib/utils"
 
 import { getQueryBuilderError, resolveBuilderQuery } from "./builder-query"
 import { stringifyQueryState } from "./query-stringify"
-import type { QueryNode } from "./types"
+import type { QueryNode, QueryState } from "./types"
 
 /** Strip generated ids so trees can be compared */
 const shape = (node: QueryNode): unknown => {
@@ -129,7 +129,7 @@ describe("resolveBuilderQuery (stored query → builder)", () => {
   }
 
   // The builder writes these, the guard alone would refuse them
-  for (const query of [`{ f1: 1, $boost: 2 }`, `{ $and: [{ $or: { f1: 1 } }] }`]) {
+  for (const query of [`{ $and: [{ $or: { f1: 1 } }] }`, `{ $and: { f1: 1 }, $boost: 2 }`]) {
     test(`opens ${query} without the guard when the builder wrote it`, () => {
       expect(getQueryBuilderError(query)).toBeDefined()
       expect(resolveBuilderQuery(query, "ui").success).toBe(true)
@@ -140,5 +140,90 @@ describe("resolveBuilderQuery (stored query → builder)", () => {
   test("an empty query is not rewritten", () => {
     const result = resolveBuilderQuery("", "ui")
     expect(result.success && result.rewrite).toBeUndefined()
+  })
+})
+
+describe("reloading what the builder wrote", () => {
+  // Deterministic random builder trees
+  let seed = 1
+  const rnd = () => {
+    seed = (seed * 1_103_515_245 + 12_345) & 0x7F_FF_FF_FF
+    return seed / 0x7F_FF_FF_FF
+  }
+  const pick = <T>(items: T[]): T => items[Math.floor(rnd() * items.length)]
+  let nextId = 0
+  const condition = (): QueryNode => {
+    const value = pick<string | number>([1, 2, "x", "y"])
+    return {
+      id: `n${nextId++}`,
+      type: "condition",
+      condition: {
+        field: pick(["a", "b", "c"]),
+        operator: typeof value === "number" ? pick(["eq", "gt"]) : pick(["smart", "eq"]),
+        value,
+      },
+      boost: rnd() < 0.2 ? pick([-1, 0.5, 2]) : undefined,
+      not: rnd() < 0.2 || undefined,
+    }
+  }
+  const group = (depth: number, isRoot = false): QueryNode => ({
+    id: `n${nextId++}`,
+    type: "group",
+    groupOperator: pick(["and", "or"]),
+    children: Array.from({ length: Math.floor(rnd() * 4) }, () =>
+      depth > 0 && rnd() < 0.4 ? group(depth - 1) : condition()
+    ),
+    boost: rnd() < 0.2 ? pick([-1, 0.5, 2]) : undefined,
+    not: (!isRoot && rnd() < 0.2) || undefined,
+  })
+
+  // Empty groups and groups with only negated children are written lossily by this
+  // serializer (fixed in the stringify PR), so they are left out here
+  const hasPositiveChildren = (node: QueryNode): boolean =>
+    node.type === "condition" ||
+    (node.children.some((child) => !child.not) &&
+      node.children.every((child) => hasPositiveChildren(child)))
+
+  test("settles after one load", () => {
+    const unstable: string[] = []
+    for (let i = 0; i < 6000; i++) {
+      const root = group(3, true)
+      if (!hasPositiveChildren(root)) continue
+      const written = stringifyQueryState({ root } as QueryState)
+      const first = resolveBuilderQuery(written, "ui")
+      if (!first.success) throw new Error(first.error)
+      const second = resolveBuilderQuery(first.rewrite ?? written, "ui")
+      if (!second.success || second.rewrite !== undefined) unstable.push(written)
+    }
+    expect(unstable).toEqual([])
+  })
+
+  test("keeps a root $boost next to a field's own $boost", () => {
+    const query = `{ t1: { $smart: "apple", $boost: -1 }, $boost: 0.5 }`
+    const result = resolveBuilderQuery(query, "ui")
+    if (!result.success) throw new Error(result.error)
+    expect(shape(result.state.root)).toEqual({
+      not: undefined,
+      boost: 0.5,
+      op: "and",
+      children: [{ not: undefined, boost: -1, field: "t1", operator: "smart", value: "apple" }],
+    })
+    expect(parseJSObjectLiteral(result.rewrite ?? query)).toEqual(parseJSObjectLiteral(query))
+  })
+
+  test("keeps both boosts of a group body and its wrapper", () => {
+    const query = `{ $and: { a: 1, b: 2, $boost: 3 }, $boost: 2 }`
+    const result = resolveBuilderQuery(query, "ui")
+    if (!result.success) throw new Error(result.error)
+    const root = result.state.root as QueryNode & { type: "group" }
+    expect(root.boost).toBe(2)
+    expect(root.children[0].boost).toBe(3)
+  })
+
+  test("settles { $and: { n3: { $gte: 3 }, $boost: 0.5 } } in one load", () => {
+    const first = resolveBuilderQuery(`{ $and: { n3: { $gte: 3 }, $boost: 0.5 } }`, "ui")
+    if (!first.success || first.rewrite === undefined) throw new Error("expected a rewrite")
+    const second = resolveBuilderQuery(first.rewrite, "ui")
+    expect(second.success && second.rewrite).toBeUndefined()
   })
 })
