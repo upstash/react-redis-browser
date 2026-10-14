@@ -3,6 +3,7 @@ import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
 import { IconX } from "@tabler/icons-react"
 
+import { fromKeySearchPattern, toKeySearchPattern } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -19,7 +20,7 @@ const dedupeSearchHistory = (history: string[]) => {
 export const SearchInput = () => {
   const { setSearchKey, search } = useTab()
   const { searchHistory, addSearchHistory } = useDatabrowserStore()
-  const [state, setState] = useState(search.key)
+  const [state, setState] = useState(fromKeySearchPattern(search.key))
 
   const [isFocus, setIsFocus] = useState(false)
   const [focusedIndex, setFocusedIndex] = useState(-1)
@@ -27,28 +28,36 @@ export const SearchInput = () => {
   const inputRef = useRef<HTMLInputElement>(null)
   const historyItemRefs = useRef<(HTMLButtonElement | null)[]>([])
 
+  // The input holds what the user typed; only the applied filter is a glob pattern
   const handleSubmit = (value: string) => {
-    if (value.trim() !== "" && !value.includes("*")) value = `${value}*`
-    addSearchHistory(value)
-    setSearchKey(value)
+    const pattern = toKeySearchPattern(value)
+    addSearchHistory(pattern)
+    setSearchKey(pattern)
     setState(value)
   }
 
   const filteredHistory = dedupeSearchHistory(
     searchHistory
       .filter((item) => item.trim() !== "" && item.trim() !== "*")
+      // Show stored patterns as the text that produces them
+      .map((item) => fromKeySearchPattern(item))
       .filter((item) => item.includes(state) && item !== state)
-  )
-    .slice(0, 5)
-    // If it has a * in the end, remove it
-    .map((item) => (item.endsWith("*") ? item.slice(0, -1) : item))
+  ).slice(0, 5)
 
   // Reset focused index when filtered history changes
   useEffect(() => {
     setFocusedIndex(-1)
   }, [filteredHistory.length])
 
+  const isHistoryOpen = isFocus && filteredHistory.length > 0
+
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    // Tab steps through open history and moves focus on past either end, so it never traps
+    const isHistoryTab =
+      e.key === "Tab" &&
+      isHistoryOpen &&
+      (e.shiftKey ? focusedIndex >= 0 : focusedIndex < filteredHistory.length - 1)
+
     if (e.key === "Enter") {
       const text =
         focusedIndex >= 0 && focusedIndex < filteredHistory.length
@@ -56,17 +65,18 @@ export const SearchInput = () => {
           : e.currentTarget.value
       handleSubmit(text)
     } else if (e.key === "Escape") {
+      setSearchKey("")
       setState("")
       setFocusedIndex(-1)
       inputRef.current?.blur()
-    } else if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
+    } else if (e.key === "ArrowDown" || (isHistoryTab && !e.shiftKey)) {
       e.preventDefault()
       if (focusedIndex < filteredHistory.length - 1) {
         setFocusedIndex(focusedIndex + 1)
       } else if (filteredHistory.length > 0) {
         setFocusedIndex(0)
       }
-    } else if (e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
+    } else if (e.key === "ArrowUp" || (isHistoryTab && e.shiftKey)) {
       e.preventDefault()
       if (focusedIndex > 0) {
         setFocusedIndex(focusedIndex - 1)
@@ -81,7 +91,7 @@ export const SearchInput = () => {
 
   return (
     <div className="browser-search relative min-w-0 grow">
-      <Popover open={isFocus && filteredHistory.length > 0}>
+      <Popover open={isHistoryOpen}>
         <PopoverTrigger asChild>
           <div className="h-8 rounded-md border border-zinc-300 font-normal">
             <Input
