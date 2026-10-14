@@ -52,11 +52,13 @@ export const SearchInput = () => {
   const isHistoryOpen = isFocus && filteredHistory.length > 0
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    // Tab steps through open history and moves focus on past either end, so it never traps
+    // Tab only steps through history once the user is in the list (via the arrow keys),
+    // and moves focus on past either end, so it never traps
     const isHistoryTab =
       e.key === "Tab" &&
       isHistoryOpen &&
-      (e.shiftKey ? focusedIndex >= 0 : focusedIndex < filteredHistory.length - 1)
+      focusedIndex >= 0 &&
+      (e.shiftKey || focusedIndex < filteredHistory.length - 1)
 
     if (e.key === "Enter") {
       const text =
