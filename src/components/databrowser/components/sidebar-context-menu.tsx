@@ -1,6 +1,6 @@
 import { useState, type PropsWithChildren } from "react"
 import { useDatabrowserStore } from "@/store"
-import { useTab } from "@/tab-provider"
+import { useTab, useTabId } from "@/tab-provider"
 import { ContextMenuSeparator } from "@radix-ui/react-context-menu"
 import { IconCopy, IconExternalLink, IconTrash } from "@tabler/icons-react"
 
@@ -20,12 +20,18 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
   const [isAlertOpen, setAlertOpen] = useState(false)
   const [contextKeys, setContextKeys] = useState<string[]>([])
   const {
+    tabs,
     addTab,
     setSelectedKey: setSelectedKeyGlobal,
     selectTab,
     setSearch,
+    setValuesSearch,
+    setIsValuesSearchSelected,
   } = useDatabrowserStore()
   const { search: currentSearch, selectedKeys, isValuesSearchSelected } = useTab()
+  // The stored values search, not useTab's derived one, so the new tab gets the same shape
+  const tabId = useTabId()
+  const currentValuesSearch = tabs.find(([id]) => id === tabId)?.[1].valuesSearch
 
   return (
     <>
@@ -83,7 +89,10 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
             onClick={() => {
               const newTabId = addTab()
               setSelectedKeyGlobal(newTabId, contextKeys[0])
+              // Carry over the search context so the key is listed in the new tab too
               setSearch(newTabId, currentSearch)
+              if (currentValuesSearch) setValuesSearch(newTabId, currentValuesSearch)
+              setIsValuesSearchSelected(newTabId, isValuesSearchSelected)
               selectTab(newTabId)
             }}
             className="gap-2"
