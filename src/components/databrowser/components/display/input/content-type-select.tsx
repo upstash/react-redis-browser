@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import { checkIsValidJSON } from "./use-field"
+import { checkIsValidJSON } from "./format-json"
 
 export type ContentType = "Text" | "JSON"
 
