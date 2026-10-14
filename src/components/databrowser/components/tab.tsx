@@ -11,7 +11,7 @@ import {
   IconX,
 } from "@tabler/icons-react"
 
-import { cn } from "@/lib/utils"
+import { cn, fromKeySearchPattern } from "@/lib/utils"
 import { useOverflow } from "@/hooks/use-overflow"
 import {
   ContextMenu,
@@ -57,7 +57,9 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
   }
 
   const keyLabel = selectedKey === "" ? "(Empty Key)" : selectedKey
-  const label = isValuesSearchSelected ? valuesSearch.index : search.key || keyLabel
+  // Show the search as typed, not the escaped glob ("*" alone maps to empty text)
+  const searchLabel = search.key && (fromKeySearchPattern(search.key) || search.key)
+  const label = isValuesSearchSelected ? valuesSearch.index : searchLabel || keyLabel
   const iconNode = isValuesSearchSelected ? (
     <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-emerald-200 text-emerald-800">
       <IconSearch size={14} />
