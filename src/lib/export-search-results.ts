@@ -35,10 +35,26 @@ const readDocumentValue = async (
   return parseJsonValue(await redis.get(key))
 }
 
+// Not in every engine (or TS lib) yet
+const { rawJSON, isRawJSON } = JSON as unknown as {
+  rawJSON?: (text: string) => object
+  isRawJSON?: (value: unknown) => boolean
+}
+
 const parseJsonValue = (value: unknown): unknown => {
   if (typeof value !== "string") return value
+  let lossy = false
   try {
-    return JSON.parse(value)
+    const parsed: unknown = JSON.parse(value, (_key, v, context?: { source?: string }) => {
+      if (typeof v !== "number" || !Number.isInteger(v) || Number.isSafeInteger(v)) return v
+      // Integers past 2^53 lose digits as numbers; keep their source text so they serialize as-is
+      const source = context?.source
+      if (source === undefined || !rawJSON) lossy = true
+      else if (/^-?\d+$/.test(source)) return rawJSON(source)
+      return v
+    })
+    // Without engine support the digits can't be kept, so export the document text untouched
+    return lossy ? value : parsed
   } catch {
     return value
   }
@@ -163,7 +179,7 @@ export const estimateExportBytes = (
 
 // Same { key, score, data } shape as SDK query results, so document fields can't
 // clobber `key` or `score`.
-export const serializeJson = (docs: SearchDoc[]): string =>
+const serializeJson = (docs: SearchDoc[]): string =>
   JSON.stringify(
     docs.map(({ key, score, data }) => ({ key, score, data })),
     undefined,
@@ -175,7 +191,7 @@ const flatten = (
   prefix: string,
   out: Record<string, unknown>
 ): Record<string, unknown> => {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
+  if (value && typeof value === "object" && !Array.isArray(value) && !isRawJSON?.(value)) {
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
       flatten(v, prefix ? `${prefix}.${k}` : k, out)
     }
@@ -202,7 +218,7 @@ const escapeCsvCell = (value: unknown): string => {
 }
 
 // Columns mirror the JSON rows flattened with dot paths: key, score, data.<field>...
-export const serializeCsv = (docs: SearchDoc[]): string => {
+const serializeCsv = (docs: SearchDoc[]): string => {
   const flatRows = docs.map((d) => flatten(d.data, "data", {}))
 
   const dataColumns = new Set<string>()

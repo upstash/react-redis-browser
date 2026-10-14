@@ -51,6 +51,15 @@ describe("exportSearchResults", () => {
     )
   })
 
+  test("keeps every digit of integers past 2^53", async () => {
+    const redis = fakeRedis({ total: 1, values: { "*": '{"big":12345678901234567890,"n":1.5}' } })
+
+    expect(await content(redis, "json")).toContain('"big": 12345678901234567890,')
+    expect(await content(redis, "json", "csv")).toBe(
+      "key,score,data.big,data.n\nk:0,1,12345678901234567890,1.5"
+    )
+  })
+
   test("keeps non-json string values as-is", async () => {
     const redis = fakeRedis({ total: 1, values: { "*": "plain" } })
     expect(await content(redis, "string", "csv")).toBe("key,score,data\nk:0,1,plain")
