@@ -186,6 +186,7 @@ type DatabrowserStore = {
   setSelectedKey: (tabId: TabId, key: string | undefined) => void
   setSelectedKeys: (tabId: TabId, keys: string[]) => void
   setSelectedListItem: (tabId: TabId, item?: { key: string; isNew?: boolean }) => void
+  deselectKeys: (keys: string[]) => void
 
   setSearch: (tabId: TabId, search: SearchFilter) => void
   setSearchKey: (tabId: TabId, key: string) => void
@@ -208,7 +209,20 @@ export type DatabrowserStoreObject = UseBoundStore<StoreApi<DatabrowserStore>>
 
 const MAX_CLOSED_TAB_GROUPS = 10
 
-const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
+/**
+ * The tab to select after closing `id`: its left neighbour (or right, if it was first) in the
+ * tab bar, which shows pinned tabs first rather than in stored order.
+ */
+const getTabToSelectAfterClose = (tabs: [TabId, TabData][], id: TabId): TabId | undefined => {
+  const visualTabs = [
+    ...tabs.filter(([, data]) => data.pinned),
+    ...tabs.filter(([, data]) => !data.pinned),
+  ]
+  const index = visualTabs.findIndex(([tabId]) => tabId === id)
+  return (visualTabs[index - 1] ?? visualTabs[index + 1])?.[0]
+}
+
+export const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
   const pushClosedTabs = (tabs: TabData[]) =>
     tabs.length > 0 ? [...get().closedTabs, tabs].slice(-MAX_CLOSED_TAB_GROUPS) : get().closedTabs
 
@@ -264,12 +278,8 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
         newTabs.splice(tabIndex, 1)
 
         // If we're removing the selected tab, select the tab to the left
-        let selectedTab = old.selectedTab
-        if (selectedTab === id) {
-          const [newId] = newTabs[tabIndex - 1] ?? newTabs[tabIndex] ?? []
-
-          selectedTab = newTabs.length > 0 ? newId : undefined
-        }
+        const selectedTab =
+          old.selectedTab === id ? getTabToSelectAfterClose(old.tabs, id) : old.selectedTab
 
         return {
           tabs: newTabs,
@@ -290,12 +300,8 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
         newTabs.splice(tabIndex, 1)
 
         // If we're removing the selected tab, select the tab to the left
-        let selectedTab = old.selectedTab
-        if (selectedTab === id) {
-          const [newId] = newTabs[tabIndex - 1] ?? newTabs[tabIndex] ?? []
-
-          selectedTab = newTabs.length > 0 ? newId : undefined
-        }
+        const selectedTab =
+          old.selectedTab === id ? getTabToSelectAfterClose(old.tabs, id) : old.selectedTab
 
         return {
           tabs: newTabs,
@@ -409,6 +415,23 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
 
         return { ...old, tabs: newTabs }
       })
+    },
+
+    // Drops keys (e.g. deleted ones) from every tab's selection, closed tabs included
+    deselectKeys: (keys) => {
+      const prune = (data: TabData): TabData =>
+        data.selectedKeys?.some((key) => keys.includes(key))
+          ? {
+              ...data,
+              selectedKeys: data.selectedKeys.filter((key) => !keys.includes(key)),
+              selectedListItem: undefined,
+            }
+          : data
+
+      set((old) => ({
+        tabs: old.tabs.map(([id, data]) => [id, prune(data)]),
+        closedTabs: old.closedTabs.map((group) => group.map((data) => prune(data))),
+      }))
     },
 
     setSelectedListItem: (tabId, item) => {
