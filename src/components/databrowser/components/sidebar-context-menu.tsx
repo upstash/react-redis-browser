@@ -24,8 +24,15 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
     setSelectedKey: setSelectedKeyGlobal,
     selectTab,
     setSearch,
+    setValuesSearch,
+    setIsValuesSearchSelected,
   } = useDatabrowserStore()
-  const { search: currentSearch, selectedKeys, isValuesSearchSelected } = useTab()
+  const {
+    search: currentSearch,
+    valuesSearch: { query: _query, ...currentValuesSearch },
+    selectedKeys,
+    isValuesSearchSelected,
+  } = useTab()
 
   return (
     <>
@@ -83,7 +90,10 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
             onClick={() => {
               const newTabId = addTab()
               setSelectedKeyGlobal(newTabId, contextKeys[0])
+              // Carry over the search context so the key is listed in the new tab too
               setSearch(newTabId, currentSearch)
+              setValuesSearch(newTabId, currentValuesSearch)
+              setIsValuesSearchSelected(newTabId, isValuesSearchSelected)
               selectTab(newTabId)
             }}
             className="gap-2"
