@@ -1,9 +1,14 @@
 import { test as base, expect } from "@playwright/test"
 
-const test = base.extend<{ searchMode: boolean; folders: boolean }>({
+// Every command the mocked server received, and how many of its replies were HTTP errors
+type MockLog = { commands: unknown[][]; failedResponses: number }
+
+const test = base.extend<{ searchMode: boolean; folders: boolean; mockLog: MockLog }>({
   searchMode: [false, { option: true }],
   // Whether the mocked server supports SCAN ... DELIMITER, like Upstash Redis with folders
   folders: [false, { option: true }],
+  // eslint-disable-next-line no-empty-pattern
+  mockLog: async ({}, use) => use({ commands: [], failedResponses: 0 }),
 })
 
 const keys = Array.from({ length: 100 }, (_, index) => `customer:${String(index).padStart(3, "0")}`)
@@ -40,7 +45,7 @@ const scanFolders = (matching: string[], prefix: string, delimiter: string) => {
   )
 }
 
-test.beforeEach(async ({ page, baseURL, searchMode, folders }) => {
+test.beforeEach(async ({ page, baseURL, searchMode, folders, mockLog }) => {
   await page.addInitScript(() => {
     ;(window as any).__PLAYWRIGHT__ = true
   })
@@ -117,6 +122,7 @@ test.beforeEach(async ({ page, baseURL, searchMode, folders }) => {
       }
     }
     const run = (command: unknown[]): { result?: unknown; error?: string } => {
+      mockLog.commands.push(command)
       try {
         return { result: encode(execute(command)) }
       } catch (error) {
@@ -130,6 +136,7 @@ test.beforeEach(async ({ page, baseURL, searchMode, folders }) => {
     if (Array.isArray(body[0]))
       return route.fulfill({ json: body.map((command: unknown[]) => run(command)) })
     const response = run(body)
+    if (response.error !== undefined) mockLog.failedResponses += 1
     await route.fulfill({ status: response.error === undefined ? 200 : 400, json: response })
   })
   await page.goto(`/tests/mobile/index.html${searchMode ? "?search" : ""}`)
@@ -343,21 +350,12 @@ test("a failed next page waits for an explicit retry", async ({ page }) => {
 
 test("a server without folders gets the flat list from one folder scan that does not fail", async ({
   page,
+  mockLog,
 }) => {
-  const folderScans: string[] = []
-  const failed: string[] = []
-  page.on("request", (request) => {
-    if (request.postData()?.includes('"DELIMITER"')) folderScans.push(request.postData()!)
-  })
-  page.on("response", (response) => {
-    if (response.status() >= 400) failed.push(response.url())
-  })
-  await page.reload()
-  await expect(page.getByRole("button", { name: keys[0], exact: true })).toBeVisible()
   // Give a follow-up support check the time to go out
   await page.waitForTimeout(500)
-  expect(folderScans).toHaveLength(1)
-  expect(failed).toEqual([])
+  expect(mockLog.commands.filter((command) => command.includes("DELIMITER"))).toHaveLength(1)
+  expect(mockLog.failedResponses).toBe(0)
   await expect(page.getByRole("radiogroup", { name: "Key list view" })).not.toBeAttached()
 })
 
