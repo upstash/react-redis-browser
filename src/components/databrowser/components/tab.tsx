@@ -4,6 +4,7 @@ import { useTab } from "@/tab-provider"
 import {
   IconArrowsMinimize,
   IconCopyPlus,
+  IconFolder,
   IconPin,
   IconRestore,
   IconSearch,
@@ -25,8 +26,10 @@ import { SimpleTooltip } from "@/components/ui/tooltip"
 import { TabTypeIcon } from "./tab-type-icon"
 
 export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
-  const { active, search, selectedKey, valuesSearch, pinned, isValuesSearchSelected } = useTab()
+  const { active, search, selectedKey, valuesSearch, pinned, isValuesSearchSelected, folder } =
+    useTab()
   const {
+    keyListView,
     selectTab,
     removeTab,
     forceRemoveTab,
@@ -57,7 +60,8 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
   }
 
   const keyLabel = selectedKey === "" ? "(Empty Key)" : selectedKey
-  const label = isValuesSearchSelected ? valuesSearch.index : search.key || keyLabel
+  const folderLabel = keyListView === "folders" ? folder : ""
+  const label = isValuesSearchSelected ? valuesSearch.index : search.key || keyLabel || folderLabel
   const iconNode = isValuesSearchSelected ? (
     <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-emerald-200 text-emerald-800">
       <IconSearch size={14} />
@@ -66,7 +70,13 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
     <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-zinc-100 text-zinc-600">
       <IconSearch size={14} />
     </div>
-  ) : selectedKey === undefined ? undefined : (
+  ) : selectedKey === undefined ? (
+    folderLabel ? (
+      <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-emerald-100 text-emerald-700">
+        <IconFolder size={14} />
+      </div>
+    ) : undefined
+  ) : (
     <TabTypeIcon selectedKey={selectedKey} />
   )
 

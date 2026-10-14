@@ -2,7 +2,7 @@ import { useState, type PropsWithChildren } from "react"
 import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
 import { ContextMenuSeparator } from "@radix-ui/react-context-menu"
-import { IconCopy, IconExternalLink, IconTrash } from "@tabler/icons-react"
+import { IconCopy, IconExternalLink, IconFolderOpen, IconTrash } from "@tabler/icons-react"
 
 import {
   ContextMenu,
@@ -19,13 +19,22 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
   const { mutateAsync: deleteKey } = useDeleteKey()
   const [isAlertOpen, setAlertOpen] = useState(false)
   const [contextKeys, setContextKeys] = useState<string[]>([])
+  // Set instead of contextKeys when a folder row is right clicked
+  const [contextFolder, setContextFolder] = useState<string>()
   const {
     addTab,
     setSelectedKey: setSelectedKeyGlobal,
     selectTab,
     setSearch,
+    setFolder: setFolderGlobal,
   } = useDatabrowserStore()
-  const { search: currentSearch, selectedKeys, isValuesSearchSelected } = useTab()
+  const {
+    search: currentSearch,
+    selectedKeys,
+    isValuesSearchSelected,
+    folder: currentFolder,
+    setFolder,
+  } = useTab()
 
   return (
     <>
@@ -46,6 +55,15 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
           // NOTE: We did not put the ContextMenu on every key because of performance reasons
           onContextMenu={(e) => {
             const el = e.target as HTMLElement
+
+            const folder = el.closest("[data-folder]")
+            if (folder instanceof HTMLElement && folder.dataset.folder !== undefined) {
+              setContextFolder(folder.dataset.folder)
+              setContextKeys([])
+              return
+            }
+            setContextFolder(undefined)
+
             const key = el.closest("[data-key]")
 
             if (key && key instanceof HTMLElement && key.dataset.key !== undefined) {
@@ -65,39 +83,70 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
         >
           {children}
         </ContextMenuTrigger>
-        <ContextMenuContent>
-          <ContextMenuItem
-            onClick={() => {
-              navigator.clipboard.writeText(contextKeys[0])
-              toast({
-                description: "Key copied to clipboard",
-              })
-            }}
-            className="gap-2"
-            disabled={contextKeys.length !== 1}
-          >
-            <IconCopy size={16} />
-            Copy key
-          </ContextMenuItem>
-          <ContextMenuItem
-            onClick={() => {
-              const newTabId = addTab()
-              setSelectedKeyGlobal(newTabId, contextKeys[0])
-              setSearch(newTabId, currentSearch)
-              selectTab(newTabId)
-            }}
-            className="gap-2"
-            disabled={contextKeys.length !== 1}
-          >
-            <IconExternalLink size={16} />
-            Open in new tab
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem onClick={() => setAlertOpen(true)} className="gap-2">
-            <IconTrash size={16} />
-            {contextKeys.length > 1 ? `Delete ${contextKeys.length} keys` : "Delete key"}
-          </ContextMenuItem>
-        </ContextMenuContent>
+        {contextFolder === undefined ? (
+          <ContextMenuContent>
+            <ContextMenuItem
+              onClick={() => {
+                navigator.clipboard.writeText(contextKeys[0])
+                toast({
+                  description: "Key copied to clipboard",
+                })
+              }}
+              className="gap-2"
+              disabled={contextKeys.length !== 1}
+            >
+              <IconCopy size={16} />
+              Copy key
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() => {
+                const newTabId = addTab()
+                setSelectedKeyGlobal(newTabId, contextKeys[0])
+                setFolderGlobal(newTabId, currentFolder)
+                setSearch(newTabId, currentSearch)
+                selectTab(newTabId)
+              }}
+              className="gap-2"
+              disabled={contextKeys.length !== 1}
+            >
+              <IconExternalLink size={16} />
+              Open in new tab
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuItem onClick={() => setAlertOpen(true)} className="gap-2">
+              <IconTrash size={16} />
+              {contextKeys.length > 1 ? `Delete ${contextKeys.length} keys` : "Delete key"}
+            </ContextMenuItem>
+          </ContextMenuContent>
+        ) : (
+          <ContextMenuContent>
+            <ContextMenuItem onClick={() => setFolder(contextFolder)} className="gap-2">
+              <IconFolderOpen size={16} />
+              Open folder
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() => {
+                const newTabId = addTab()
+                setFolderGlobal(newTabId, contextFolder)
+                selectTab(newTabId)
+              }}
+              className="gap-2"
+            >
+              <IconExternalLink size={16} />
+              Open in new tab
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() => {
+                navigator.clipboard.writeText(contextFolder)
+                toast({ description: "Folder path copied to clipboard" })
+              }}
+              className="gap-2"
+            >
+              <IconCopy size={16} />
+              Copy folder path
+            </ContextMenuItem>
+          </ContextMenuContent>
+        )}
       </ContextMenu>
     </>
   )

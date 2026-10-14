@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress"
 
 import { FETCH_SEARCH_INDEX_QUERY_KEY } from "../../hooks/use-fetch-search-index"
 import { FETCH_SEARCH_INDEXES_QUERY_KEY } from "../../hooks/use-fetch-search-indexes"
+import { FETCH_KEYS_QUERY_KEY } from "../../hooks/use-keys"
 import { parseSchemaFromEditorValue } from "./schema-parser"
 
 type FormValues = {
@@ -95,6 +96,7 @@ export const SaveSchemaModal = ({
       queryClient.invalidateQueries({
         queryKey: [FETCH_SEARCH_INDEXES_QUERY_KEY],
       })
+      queryClient.invalidateQueries({ queryKey: [FETCH_KEYS_QUERY_KEY] })
 
       onClose()
     } catch (catchedError) {

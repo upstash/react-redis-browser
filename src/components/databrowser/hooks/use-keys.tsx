@@ -1,19 +1,43 @@
 import { createContext, useContext, useMemo, type PropsWithChildren } from "react"
 import { useRedis } from "@/redis-context"
+import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
 import type { DataType, RedisKey } from "@/types"
-import { useInfiniteQuery, type UseInfiniteQueryResult } from "@tanstack/react-query"
+import { useInfiniteQuery, useQuery, type UseInfiniteQueryResult } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
+import {
+  getFolderMatch,
+  getFolderQuery,
+  getKeysStaleTime,
+  isFolderScanUnsupported,
+  isPrefixSearch,
+  parseFolderScan,
+  type KeyListEntry,
+} from "@/lib/folders"
 import { listSearchIndexes } from "@/lib/list-search-indexes"
 import { parseJSObjectLiteral } from "@/lib/utils"
 
-import { FETCH_KEY_TYPE_QUERY_KEY } from "./use-fetch-key-type"
+import { FETCH_KEY_TYPE_QUERY_KEY, useFetchKeyType } from "./use-fetch-key-type"
 import { useFetchSearchIndex } from "./use-fetch-search-index"
+
+export type FolderView = {
+  /** True when the list shows folders, false for the flat key list */
+  enabled: boolean
+  /** Whether the server supports folders, undefined until known */
+  supported: boolean | undefined
+  /** The open folder, "" for the root */
+  folder: string
+  delimiter: string
+}
 
 const KeysContext = createContext<
   | {
       keys: RedisKey[]
+      // The rows of the list in order. Same as `keys` in the flat view, with folders mixed
+      // in when the folder view is on.
+      entries: KeyListEntry[]
+      folderView: FolderView
       query: UseInfiniteQueryResult
       scan: { paused: boolean; scannedKeys: number }
     }
@@ -21,6 +45,52 @@ const KeysContext = createContext<
 >(undefined)
 
 export const FETCH_KEYS_QUERY_KEY = "use-fetch-keys"
+export const FOLDER_SUPPORT_QUERY_KEY = "folder-support"
+
+// A server without folder support is checked again after this long, since replicas may
+// not all support folders yet during a rollout.
+const FOLDER_SUPPORT_RECHECK_MS = 5 * 60 * 1000
+
+/**
+ * Whether the server supports `SCAN ... DELIMITER`. Undefined until known.
+ *
+ * The folder view finds out from its first scan. The flat view sends a one off probe so
+ * the view toggle only shows up on servers that support folders. The answer is kept in
+ * memory only, never in the persisted store.
+ */
+export const useFolderSupport = ({
+  scansFolders,
+  active,
+}: {
+  // Whether the key list itself sends a folder scan to find out
+  scansFolders: boolean
+  active: boolean
+}) => {
+  const { redisNoPipeline: redis } = useRedis()
+  const supported = queryClient.getQueryData<boolean>([FOLDER_SUPPORT_QUERY_KEY])
+
+  const { data } = useQuery({
+    queryKey: [FOLDER_SUPPORT_QUERY_KEY],
+    // The folder view tells by itself on its first scan, unless the server said no
+    enabled: active && (!scansFolders || supported === false),
+    staleTime: (query) =>
+      query.state.data === false ? FOLDER_SUPPORT_RECHECK_MS : Number.POSITIVE_INFINITY,
+    gcTime: Number.POSITIVE_INFINITY,
+    retry: 2,
+    meta: { hideToast: true },
+    queryFn: async () => {
+      try {
+        await redis.exec(["SCAN", "0", "COUNT", "1", "DELIMITER", ":", "WITHCOUNT"])
+        return true
+      } catch (error) {
+        if (isFolderScanUnsupported(error)) return false
+        throw error
+      }
+    },
+  })
+
+  return data
+}
 
 // Upstash REST caps SCAN at ~1000 examined/returned keys per call regardless of
 // COUNT (measured), so escalating past 1000 is pointless. We still ramp up from a
@@ -33,10 +103,11 @@ const SCAN_COUNTS = [100, 500, 1000]
 // and let the user explicitly continue (see `scan.paused`).
 const MAX_SCANS_PER_FETCH = 20
 
-type ScanResult = { cursor: string; keys: { key: string; type: DataType; score?: number }[] }
+type ScanResult = { cursor: string; keys: KeyListEntry[] }
 
 export const KeysProvider = ({ children }: PropsWithChildren) => {
-  const { active, search, valuesSearch, isValuesSearchSelected } = useTab()
+  const { active, search, valuesSearch, isValuesSearchSelected, folder } = useTab()
+  const { keyListView, folderDelimiter } = useDatabrowserStore()
   const { data: searchIndexDetails, isLoading: isIndexDetailsLoading } = useFetchSearchIndex(
     valuesSearch.index,
     { enabled: isValuesSearchSelected }
@@ -50,18 +121,84 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     active &&
     (isValuesSearchSelected ? Boolean(valuesSearch.index) && Boolean(searchIndexDetails) : true)
 
-  // Redis default key scan
-  const redisKeyScan = async ({
+  // Search indexes and value search results have no folders
+  const wantsFolders =
+    keyListView === "folders" && !isValuesSearchSelected && search.type !== "search"
+  const folderSupport = useFolderSupport({
+    scansFolders: wantsFolders && isPrefixSearch(search.key),
+    active,
+  })
+  const folderView: FolderView = {
+    enabled: wantsFolders && folderSupport === true,
+    supported: folderSupport,
+    folder,
+    delimiter: folderDelimiter,
+  }
+  // Part of the query key. A server without folder support gets the flat list, and the
+  // folder view comes back if a later check finds support.
+  const folderQuery = getFolderQuery({
+    wantsFolders,
+    supported: folderSupport,
+    folder,
+    delimiter: folderDelimiter,
+    search: search.key,
+  })
+
+  // Redis folder scan, falls back to the flat scan on servers without folder support
+  const redisFolderScan = async ({
     count,
     cursor,
   }: {
     count: number
     cursor: string
   }): Promise<ScanResult> => {
+    if (!folderQuery) return redisKeyScan({ count, cursor })
+
+    const match = getFolderMatch(folderQuery.folder, search.key)
+
+    // The server lists a folder only when its own name matches, so a pattern like
+    // "*session*" would hide every match inside folders. Search all keys below the
+    // folder instead and show them by their path.
+    if (!isPrefixSearch(search.key)) return redisKeyScan({ count, cursor, match })
+
+    const args: [string, ...string[]] = ["SCAN", cursor, "MATCH", match]
+    if (search.type) args.push("TYPE", search.type)
+    args.push("COUNT", count.toString(), "DELIMITER", folderQuery.delimiter, "WITHCOUNT")
+
+    let result: [string, unknown[]]
+    try {
+      result = await redis.exec<[string, unknown[]]>(args)
+    } catch (error) {
+      if (!isFolderScanUnsupported(error)) throw error
+
+      // Switches this tab's query key to the flat list for the session. That query does
+      // the scan, this one ends with an empty page.
+      queryClient.setQueryData([FOLDER_SUPPORT_QUERY_KEY], false)
+      return { cursor: "0", keys: [] }
+    }
+
+    if (queryClient.getQueryData([FOLDER_SUPPORT_QUERY_KEY]) !== true) {
+      queryClient.setQueryData([FOLDER_SUPPORT_QUERY_KEY], true)
+    }
+
+    const [newCursor, values] = result
+    return { cursor: newCursor, keys: parseFolderScan(values) }
+  }
+
+  // Redis default key scan
+  const redisKeyScan = async ({
+    count,
+    cursor,
+    match = search.key,
+  }: {
+    count: number
+    cursor: string
+    match?: string
+  }): Promise<ScanResult> => {
     const args = [cursor]
 
-    if (search.key) {
-      args.push("MATCH", search.key)
+    if (match) {
+      args.push("MATCH", match)
     }
 
     if (search.type) {
@@ -75,16 +212,16 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     const [newCursor, values] = await redis.exec<[string, string[]]>(["SCAN", ...args])
 
     // Deserialize keys from the SCAN result
-    const keys: { key: string; type: DataType }[] = []
+    const keys: KeyListEntry[] = []
     let index = 0
     while (true) {
       if (search.type) {
         if (index >= values.length) break
-        keys.push({ key: values[index], type: search.type as DataType })
+        keys.push({ kind: "key", key: values[index], type: search.type as DataType })
         index += 1
       } else {
         if (index + 1 >= values.length) break
-        keys.push({ key: values[index], type: values[index + 1] as DataType })
+        keys.push({ kind: "key", key: values[index], type: values[index + 1] as DataType })
         index += 2
       }
     }
@@ -107,7 +244,7 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
       limit: count,
       offset,
     })
-    const keys = names.map((name) => ({ key: name, type: "search" as DataType }))
+    const keys = names.map((name): KeyListEntry => ({ kind: "key", key: name, type: "search" }))
 
     const hasMore = keys.length >= count
     const nextCursor = hasMore ? String(offset + keys.length) : "0"
@@ -139,11 +276,14 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
         withScores: true,
       })
 
-    const keys = result.map((doc) => ({
-      key: doc.key,
-      type: searchIndexDetails.dataType,
-      score: doc.score,
-    }))
+    const keys = result.map(
+      (doc): KeyListEntry => ({
+        kind: "key",
+        key: doc.key,
+        type: searchIndexDetails.dataType,
+        score: doc.score,
+      })
+    )
 
     // If we got fewer results than the limit, we've reached the end
     const hasMore = keys.length >= count
@@ -157,7 +297,7 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
       ? redisValueScan
       : search.type === "search"
         ? redisSearchIndexScan
-        : redisKeyScan
+        : redisFolderScan
 
     const result = await scanFunction({ count, cursor })
     return [result.cursor, result.keys] as const
@@ -199,23 +339,22 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
   }
 
   const query = useInfiniteQuery({
-    queryKey: [FETCH_KEYS_QUERY_KEY, search, valuesSearch, isValuesSearchSelected],
+    queryKey: [FETCH_KEYS_QUERY_KEY, search, valuesSearch, isValuesSearchSelected, folderQuery],
     enabled: isQueryEnabled,
 
     initialPageParam: "0",
     queryFn: async ({ pageParam: lastCursor, signal }) => {
       const { cursor, values, scannedKeys, paused } = await scanUntilAvailable(lastCursor, signal)
 
-      const keys: RedisKey[] = values.map((value) => [value.key, value.type, value.score])
-
       // Save in cache to not send additional requests with useFetchKeyType
-      for (const [key, type] of keys) {
-        queryClient.setQueryData([FETCH_KEY_TYPE_QUERY_KEY, key], type)
+      for (const entry of values) {
+        if (entry.kind === "key")
+          queryClient.setQueryData([FETCH_KEY_TYPE_QUERY_KEY, entry.key], entry.type)
       }
 
       return {
         cursor: cursor === "0" ? undefined : cursor,
-        keys,
+        entries: values,
         hasNextPage: cursor !== "0",
         scannedKeys,
         paused,
@@ -227,22 +366,28 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     select: (data) => data,
     getNextPageParam: ({ cursor }) => cursor,
     refetchOnMount: false,
+    // Going back to a folder reuses its pages instead of scanning them all again.
+    // Refresh and key changes invalidate the list, which still refetches.
+    staleTime: getKeysStaleTime(folderQuery),
   })
 
-  const keys = useMemo(() => {
-    const keys = query.data?.pages.flatMap((page) => page.keys) ?? []
+  const { entries, keys } = useMemo(() => {
+    const allEntries = query.data?.pages.flatMap((page) => page.entries) ?? []
 
     // deduplication
-    const keysSet = new Set<string>()
-    const dedupedKeys: RedisKey[] = []
+    const seen = new Set<string>()
+    const entries: KeyListEntry[] = []
+    const keys: RedisKey[] = []
 
-    for (const key of keys) {
-      if (keysSet.has(key[0])) continue
+    for (const entry of allEntries) {
+      const id = `${entry.kind}:${entry.key}`
+      if (seen.has(id)) continue
 
-      keysSet.add(key[0])
-      dedupedKeys.push(key)
+      seen.add(id)
+      entries.push(entry)
+      if (entry.kind === "key") keys.push([entry.key, entry.type, entry.score])
     }
-    return dedupedKeys
+    return { entries, keys }
   }, [query.data])
 
   const scan = useMemo(() => {
@@ -258,6 +403,8 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     <KeysContext.Provider
       value={{
         keys,
+        entries,
+        folderView,
         query: {
           ...query,
           isLoading: query.isLoading || isIndexDetailsLoading,
@@ -279,9 +426,15 @@ export const useKeys = () => {
 }
 
 export const useKeyType = (key?: string) => {
-  const { keys } = useKeys()
+  const { keys, folderView } = useKeys()
 
   const keyTuple = useMemo(() => keys.find(([k, _]) => k === key), [keys, key])
 
-  return keyTuple?.[1]
+  // In the folder view the open key may not be in the list after going to another folder
+  const { data: fetchedType } = useFetchKeyType(key, {
+    enabled: folderView.enabled && key !== undefined && !keyTuple,
+  })
+
+  if (keyTuple || !folderView.enabled) return keyTuple?.[1]
+  return fetchedType === "none" ? undefined : (fetchedType as DataType)
 }

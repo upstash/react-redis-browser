@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
+import { useKeys } from "../../hooks/use-keys"
+
 const dedupeSearchHistory = (history: string[]) => {
   const seen = new Set()
   return history.filter((item) => {
@@ -18,8 +20,14 @@ const dedupeSearchHistory = (history: string[]) => {
 
 export const SearchInput = () => {
   const { setSearchKey, search } = useTab()
+  const { folderView } = useKeys()
   const { searchHistory, addSearchHistory } = useDatabrowserStore()
   const [state, setState] = useState(search.key)
+
+  // Opening a folder clears the search
+  useEffect(() => {
+    setState(search.key)
+  }, [search.key])
 
   const [isFocus, setIsFocus] = useState(false)
   const [focusedIndex, setFocusedIndex] = useState(-1)
@@ -86,7 +94,11 @@ export const SearchInput = () => {
           <div className="h-8 rounded-md border border-zinc-300 font-normal">
             <Input
               ref={inputRef}
-              placeholder="Search"
+              placeholder={
+                folderView.enabled && folderView.folder
+                  ? `Search in ${folderView.folder}`
+                  : "Search"
+              }
               className={"h-full border-none pr-6"}
               onKeyDown={handleKeyDown}
               onChange={(e) => {
