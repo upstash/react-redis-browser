@@ -139,6 +139,10 @@ export type ValuesSearchFilter = {
   // A map of <indexName, queryValue>
   queries: Record<string, string>
 
+  // A map of <indexName, editor that wrote the query>. Queries typed in the code editor are
+  // only opened in the query builder if that doesn't change them.
+  queryWrittenBy?: Record<string, "ui" | "code">
+
   queryBuilderMode: "ui" | "code"
 }
 
@@ -193,7 +197,7 @@ type DatabrowserStore = {
 
   setValuesSearch: (tabId: TabId, search: ValuesSearchFilter) => void
   setValuesSearchIndex: (tabId: TabId, index: string) => void
-  setValuesSearchQuery: (tabId: TabId, query: string) => void
+  setValuesSearchQuery: (tabId: TabId, query: string, writtenBy: "ui" | "code") => void
   setIsValuesSearchSelected: (tabId: TabId, isSelected: boolean) => void
   setQueryBuilderMode: (tabId: TabId, mode: "ui" | "code") => void
 
@@ -507,7 +511,7 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
       })
     },
 
-    setValuesSearchQuery: (tabId, query) => {
+    setValuesSearchQuery: (tabId, query, writtenBy) => {
       set((old) => {
         const tabIndex = old.tabs.findIndex(([id]) => id === tabId)
         if (tabIndex === -1) return old
@@ -522,6 +526,7 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
             valuesSearch: {
               ...tabData.valuesSearch,
               queries: { ...tabData.valuesSearch.queries, [currentIndex]: query },
+              queryWrittenBy: { ...tabData.valuesSearch.queryWrittenBy, [currentIndex]: writtenBy },
             },
           },
         ]

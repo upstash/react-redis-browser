@@ -23,7 +23,7 @@ import { WizardButton } from "./query-wizard/wizard-button"
 import { SearchEmptyState } from "./search-empty-state"
 import { Sidebar } from "./sidebar"
 import { UIQueryBuilder } from "./ui-query-builder"
-import { getQueryBuilderError } from "./ui-query-builder/query-parser"
+import { getQueryBuilderError } from "./ui-query-builder/builder-query"
 
 export const PREFIX = "const query: Query = "
 
