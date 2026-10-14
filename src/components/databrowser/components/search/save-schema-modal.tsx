@@ -16,7 +16,9 @@ import { Progress } from "@/components/ui/progress"
 
 import { FETCH_SEARCH_INDEX_QUERY_KEY } from "../../hooks/use-fetch-search-index"
 import { FETCH_SEARCH_INDEXES_QUERY_KEY } from "../../hooks/use-fetch-search-indexes"
-import { parseSchemaFromEditorValue } from "./schema-parser"
+import { parsePrefixes, parseSchemaFromEditorValue, validateIndexDefinition } from "./schema-parser"
+
+const toError = (error: unknown) => (error instanceof Error ? error : new Error(String(error)))
 
 type FormValues = {
   indexName: string
@@ -53,28 +55,45 @@ export const SaveSchemaModal = ({
       const result = parseSchemaFromEditorValue(values.editorValue)
       if (!result.success) throw new Error(result.error)
 
-      // Drop and recreate index in a transaction
+      const prefixes = parsePrefixes(values.prefixes)
+      const validationError = validateIndexDefinition({ schema: result.schema, prefixes })
+      if (validationError) throw new Error(validationError)
+
+      // Drop and recreate index
       setStatus("Saving index...")
       setProgress(33)
 
-      // const tx = redis.multi()
+      // Keep the current definition to restore it if the new one can't be created
+      const original = await redis.search.index({ name: values.indexName }).describe()
+      if (!original) throw new Error(`Index "${values.indexName}" was not found`)
+
       await redis.search.index({ name: values.indexName }).drop()
 
       try {
         await redis.search.createIndex({
           name: values.indexName,
           dataType: values.dataType as any,
-          prefix: values.prefixes
-            .split(",")
-            .map((p) => p.trim())
-            .filter(Boolean),
+          prefix: prefixes,
           language: values.language as any,
           schema: result.schema as any,
         })
-      } catch (txError) {
-        const err = txError instanceof Error ? txError : new Error(String(txError))
+      } catch (createError) {
+        const createMessage = formatUpstashErrorMessage(toError(createError))
+        try {
+          await redis.search.createIndex({
+            name: values.indexName,
+            dataType: original.dataType as any,
+            prefix: original.prefixes,
+            language: original.language,
+            schema: original.schema as any,
+          })
+        } catch (restoreError) {
+          throw new Error(
+            `Your index was deleted, but there was an error when trying to re-create it: ${createMessage}. Restoring the original index also failed: ${formatUpstashErrorMessage(toError(restoreError))}`
+          )
+        }
         throw new Error(
-          `Your index was deleted, but there was an error when trying to re-create it: ${formatUpstashErrorMessage(err)}`
+          `Could not save the schema, the original index was restored: ${createMessage}`
         )
       }
 
@@ -98,7 +117,7 @@ export const SaveSchemaModal = ({
 
       onClose()
     } catch (catchedError) {
-      setError(catchedError instanceof Error ? catchedError : new Error(String(catchedError)))
+      setError(toError(catchedError))
       setStatus(undefined)
     }
   }
