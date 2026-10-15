@@ -17,8 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SimpleTooltip } from "@/components/ui/tooltip"
 
-import { useKeys } from "../../hooks/use-keys"
-import { ViewToggle } from "./view-toggle"
+import { useKeys } from "../../../../hooks/use-keys"
 
 // Longer paths keep the first and the last crumbs and fold the middle into a menu. Narrow
 // sidebars fold more, so that the open folder stays readable.
@@ -161,16 +160,12 @@ export const FolderBreadcrumb = () => {
           </>
         )}
       </div>
-
-      <div className="flex shrink-0 items-center gap-1.5">
-        <DelimiterSetting />
-        <ViewToggle />
-      </div>
     </nav>
   )
 }
 
-const DelimiterSetting = () => {
+/** The delimiter that splits keys into folders, in the footer below the list */
+export const DelimiterSetting = () => {
   const { folderDelimiter, setFolderDelimiter } = useDatabrowserStore()
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState(folderDelimiter)
@@ -191,14 +186,17 @@ const DelimiterSetting = () => {
       <SimpleTooltip content={open ? undefined : "Folder delimiter"}>
         <PopoverTrigger asChild>
           <button
-            className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-md border border-zinc-300 bg-white px-1.5 font-mono text-xs text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
+            className="flex h-6 shrink-0 items-center gap-1.5 rounded-md pl-2 pr-1 text-zinc-500 transition-colors hover:bg-zinc-200 hover:text-zinc-900 data-[state=open]:bg-zinc-200 data-[state=open]:text-zinc-900 dark:hover:bg-zinc-300"
             aria-label="Folder delimiter"
           >
-            {folderDelimiter}
+            Delimiter
+            <span className="flex h-5 min-w-5 items-center justify-center rounded border border-zinc-300 bg-white px-1 font-mono text-xs text-zinc-700">
+              {folderDelimiter}
+            </span>
           </button>
         </PopoverTrigger>
       </SimpleTooltip>
-      <PopoverContent align="end" className="w-64 p-3">
+      <PopoverContent align="end" side="top" className="w-64 p-3">
         <form
           className="flex flex-col gap-2"
           onSubmit={(e) => {

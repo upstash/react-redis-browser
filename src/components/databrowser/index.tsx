@@ -18,6 +18,7 @@ import type { UseQueryWizard } from "./components/query-wizard/types"
 import { QueryWizardProvider } from "./components/query-wizard/use-query-wizard"
 import { CompactLayoutContext, useCompactLayoutObserver } from "./hooks/use-compact-layout"
 import { FoldersEnabledContext } from "./hooks/use-folders-enabled"
+import { ListBarVariantContext, type ListBarVariant } from "./hooks/use-list-bar-variant"
 
 /**
  * Persistence storage interface for the Databrowser.
@@ -45,6 +46,7 @@ export const RedisBrowser = ({
   theme = "light",
   allowSearch = false,
   disableFolders = false,
+  listBarVariant = "a",
   useQueryWizard,
 }: RedisCredentials & {
   /**
@@ -125,6 +127,13 @@ export const RedisBrowser = ({
   disableFolders?: boolean
 
   /**
+   * Design review only: which list bar design to show above the key list.
+   *
+   * @default "a"
+   */
+  listBarVariant?: ListBarVariant
+
+  /**
    * AI Query Wizard function for generating Redis search queries from natural language.
    * When provided, a wizard button (🪄) appears in the Search tab that allows users to
    * generate queries using AI.
@@ -176,15 +185,17 @@ export const RedisBrowser = ({
           <DatabrowserProvider storage={storage} rootRef={rootRef}>
             <QueryWizardProvider value={useQueryWizard}>
               <FoldersEnabledContext.Provider value={!disableFolders}>
-                <TooltipProvider>
-                  <RedisBrowserRoot
-                    allowSearch={allowSearch}
-                    hideTabs={hideTabs}
-                    tabType={tabType}
-                    rootRef={rootRef}
-                    onFullScreenClick={onFullScreenClick}
-                  />
-                </TooltipProvider>
+                <ListBarVariantContext.Provider value={listBarVariant}>
+                  <TooltipProvider>
+                    <RedisBrowserRoot
+                      allowSearch={allowSearch}
+                      hideTabs={hideTabs}
+                      tabType={tabType}
+                      rootRef={rootRef}
+                      onFullScreenClick={onFullScreenClick}
+                    />
+                  </TooltipProvider>
+                </ListBarVariantContext.Provider>
               </FoldersEnabledContext.Provider>
             </QueryWizardProvider>
           </DatabrowserProvider>
