@@ -1,9 +1,12 @@
 import { useRedis } from "@/redis-context"
+import type { SearchFilter } from "@/store"
 import type { DataType, RedisKey } from "@/types"
 import { useMutation, type InfiniteData } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
+import { matchesGlob } from "@/lib/utils"
 
+import { FETCH_KEY_TYPE_QUERY_KEY } from "./use-fetch-key-type"
 import { FETCH_KEYS_QUERY_KEY } from "./use-keys"
 
 export const useAddKey = () => {
@@ -57,6 +60,9 @@ export const useAddKey = () => {
       }
     },
     onSuccess: (_, { key, type }) => {
+      // Lets the new key be displayed even when it is not in the current list
+      queryClient.setQueryData([FETCH_KEY_TYPE_QUERY_KEY, key], type)
+
       queryClient.setQueriesData<
         InfiniteData<{
           keys: RedisKey[]
@@ -65,6 +71,20 @@ export const useAddKey = () => {
       >(
         {
           queryKey: [FETCH_KEYS_QUERY_KEY],
+          // Only add the key to key scans whose filters it matches, never to value searches
+          predicate: ({ queryKey }) => {
+            const [, search, , isValuesSearchSelected] = queryKey as [
+              string,
+              SearchFilter,
+              unknown,
+              boolean,
+            ]
+            return (
+              !isValuesSearchSelected &&
+              (!search.type || search.type === type) &&
+              (!search.key || matchesGlob(search.key, key))
+            )
+          },
         },
         (data) => {
           if (!data) return
