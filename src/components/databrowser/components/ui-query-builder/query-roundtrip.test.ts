@@ -71,9 +71,10 @@ const queries: (Record<string, unknown> | [Record<string, unknown>, Record<strin
   // root $or stays and flattened with $boost
   [{ $or: { name: "foo", $boost: 2 } }, { $or: { name: "foo", $boost: 2 } }],
 
-  // do not flatten
-  { name: "foo", $or: { age: 18, $boost: 2 } },
-  { name: "foo", $or: { age: 18, $boost: 2 }, $boost: 3 },
+  // do not flatten $or next to other keys, the server would treat it as an optional boost
+  { $and: [{ name: "foo" }, { $or: { age: 18 }, $boost: 2 }] },
+  { $and: [{ name: "foo" }, { $or: { age: 18 }, $boost: 2 }], $boost: 3 },
+  { $and: [{ name: "foo" }, { $or: { age: 18, title: "bar" } }] },
   { name: "foo", $and: { age: 18, $boost: 2 }, $boost: 3 },
 
   // flatten the $boost
@@ -224,14 +225,14 @@ const queries: (Record<string, unknown> | [Record<string, unknown>, Record<strin
     { $and: { name: "foo" }, $mustNot: { age: 18 } },
   ],
 
-  // nested groups (root AND flattens, inner $or merges to object form)
+  // nested groups (root AND can't flatten next to $or, inner $or merges to object form)
   [
     { $and: [{ $or: [{ name: "a" }, { status: "b" }] }, { active: true }] },
-    { $or: { name: "a", status: "b" }, active: true },
+    { $and: [{ $or: { name: "a", status: "b" } }, { active: true }] },
   ],
   [
     { $and: [{ $or: [{ name: "a" }, { status: { $eq: "b" } }] }, { active: true }] },
-    { $or: { name: "a", status: { $eq: "b" } }, active: true },
+    { $and: [{ $or: { name: "a", status: { $eq: "b" } } }, { active: true }] },
   ],
 ]
 
@@ -263,6 +264,10 @@ const group = (groupOperator: "and" | "or", children: QueryNode[], boost?: numbe
 // Builder states that the parser never produces from the expected output directly
 const builderStates: [QueryNode, Record<string, unknown>][] = [
   [
+    group("and", [group("and", [cond("a", "1"), cond("b", "2")]), group("or", [cond("c", "3")])]),
+    { $and: [{ a: { $eq: "1" }, b: { $eq: "2" } }, { $or: { c: { $eq: "3" } } }] },
+  ],
+  [
     group("or", [cond("a", "1"), group("and", [cond("b", "2", true)])]),
     { $or: [{ a: { $eq: "1" } }, { $and: [{}], $mustNot: { b: { $eq: "2" } } }] },
   ],
@@ -285,6 +290,11 @@ const builderStates: [QueryNode, Record<string, unknown>][] = [
       $and: { a: { $eq: "1" } },
       $mustNot: [{ $and: { b: { $eq: "2" } }, $mustNot: { c: { $eq: "3" } } }],
     },
+  ],
+  // A child group's $mustNot is not flattened into the root
+  [
+    group("and", [cond("a", "1"), group("and", [cond("b", "2", true)])]),
+    { $and: [{ a: { $eq: "1" } }, { $and: [{}], $mustNot: { b: { $eq: "2" } } }] },
   ],
 ]
 
