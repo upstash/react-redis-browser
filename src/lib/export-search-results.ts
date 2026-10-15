@@ -4,6 +4,10 @@ export type ExportFormat = "csv" | "json"
 
 const PAGE_SIZE = 1000
 const SAMPLE_SIZE = 50
+// SEARCH.QUERY rejects OFFSET above 10,000 and has no cursor, so only the first
+// MAX_OFFSET + PAGE_SIZE results of a query can be read.
+const MAX_OFFSET = 10_000
+export const MAX_EXPORT_RESULTS = MAX_OFFSET + PAGE_SIZE
 
 type IndexDataType = "string" | "hash" | "json"
 
@@ -38,7 +42,7 @@ export const exportSearchResults = async (opts: {
   format: ExportFormat
   signal?: AbortSignal
   onProgress?: (p: { count: number; bytes: number }) => void
-}): Promise<{ content: string; count: number; bytes: number }> => {
+}): Promise<{ content: string; count: number; bytes: number; truncated: boolean }> => {
   const { searchRedis, readRedis, indexName, filter, dataType, format, signal, onProgress } = opts
 
   const index = searchRedis.search.index({ name: indexName })
@@ -46,7 +50,7 @@ export const exportSearchResults = async (opts: {
   let offset = 0
   let bytes = 0
 
-  for (;;) {
+  while (offset <= MAX_OFFSET) {
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError")
 
     // `select: {}` -> NOCONTENT -> returns just { key, score } for each match (the proven path).
@@ -76,11 +80,21 @@ export const exportSearchResults = async (opts: {
     if (rows.length < PAGE_SIZE) break
   }
 
+  // Reading up to the offset cap means there may be more matches.
+  const truncated =
+    docs.length === MAX_EXPORT_RESULTS &&
+    (await index.count({ filter }).then(
+      ({ count }) => count > docs.length,
+      () => true
+    ))
+
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError")
+
   const content = format === "csv" ? serializeCsv(docs) : serializeJson(docs)
 
   // Report the actual serialized output size (the running `bytes` above is a raw
   // approximation used only for live progress and won't match the final file).
-  return { content, count: docs.length, bytes: new Blob([content]).size }
+  return { content, count: docs.length, bytes: new Blob([content]).size, truncated }
 }
 
 /**
