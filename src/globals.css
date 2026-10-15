@@ -583,6 +583,7 @@ svg.tabler-icon {
 }
 
 [data-compact="true"] .browser-key-row,
+[data-compact="true"] .browser-folder-row,
 [data-compact="true"] .browser-item-row {
   min-height: 44px;
   touch-action: manipulation;
@@ -602,7 +603,8 @@ svg.tabler-icon {
   padding-block: 4px;
 }
 
-[data-compact="true"] .browser-key-row {
+[data-compact="true"] .browser-key-row,
+[data-compact="true"] .browser-folder-row {
   padding-inline: 8px;
 }
 
