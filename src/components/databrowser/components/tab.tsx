@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/context-menu"
 import { SimpleTooltip } from "@/components/ui/tooltip"
 
+import { useFoldersEnabled } from "../hooks/use-folders-enabled"
 import { TabTypeIcon } from "./tab-type-icon"
 
 export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
@@ -42,6 +43,7 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
     reopenClosedTab,
   } = useDatabrowserStore()
   const rootRef = useDatabrowserRootRef()
+  const foldersEnabled = useFoldersEnabled()
 
   const hasPinnedTabs = tabs.some(([, data]) => data.pinned)
 
@@ -60,7 +62,7 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
   }
 
   const keyLabel = selectedKey === "" ? "(Empty Key)" : selectedKey
-  const folderLabel = keyListView === "folders" ? folder : ""
+  const folderLabel = foldersEnabled && keyListView === "folders" ? folder : ""
   const label = isValuesSearchSelected ? valuesSearch.index : search.key || keyLabel || folderLabel
   const iconNode = isValuesSearchSelected ? (
     <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-emerald-200 text-emerald-800">

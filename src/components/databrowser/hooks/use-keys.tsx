@@ -21,6 +21,7 @@ import { parseJSObjectLiteral } from "@/lib/utils"
 
 import { FETCH_KEY_TYPE_QUERY_KEY, useFetchKeyType } from "./use-fetch-key-type"
 import { useFetchSearchIndex } from "./use-fetch-search-index"
+import { useFoldersEnabled } from "./use-folders-enabled"
 
 export type FolderView = {
   /** True when the list shows folders, false for the flat key list */
@@ -109,6 +110,7 @@ type ScanResult = { cursor: string; keys: KeyListEntry[] }
 export const KeysProvider = ({ children }: PropsWithChildren) => {
   const { active, search, valuesSearch, isValuesSearchSelected, folder } = useTab()
   const { keyListView, folderDelimiter } = useDatabrowserStore()
+  const foldersEnabled = useFoldersEnabled()
   const { data: searchIndexDetails, isLoading: isIndexDetailsLoading } = useFetchSearchIndex(
     valuesSearch.index,
     { enabled: isValuesSearchSelected }
@@ -124,14 +126,18 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
 
   // Search indexes and value search results have no folders
   const wantsFolders =
-    keyListView === "folders" && !isValuesSearchSelected && search.type !== "search"
+    foldersEnabled &&
+    keyListView === "folders" &&
+    !isValuesSearchSelected &&
+    search.type !== "search"
   const folderSupport = useFolderSupport({
     scansFolders: wantsFolders && isPrefixSearch(search.key),
-    active,
+    // Turned off folders never probe the server
+    active: active && foldersEnabled,
   })
   const folderView: FolderView = {
     enabled: wantsFolders && folderSupport === true,
-    supported: folderSupport,
+    supported: foldersEnabled ? folderSupport : false,
     folder,
     delimiter: folderDelimiter,
   }
