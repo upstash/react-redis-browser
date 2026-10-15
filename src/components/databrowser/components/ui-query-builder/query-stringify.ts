@@ -79,7 +79,11 @@ const mergeConditions = (children: QueryNode[], boost?: number): Record<string, 
   return merged
 }
 
-/** Build $mustNot value: object form for single item, array for multiple */
+/**
+ * Build $mustNot value: object form for a single item with a single key, array otherwise.
+ * The server excludes each key of an object form separately, so an item with multiple
+ * keys (e.g. { $and: [{}], $mustNot: ... }) must stay one array item.
+ */
 const buildMustNot = (
   negatedChildren: QueryNode[]
 ): Record<string, unknown> | Record<string, unknown>[] => {
@@ -87,7 +91,9 @@ const buildMustNot = (
     const withoutNot = { ...child, not: undefined }
     return queryNodeToObject(withoutNot, false)
   })
-  return negatedObjects.length === 1 ? negatedObjects[0] : negatedObjects
+  return negatedObjects.length === 1 && Object.keys(negatedObjects[0]).length === 1
+    ? negatedObjects[0]
+    : negatedObjects
 }
 
 /** Convert a group node to a query object */
@@ -209,8 +215,9 @@ const groupToObject = (
       return queryNodeToObject(child, false, true)
     })
   } else if (negatedChildren.length > 0) {
-    // Preserve empty group operator when there are negated children
-    result[`$${groupOperator}`] = {}
+    // Only negated children: $mustNot alone has nothing to exclude from, so match all
+    // documents with [{}] (an empty object is rejected by the server)
+    result[`$${groupOperator}`] = [{}]
   }
 
   if (negatedChildren.length > 0) {
