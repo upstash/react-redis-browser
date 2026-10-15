@@ -14,6 +14,29 @@ export function safeParseJSON<T>(value: string): T | undefined {
 }
 
 /**
+ * Turns search box text into a SCAN MATCH pattern. Text containing `*` is used as a glob;
+ * plain text is matched literally as a prefix, so `[`, `]`, `?` and `\` are escaped.
+ */
+export function toKeySearchPattern(value: string): string {
+  if (value.trim() === "" || value.includes("*")) return value
+  return `${value.replaceAll(/[?[\\\]]/g, String.raw`\$&`)}*`
+}
+
+/**
+ * Inverse of `toKeySearchPattern`: search box text that produces `pattern`. Patterns that aren't
+ * escaped text plus a trailing `*` are user globs and come back unchanged.
+ */
+export function fromKeySearchPattern(pattern: string): string {
+  if (!pattern.endsWith("*")) return pattern
+  const prefix = pattern.slice(0, -1)
+  // Blank text isn't turned into a pattern, so this can't have come from one
+  if (prefix.trim() === "" && prefix !== "") return pattern
+  // Every glob char escaped -> built from plain text
+  if (!/^(?:[^*?[\\\]]|\\[?[\\\]])*$/.test(prefix)) return pattern
+  return prefix.replaceAll(/\\(.)/g, "$1")
+}
+
+/**
  * Parses a JavaScript object literal string (with unquoted keys) into a JS object.
  * Adds double quotes around unquoted keys like `$and:` -> `"$and":`
  */
