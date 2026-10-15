@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
-import { parseJSObjectLiteral } from "./utils"
+import { parseJSObjectLiteral, parseSearchQuery } from "./utils"
 
 describe("parseJSObjectLiteral", () => {
   test("never rewrites string contents", () => {
@@ -29,5 +29,13 @@ describe("parseJSObjectLiteral", () => {
     expect(parseJSObjectLiteral<unknown>(`{ a: undefined }`)).toBeUndefined()
     expect(parseJSObjectLiteral<unknown>(`{,}`)).toBeUndefined()
     expect(parseJSObjectLiteral<unknown>(`{ a: [,] }`)).toBeUndefined()
+  })
+})
+
+describe("parseSearchQuery", () => {
+  test("empty query matches everything, invalid query is undefined", () => {
+    expect(parseSearchQuery("  ")).toEqual({})
+    expect(parseSearchQuery(`{ title: "x"`)).toBeUndefined()
+    expect(parseSearchQuery(`[1]`)).toBeUndefined()
   })
 })
