@@ -56,6 +56,7 @@ export const SearchInput = () => {
           : e.currentTarget.value
       handleSubmit(text)
     } else if (e.key === "Escape") {
+      setSearchKey("")
       setState("")
       setFocusedIndex(-1)
       inputRef.current?.blur()
