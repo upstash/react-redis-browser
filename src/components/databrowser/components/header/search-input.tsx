@@ -3,6 +3,7 @@ import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
 import { IconX } from "@tabler/icons-react"
 
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -35,15 +36,21 @@ export const SearchInput = () => {
   const inputRef = useRef<HTMLInputElement>(null)
   const historyItemRefs = useRef<(HTMLButtonElement | null)[]>([])
 
+  // Inside a folder the search is relative to it, so the folder shows as a fixed prefix
+  const prefix = folderView.enabled ? folderView.folder : ""
+
   const handleSubmit = (value: string) => {
     if (value.trim() !== "" && !value.includes("*")) value = `${value}*`
-    addSearchHistory(value)
+    // History keeps the full pattern, so it only comes up again in the same folder
+    if (value) addSearchHistory(prefix + value)
     setSearchKey(value)
     setState(value)
   }
 
   const filteredHistory = dedupeSearchHistory(
     searchHistory
+      .filter((item) => item.startsWith(prefix))
+      .map((item) => item.slice(prefix.length))
       .filter((item) => item.trim() !== "" && item.trim() !== "*")
       .filter((item) => item.includes(state) && item !== state)
   )
@@ -91,15 +98,30 @@ export const SearchInput = () => {
     <div className="browser-search relative min-w-0 grow">
       <Popover open={isFocus && filteredHistory.length > 0}>
         <PopoverTrigger asChild>
-          <div className="h-8 rounded-md border border-zinc-300 font-normal">
+          <div
+            className="flex h-8 items-center rounded-md border border-zinc-300 bg-white font-normal"
+            onMouseDown={(e) => {
+              // Clicking the prefix focuses the input
+              if (e.target !== inputRef.current) {
+                e.preventDefault()
+                inputRef.current?.focus()
+              }
+            }}
+          >
+            {prefix && (
+              // Cut long folders from the left, the end is closest to the keys
+              <span
+                dir="rtl"
+                title={prefix}
+                className="max-w-[50%] shrink-0 cursor-text truncate pl-3 text-sm text-zinc-400"
+              >
+                <span dir="ltr">{prefix}</span>
+              </span>
+            )}
             <Input
               ref={inputRef}
-              placeholder={
-                folderView.enabled && folderView.folder
-                  ? `Search in ${folderView.folder}`
-                  : "Search"
-              }
-              className={"h-full border-none pr-6"}
+              placeholder="Search"
+              className={cn("h-full min-w-0 border-none pr-6", prefix && "pl-0")}
               onKeyDown={handleKeyDown}
               onChange={(e) => {
                 setState(e.currentTarget.value)
