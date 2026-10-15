@@ -16,7 +16,7 @@ export const NodeActionsMenu = ({ node }: { node: QueryNode }) => {
   const [open, setOpen] = useState(false)
 
   const handleToggleBoost = () => {
-    updateNode(node.id, { boost: node.boost ? undefined : 2 })
+    updateNode(node.id, { boost: node.boost === undefined ? 2 : undefined })
   }
 
   const handleToggleNot = () => {

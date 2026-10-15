@@ -2,6 +2,9 @@ import { toJsLiteral } from "@/lib/utils"
 
 import type { FieldOperator, QueryNode, QueryState } from "./types"
 
+/** Boost 1 is the default and can be omitted, but 0 (or any other value) must be kept */
+const hasBoost = (boost: number | undefined): boost is number => boost !== undefined && boost !== 1
+
 /** A group with no conditions anywhere inside it adds no constraint, so it is skipped */
 const isEmptyGroup = (node: QueryNode): boolean =>
   node.type === "group" && node.children.every((child) => isEmptyGroup(child))
@@ -44,7 +47,7 @@ const conditionToObject = (node: QueryNode & { type: "condition" }): Record<stri
   // Shorthand for $smart without boost, or $eq on boolean/number without boost
   const isCollapsibleEq =
     operator === "eq" && (typeof value === "boolean" || typeof value === "number")
-  if ((operator === "smart" || isCollapsibleEq) && !effectiveBoost) {
+  if ((operator === "smart" || isCollapsibleEq) && !hasBoost(effectiveBoost)) {
     return { [field]: value }
   }
 
@@ -54,9 +57,8 @@ const conditionToObject = (node: QueryNode & { type: "condition" }): Record<stri
   }
 
   // Apply boost to the field condition - node.boost takes priority over conditionBoost
-  const finalBoost = node.boost ?? conditionBoost
-  if (finalBoost && finalBoost !== 1) {
-    fieldCondition.$boost = finalBoost
+  if (hasBoost(effectiveBoost)) {
+    fieldCondition.$boost = effectiveBoost
   }
 
   return { [field]: fieldCondition }
@@ -77,7 +79,7 @@ const mergeConditions = (children: QueryNode[], boost?: number): Record<string, 
       Object.assign(merged, conditionToObject(child as QueryNode & { type: "condition" }))
     }
   }
-  if (boost && boost !== 1) {
+  if (hasBoost(boost)) {
     merged.$boost = boost
   }
   return merged
@@ -123,7 +125,7 @@ const groupToObject = (
     const withoutNot = { ...node, not: undefined } as QueryNode & { type: "group" }
     const inner = groupToObject(withoutNot, false)
     // OR group with not and no negated children → flatten to $mustNot array
-    if (groupOperator === "or" && !boost && negatedChildren.length === 0) {
+    if (groupOperator === "or" && !hasBoost(boost) && negatedChildren.length === 0) {
       const childObjects = normalChildren.map((child) => queryNodeToObject(child, false))
       return { $mustNot: childObjects }
     }
@@ -136,7 +138,7 @@ const groupToObject = (
     // Single child: just unwrap it
     if (normalChildren.length === 1) {
       const result = queryNodeToObject(normalChildren[0], false)
-      if (boost && boost !== 1) result.$boost = boost
+      if (hasBoost(boost)) result.$boost = boost
       return result
     }
 
@@ -148,7 +150,7 @@ const groupToObject = (
     // Don't flatten if a group child has same operator, multiple children, and boost
     // (would create confusing nested $and inside root AND)
     const hasConflictingGroupChild = groupChildren.some(
-      (c) => c.groupOperator === groupOperator && c.children.length > 1 && c.boost
+      (c) => c.groupOperator === groupOperator && c.children.length > 1 && hasBoost(c.boost)
     )
 
     if (!hasConflictingGroupChild) {
@@ -169,7 +171,7 @@ const groupToObject = (
 
       if (canFlatten) {
         const result: Record<string, unknown> = Object.assign({}, ...childObjects)
-        if (boost && boost !== 1) result.$boost = boost
+        if (hasBoost(boost)) result.$boost = boost
         return result
       }
     }
@@ -186,7 +188,7 @@ const groupToObject = (
     if (forArray) {
       // Array context: boost goes outside as sibling of $op key
       result[`$${groupOperator}`] = mergeConditions(normalChildren)
-      if (boost && boost !== 1) result.$boost = boost
+      if (hasBoost(boost)) result.$boost = boost
     } else {
       // Standalone/merged context: boost goes inside the operator value
       result[`$${groupOperator}`] = mergeConditions(normalChildren, boost)
@@ -232,7 +234,7 @@ const groupToObject = (
     result.$mustNot = buildMustNot(negatedChildren)
   }
 
-  if (boost && boost !== 1) {
+  if (hasBoost(boost)) {
     result.$boost = boost
   }
 
