@@ -1,7 +1,14 @@
 import { test as base, expect } from "@playwright/test"
 
-const test = base.extend<{ searchMode: boolean }>({
+// Every command the mocked server received, and how many of its replies were HTTP errors
+type MockLog = { commands: unknown[][]; failedResponses: number }
+
+const test = base.extend<{ searchMode: boolean; folders: boolean; mockLog: MockLog }>({
   searchMode: [false, { option: true }],
+  // Whether the mocked server supports SCAN ... DELIMITER, like Upstash Redis with folders
+  folders: [false, { option: true }],
+  // eslint-disable-next-line no-empty-pattern
+  mockLog: async ({}, use) => use({ commands: [], failedResponses: 0 }),
 })
 
 const keys = Array.from({ length: 100 }, (_, index) => `customer:${String(index).padStart(3, "0")}`)
@@ -15,7 +22,30 @@ const encode = (value: unknown): unknown => {
   return value
 }
 
-test.beforeEach(async ({ page, baseURL, searchMode }) => {
+const getType = (key: string) => (key === hashKey ? "hash" : "string")
+
+// An error reply of the mocked Redis server
+class RedisError extends Error {}
+
+/**
+ * Lists `matching` like `SCAN ... DELIMITER d WITHCOUNT`: keys below `prefix` with another
+ * delimiter are grouped into folders, and a folder with a single key shows as that key.
+ */
+const scanFolders = (matching: string[], prefix: string, delimiter: string) => {
+  const groups = new Map<string, string[]>()
+  for (const key of matching) {
+    const index = key.indexOf(delimiter, prefix.length)
+    const name = index === -1 ? key : key.slice(0, index + delimiter.length)
+    groups.set(name, [...(groups.get(name) ?? []), key])
+  }
+  return [...groups].flatMap(([name, inside]) =>
+    inside.length === 1
+      ? [inside[0], getType(inside[0]), "1"]
+      : [name, "folder", inside.length >= 100 ? "100+" : String(inside.length)]
+  )
+}
+
+test.beforeEach(async ({ page, baseURL, searchMode, folders, mockLog }) => {
   await page.addInitScript(() => {
     ;(window as any).__PLAYWRIGHT__ = true
   })
@@ -33,13 +63,14 @@ test.beforeEach(async ({ page, baseURL, searchMode }) => {
           const matchIndex = command.indexOf("MATCH")
           const prefix = matchIndex >= 0 ? String(command[matchIndex + 1]).replaceAll("*", "") : ""
           const matching = [...keys, hashKey, longKey, ""].filter((key) => key.startsWith(prefix))
+          const delimiterIndex = command.indexOf("DELIMITER")
+          if (delimiterIndex >= 0) {
+            // Servers without folder support reject DELIMITER
+            if (!folders) throw new RedisError("ERR syntax error")
+            return ["0", scanFolders(matching, prefix, String(command[delimiterIndex + 1]))]
+          }
           const withType = command.includes("WITHTYPE")
-          return [
-            "0",
-            withType
-              ? matching.flatMap((key) => [key, key === hashKey ? "hash" : "string"])
-              : matching,
-          ]
+          return ["0", withType ? matching.flatMap((key) => [key, getType(key)]) : matching]
         }
         case "SEARCH.LISTINDEXES": {
           return [["name", "idx_customers", "type", "STRING"]]
@@ -90,14 +121,30 @@ test.beforeEach(async ({ page, baseURL, searchMode }) => {
         }
       }
     }
+    const run = (command: unknown[]): { result?: unknown; error?: string } => {
+      mockLog.commands.push(command)
+      try {
+        return { result: encode(execute(command)) }
+      } catch (error) {
+        if (error instanceof RedisError) return { error: error.message }
+        throw error
+      }
+    }
     const body = request.postDataJSON()
-    const result = Array.isArray(body[0])
-      ? body.map((command: unknown[]) => ({ result: encode(execute(command)) }))
-      : { result: encode(execute(body)) }
-    await route.fulfill({ json: result })
+    // Like Upstash REST, the pipeline endpoint returns errors inside a 200 response, a
+    // single command returns them with a 400.
+    if (Array.isArray(body[0]))
+      return route.fulfill({ json: body.map((command: unknown[]) => run(command)) })
+    const response = run(body)
+    if (response.error !== undefined) mockLog.failedResponses += 1
+    await route.fulfill({ status: response.error === undefined ? 200 : 400, json: response })
   })
   await page.goto(`/tests/mobile/index.html${searchMode ? "?search" : ""}`)
-  await expect(page.getByRole("button", { name: keys[0], exact: true })).toBeVisible()
+  await expect(
+    folders
+      ? page.locator('[data-folder="customer:"]')
+      : page.getByRole("button", { name: keys[0], exact: true })
+  ).toBeVisible()
 })
 
 test("touch opens a full-width detail, and Back restores list scroll", async ({ page }) => {
@@ -299,6 +346,41 @@ test("a failed next page waits for an explicit retry", async ({ page }) => {
   await expect.poll(() => cursors).toEqual(["0", "1", "1"])
   await page.waitForTimeout(500)
   expect(cursors).toEqual(["0", "1", "1"])
+})
+
+test("a server without folders gets the flat list from one folder scan that does not fail", async ({
+  page,
+  mockLog,
+}) => {
+  // Give a follow-up support check the time to go out
+  await page.waitForTimeout(500)
+  expect(mockLog.commands.filter((command) => command.includes("DELIMITER"))).toHaveLength(1)
+  expect(mockLog.failedResponses).toBe(0)
+  await expect(page.getByRole("radiogroup", { name: "Key list view" })).not.toBeAttached()
+})
+
+test.describe("folders", () => {
+  test.use({ folders: true })
+
+  test("folders open on touch and show the keys inside", async ({ page }) => {
+    const folder = page.locator('[data-folder="customer:"]')
+    await expect(folder).toContainText("99+")
+    await expect(page.getByRole("radiogroup", { name: "Key list view" })).toBeVisible()
+    // A folder with a single key shows as the key
+    await expect(page.locator(`[data-key="${longKey}"]`)).toBeVisible()
+    const row = page.locator(`[data-key="${keys[0]}"]`)
+    await expect(row).not.toBeAttached()
+    await folder.tap()
+    await expect(row).toHaveText("000")
+    await expect(page.locator(`[data-key="${hashKey}"]`)).toBeAttached()
+    await row.tap()
+    await expect(page.getByRole("textbox", { name: "editor" })).toHaveValue(`Value for ${keys[0]}`)
+    await page.getByRole("button", { name: "Back to keys" }).tap()
+    await expect(row).toBeVisible()
+    await page.getByRole("button", { name: "Up one folder" }).tap()
+    await expect(folder).toBeVisible()
+    await expect(row).not.toBeAttached()
+  })
 })
 
 test.describe("search", () => {

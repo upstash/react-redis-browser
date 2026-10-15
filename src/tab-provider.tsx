@@ -28,6 +28,7 @@ export const useTab = () => {
     setSearch,
     setSearchKey,
     setSearchType,
+    setFolder,
     setValuesSearch,
     setValuesSearchIndex,
     setValuesSearchQuery,
@@ -54,6 +55,7 @@ export const useTab = () => {
       isValuesSearchSelected: tabData.isValuesSearchSelected,
       queryBuilderMode: tabData.valuesSearch.queryBuilderMode ?? "ui",
       pinned: tabData.pinned,
+      folder: tabData.folder ?? "",
 
       setSelectedKey: (key: string | undefined) => setSelectedKey(tabId, key),
       setSelectedKeys: (keys: string[]) => setSelectedKeys(tabId, keys),
@@ -61,6 +63,7 @@ export const useTab = () => {
       setSearch: (search: SearchFilter) => setSearch(tabId, search),
       setSearchKey: (key: string) => setSearchKey(tabId, key),
       setSearchType: (type: DataType | undefined) => setSearchType(tabId, type),
+      setFolder: (folder: string) => setFolder(tabId, folder),
       setValuesSearch: (search: ValuesSearchFilter) => setValuesSearch(tabId, search),
       setValuesSearchIndex: (index: string) => setValuesSearchIndex(tabId, index),
       setValuesSearchQuery: (query: string) => setValuesSearchQuery(tabId, query),

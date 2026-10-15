@@ -1,8 +1,9 @@
 import { useRedis } from "@/redis-context"
-import type { DataType, RedisKey } from "@/types"
+import type { DataType } from "@/types"
 import { useMutation, type InfiniteData } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
+import type { KeyListEntry } from "@/lib/folders"
 
 import { FETCH_KEYS_QUERY_KEY } from "./use-keys"
 
@@ -57,25 +58,30 @@ export const useAddKey = () => {
       }
     },
     onSuccess: (_, { key, type }) => {
-      queryClient.setQueriesData<
-        InfiniteData<{
-          keys: RedisKey[]
-          hasNextPage: boolean
-        }>
-      >(
-        {
-          queryKey: [FETCH_KEYS_QUERY_KEY],
-        },
-        (data) => {
+      for (const query of queryClient.getQueryCache().findAll({
+        queryKey: [FETCH_KEYS_QUERY_KEY],
+      })) {
+        // The folder view lists the key under its folder, which only a new scan can tell
+        if (query.queryKey[4]) {
+          queryClient.invalidateQueries({ queryKey: query.queryKey, exact: true })
+          continue
+        }
+
+        queryClient.setQueryData<
+          InfiniteData<{
+            entries: KeyListEntry[]
+            hasNextPage: boolean
+          }>
+        >(query.queryKey, (data) => {
           if (!data) return
           return {
             ...data,
             pages: data.pages.map((page, i) =>
-              i === 0 ? { ...page, keys: [[key, type] as RedisKey, ...page.keys] } : page
+              i === 0 ? { ...page, entries: [{ kind: "key", key, type }, ...page.entries] } : page
             ),
           }
-        }
-      )
+        })
+      }
     },
   })
   return mutation

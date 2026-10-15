@@ -4,6 +4,7 @@ import { create, useStore, type StateCreator } from "zustand"
 import { persist } from "zustand/middleware"
 
 import type { RedisBrowserStorage } from "./components/databrowser"
+import { DEFAULT_FOLDER_DELIMITER } from "./lib/folders"
 import type { DataType } from "./types"
 
 // Re-export for backward compatibility
@@ -45,7 +46,7 @@ export const DatabrowserProvider = ({
           setItem: (_name, value) => storage.set(JSON.stringify(value)),
           removeItem: () => {},
         },
-        version: 9,
+        version: 10,
         migrate: (originalState, version) => {
           const state = originalState as DatabrowserStore
 
@@ -96,6 +97,12 @@ export const DatabrowserProvider = ({
           if (version <= 8) {
             // Add recently closed tabs stack
             state.closedTabs = state.closedTabs ?? []
+          }
+
+          if (version <= 9) {
+            // Add the folder view of the key list
+            state.keyListView = state.keyListView ?? "folders"
+            state.folderDelimiter = state.folderDelimiter ?? DEFAULT_FOLDER_DELIMITER
           }
 
           return state
@@ -156,7 +163,12 @@ export type TabData = {
   valuesSearch: ValuesSearchFilter
   isValuesSearchSelected: boolean
   pinned?: boolean
+
+  // The open folder in the folder view, like "user:1:". Empty for the root.
+  folder?: string
 }
+
+export type KeyListView = "folders" | "flat"
 
 export type TabId = string & { __tabId: true }
 
@@ -190,6 +202,7 @@ type DatabrowserStore = {
   setSearch: (tabId: TabId, search: SearchFilter) => void
   setSearchKey: (tabId: TabId, key: string) => void
   setSearchType: (tabId: TabId, type: DataType | undefined) => void
+  setFolder: (tabId: TabId, folder: string) => void
 
   setValuesSearch: (tabId: TabId, search: ValuesSearchFilter) => void
   setValuesSearchIndex: (tabId: TabId, index: string) => void
@@ -202,6 +215,11 @@ type DatabrowserStore = {
 
   aiDataSharingConsent: boolean
   setAiDataSharingConsent: (consent: boolean) => void
+
+  keyListView: KeyListView
+  setKeyListView: (view: KeyListView) => void
+  folderDelimiter: string
+  setFolderDelimiter: (delimiter: string) => void
 }
 
 export type DatabrowserStoreObject = UseBoundStore<StoreApi<DatabrowserStore>>
@@ -475,6 +493,20 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
       })
     },
 
+    setFolder: (tabId, folder) => {
+      set((old) => {
+        const tabIndex = old.tabs.findIndex(([id]) => id === tabId)
+        if (tabIndex === -1) return old
+
+        const newTabs = [...old.tabs]
+        const [, tabData] = newTabs[tabIndex]
+        // A search belongs to the folder it was made in
+        newTabs[tabIndex] = [tabId, { ...tabData, folder, search: { ...tabData.search, key: "" } }]
+
+        return { ...old, tabs: newTabs }
+      })
+    },
+
     setValuesSearch: (tabId, valuesSearch) => {
       set((old) => {
         const tabIndex = old.tabs.findIndex(([id]) => id === tabId)
@@ -570,6 +602,20 @@ const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
     aiDataSharingConsent: false,
     setAiDataSharingConsent: (consent) => {
       set({ aiDataSharingConsent: consent })
+    },
+
+    keyListView: "folders",
+    setKeyListView: (view) => {
+      set({ keyListView: view })
+    },
+
+    folderDelimiter: DEFAULT_FOLDER_DELIMITER,
+    setFolderDelimiter: (delimiter) => {
+      set((old) => ({
+        folderDelimiter: delimiter,
+        // Open folders are split by the old delimiter, start over from the root
+        tabs: old.tabs.map(([id, data]) => [id, { ...data, folder: "" }]),
+      }))
     },
   }
 }

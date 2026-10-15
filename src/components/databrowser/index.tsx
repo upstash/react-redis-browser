@@ -17,6 +17,7 @@ import { DatabrowserTabs } from "./components/databrowser-tabs"
 import type { UseQueryWizard } from "./components/query-wizard/types"
 import { QueryWizardProvider } from "./components/query-wizard/use-query-wizard"
 import { CompactLayoutContext, useCompactLayoutObserver } from "./hooks/use-compact-layout"
+import { FoldersEnabledContext } from "./hooks/use-folders-enabled"
 
 /**
  * Persistence storage interface for the Databrowser.
@@ -43,6 +44,7 @@ export const RedisBrowser = ({
   onFullScreenClick,
   theme = "light",
   allowSearch = false,
+  disableFolders = false,
   useQueryWizard,
 }: RedisCredentials & {
   /**
@@ -115,6 +117,14 @@ export const RedisBrowser = ({
   allowSearch?: boolean
 
   /**
+   * Whether to turn off the folder view, which groups keys by a delimiter like ":".
+   * The key list is then always flat and the view toggle is hidden.
+   *
+   * @default false
+   */
+  disableFolders?: boolean
+
+  /**
    * AI Query Wizard function for generating Redis search queries from natural language.
    * When provided, a wizard button (🪄) appears in the Search tab that allows users to
    * generate queries using AI.
@@ -165,15 +175,17 @@ export const RedisBrowser = ({
         <DarkModeProvider theme={theme}>
           <DatabrowserProvider storage={storage} rootRef={rootRef}>
             <QueryWizardProvider value={useQueryWizard}>
-              <TooltipProvider>
-                <RedisBrowserRoot
-                  allowSearch={allowSearch}
-                  hideTabs={hideTabs}
-                  tabType={tabType}
-                  rootRef={rootRef}
-                  onFullScreenClick={onFullScreenClick}
-                />
-              </TooltipProvider>
+              <FoldersEnabledContext.Provider value={!disableFolders}>
+                <TooltipProvider>
+                  <RedisBrowserRoot
+                    allowSearch={allowSearch}
+                    hideTabs={hideTabs}
+                    tabType={tabType}
+                    rootRef={rootRef}
+                    onFullScreenClick={onFullScreenClick}
+                  />
+                </TooltipProvider>
+              </FoldersEnabledContext.Provider>
             </QueryWizardProvider>
           </DatabrowserProvider>
         </DarkModeProvider>
