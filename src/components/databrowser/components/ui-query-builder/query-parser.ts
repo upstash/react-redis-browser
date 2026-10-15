@@ -26,42 +26,6 @@ export type ParseResult = { success: true; state: QueryState } | { success: fals
 const isOperatorKey = (key: string): boolean => key.startsWith("$")
 
 /**
- * Check if an object contains both $must and $should at the same level,
- * which is not supported in UI query builder.
- * Only catches { $must: ..., $should: ... } pattern, NOT $and/$or combinations.
- */
-const hasMustShouldCombinationInObject = (obj: unknown): boolean => {
-  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false
-
-  // Only error if BOTH $must AND $should are present at this level
-  if ("$must" in obj && "$should" in obj) return true
-
-  return Object.values(obj).some(
-    (value) =>
-      hasMustShouldCombinationInObject(value) ||
-      (Array.isArray(value) && value.some((item) => hasMustShouldCombinationInObject(item)))
-  )
-}
-
-/**
- * Check if a query string contains both $must and $should,
- * which is not supported in the UI query builder.
- */
-export const hasMustShouldCombination = (queryString: string): boolean => {
-  if (!queryString || queryString.trim() === "" || queryString.trim() === "{}") {
-    return false
-  }
-
-  try {
-    const obj = parseJSObjectLiteral<Record<string, unknown>>(queryString)
-    if (!obj) return false
-    return hasMustShouldCombinationInObject(obj)
-  } catch {
-    return false
-  }
-}
-
-/**
  * Normalize operator keys: $must → $and, $should → $or
  */
 const normalizeOperators = (obj: unknown): unknown => {

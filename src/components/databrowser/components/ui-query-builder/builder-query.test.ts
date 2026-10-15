@@ -177,18 +177,10 @@ describe("reloading what the builder wrote", () => {
     not: (!isRoot && rnd() < 0.2) || undefined,
   })
 
-  // Empty groups and groups with only negated children are written lossily by this
-  // serializer (fixed in the stringify PR), so they are left out here
-  const hasPositiveChildren = (node: QueryNode): boolean =>
-    node.type === "condition" ||
-    (node.children.some((child) => !child.not) &&
-      node.children.every((child) => hasPositiveChildren(child)))
-
   test("settles after one load", () => {
     const unstable: string[] = []
     for (let i = 0; i < 6000; i++) {
       const root = group(3, true)
-      if (!hasPositiveChildren(root)) continue
       const written = stringifyQueryState({ root } as QueryState)
       const first = resolveBuilderQuery(written, "ui")
       if (!first.success) throw new Error(first.error)
