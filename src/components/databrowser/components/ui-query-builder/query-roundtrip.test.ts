@@ -234,6 +234,13 @@ const queries: (Record<string, unknown> | [Record<string, unknown>, Record<strin
     { $and: [{ $or: [{ name: "a" }, { status: { $eq: "b" } }] }, { active: true }] },
     { $and: [{ $or: { name: "a", status: { $eq: "b" } } }, { active: true }] },
   ],
+  // nested $or inside $or is not merged into a plain object (which would mean AND)
+  { $or: [{ $or: { name: "a", status: "b" } }, { active: true }] },
+  // nested $and inside $and is merged
+  [
+    { $and: [{ $and: { name: "a", status: "b" } }, { $or: { active: true, age: 1 } }] },
+    { $and: [{ name: "a", status: "b" }, { $or: { active: true, age: 1 } }] },
+  ],
 ]
 
 describe("query roundtrip: parse → stringify", () => {

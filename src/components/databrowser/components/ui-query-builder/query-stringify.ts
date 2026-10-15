@@ -197,15 +197,17 @@ const groupToObject = (
 
   if (normalChildren.length > 0) {
     result[`$${groupOperator}`] = normalChildren.map((child) => {
-      // Same-operator group with multiple mergeable conditions: flatten to merged object
-      // (avoids redundant nesting like $and: [{ $and: { ... } }] inside $and array)
+      // AND group inside AND with multiple mergeable conditions: flatten to merged object
+      // (avoids redundant nesting like $and: [{ $and: { ... } }] inside $and array).
+      // Not done for OR, since the fields of a plain object are always ANDed.
       if (child.type === "group") {
         const groupChild = child as QueryNode & { type: "group" }
         const gc = groupChild.children
         const gcNormal = gc.filter((c) => !c.not)
         const gcNegated = gc.filter((c) => c.not)
         if (
-          groupChild.groupOperator === groupOperator &&
+          groupOperator === "and" &&
+          groupChild.groupOperator === "and" &&
           gc.length > 1 &&
           gcNegated.length === 0 &&
           canMergeChildren(gcNormal)
