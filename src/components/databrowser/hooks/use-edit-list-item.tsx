@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
 
+import { FETCH_HASH_FIELD_TTLS_QUERY_KEY } from "./use-fetch-hash-ttl"
 import { FETCH_LIST_ITEMS_QUERY_KEY, transformArray } from "./use-fetch-list-items"
 
 export const useEditListItem = () => {
@@ -103,6 +104,9 @@ export const useEditListItem = () => {
     onSuccess: (_, { dataKey }) => {
       queryClient.invalidateQueries({
         queryKey: [FETCH_LIST_ITEMS_QUERY_KEY, dataKey],
+      })
+      queryClient.invalidateQueries({
+        queryKey: [FETCH_HASH_FIELD_TTLS_QUERY_KEY, dataKey],
       })
     },
   })
