@@ -4,6 +4,7 @@ import { parseJSObjectLiteral } from "@/lib/utils"
 
 import { parseQueryString } from "./query-parser"
 import { stringifyQueryState } from "./query-stringify"
+import type { QueryNode } from "./types"
 
 const roundtrip = (input: Record<string, unknown>) => {
   const state = parseQueryString(JSON.stringify(input))
@@ -204,14 +205,19 @@ const queries: (Record<string, unknown> | [Record<string, unknown>, Record<strin
 
   // --- $mustNot ---
 
-  // $and stays with mustNot
-  { $and: {}, $mustNot: { name: "foo" } },
-  { $or: {}, $mustNot: { name: "foo" } },
+  // only negated children: [{}] matches all documents for $mustNot to exclude from
+  [
+    { $and: {}, $mustNot: { name: "foo" } },
+    { $and: [{}], $mustNot: { name: "foo" } },
+  ],
+  { $and: [{}], $mustNot: { name: "foo" } },
+  { $or: [{}], $mustNot: { name: "foo" } },
   // must not flattened
   [
-    { $and: {}, $mustNot: [{ name: "foo" }] },
-    { $and: {}, $mustNot: { name: "foo" } },
+    { $and: [{}], $mustNot: [{ name: "foo" }] },
+    { $and: [{}], $mustNot: { name: "foo" } },
   ],
+  { $or: [{ name: "foo" }, { $and: [{}], $mustNot: { age: 18 } }] },
   // both flattened
   [
     { $and: [{ name: "foo" }], $mustNot: [{ age: 18 }] },
@@ -236,6 +242,58 @@ describe("query roundtrip: parse → stringify", () => {
       const result = roundtrip(input)
       expect(result).not.toBeUndefined()
       expect(result).toEqual(expected)
+    })
+  }
+})
+
+const cond = (field: string, value: string | number, not?: boolean): QueryNode => ({
+  id: field,
+  type: "condition",
+  not,
+  condition: { field, operator: "eq", value },
+})
+const group = (groupOperator: "and" | "or", children: QueryNode[], boost?: number): QueryNode => ({
+  id: groupOperator,
+  type: "group",
+  groupOperator,
+  children,
+  boost,
+})
+
+// Builder states that the parser never produces from the expected output directly
+const builderStates: [QueryNode, Record<string, unknown>][] = [
+  [
+    group("or", [cond("a", "1"), group("and", [cond("b", "2", true)])]),
+    { $or: [{ a: { $eq: "1" } }, { $and: [{}], $mustNot: { b: { $eq: "2" } } }] },
+  ],
+
+  // Negated groups with more than one key stay array items, since the server excludes
+  // each key of a $mustNot object separately
+  [
+    group("and", [cond("a", "1"), { ...group("and", [cond("b", "2", true)]), not: true }]),
+    {
+      $and: { a: { $eq: "1" } },
+      $mustNot: [{ $and: [{}], $mustNot: { b: { $eq: "2" } } }],
+    },
+  ],
+  [
+    group("and", [
+      cond("a", "1"),
+      { ...group("and", [cond("b", "2"), cond("c", "3", true)]), not: true },
+    ]),
+    {
+      $and: { a: { $eq: "1" } },
+      $mustNot: [{ $and: { b: { $eq: "2" } }, $mustNot: { c: { $eq: "3" } } }],
+    },
+  ],
+]
+
+describe("builder → stringify → parse → stringify is stable", () => {
+  for (const [root, expected] of builderStates) {
+    test(JSON.stringify(expected), () => {
+      const str = stringifyQueryState({ root })
+      expect(parseJSObjectLiteral<Record<string, unknown>>(str)).toEqual(expected)
+      expect(stringifyQueryState(parseQueryString(str)!)).toEqual(str)
     })
   }
 })
