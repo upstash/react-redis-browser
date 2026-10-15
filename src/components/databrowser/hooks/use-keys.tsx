@@ -377,7 +377,8 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
 
     // deduplication
     const seen = new Set<string>()
-    const entries: KeyListEntry[] = []
+    const folders: KeyListEntry[] = []
+    const keyEntries: KeyListEntry[] = []
     const keys: RedisKey[] = []
 
     for (const entry of allEntries) {
@@ -385,10 +386,15 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
       if (seen.has(id)) continue
 
       seen.add(id)
-      entries.push(entry)
-      if (entry.kind === "key") keys.push([entry.key, entry.type, entry.score])
+      if (entry.kind === "folder") {
+        folders.push(entry)
+      } else {
+        keyEntries.push(entry)
+        keys.push([entry.key, entry.type, entry.score])
+      }
     }
-    return { entries, keys }
+    // Folders go above the keys, each group keeps the scan order
+    return { entries: [...folders, ...keyEntries], keys }
   }, [query.data])
 
   const scan = useMemo(() => {
