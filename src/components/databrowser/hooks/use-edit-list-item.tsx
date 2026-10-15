@@ -44,15 +44,17 @@ export const useEditListItem = () => {
           break
         }
         case "zset": {
-          if (Number.isNaN(Number(newValue)) && newKey !== undefined) {
-            throw new TypeError("Value must be a number for zset data type")
+          const score = parseScore(newValue)
+          if (score === undefined && newKey !== undefined) {
+            throw new TypeError("Score must be a number, inf or -inf")
           }
 
           if (shouldDelete) pipe.zrem(dataKey, itemKey)
           if (newKey)
             pipe.zadd(dataKey, {
               member: newKey,
-              score: Number(newValue),
+              // The SDK types scores as numbers but Redis also accepts "+inf" and "-inf"
+              score: score as number,
             })
 
           break
@@ -106,4 +108,16 @@ export const useEditListItem = () => {
       })
     },
   })
+}
+
+/** Parses a zset score, returning Redis' "+inf"/"-inf" for infinite scores and undefined if invalid */
+export const parseScore = (value?: string) => {
+  const trimmed = value?.trim().toLowerCase()
+  if (!trimmed) return
+  if (/^\+?inf(inity)?$/.test(trimmed)) return "+inf"
+  if (/^-inf(inity)?$/.test(trimmed)) return "-inf"
+  if (!/^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/.test(trimmed)) return
+
+  const score = Number(trimmed)
+  return Number.isFinite(score) ? score : undefined
 }
