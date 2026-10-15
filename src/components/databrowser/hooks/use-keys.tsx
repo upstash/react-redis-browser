@@ -6,7 +6,7 @@ import { useInfiniteQuery, type UseInfiniteQueryResult } from "@tanstack/react-q
 
 import { queryClient } from "@/lib/clients"
 import { listSearchIndexes } from "@/lib/list-search-indexes"
-import { parseJSObjectLiteral } from "@/lib/utils"
+import { INVALID_QUERY_MESSAGE, parseSearchQuery } from "@/lib/utils"
 
 import { FETCH_KEY_TYPE_QUERY_KEY } from "./use-fetch-key-type"
 import { useFetchSearchIndex } from "./use-fetch-search-index"
@@ -44,7 +44,7 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
 
   const { redisNoPipeline: redis } = useRedis()
 
-  const parsedValueQuery = parseJSObjectLiteral(valuesSearch.query)
+  const parsedValueQuery = parseSearchQuery(valuesSearch.query)
 
   const isQueryEnabled =
     active &&
@@ -124,6 +124,8 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
     cursor: string
   }): Promise<ScanResult> => {
     if (!searchIndexDetails) throw new Error("Attempted search while loading the search index")
+    // Never fall back to an empty filter, which would match every document
+    if (!parsedValueQuery) throw new Error(INVALID_QUERY_MESSAGE)
 
     const offset = Number.parseInt(cursor, 10) || 0
 
@@ -132,7 +134,7 @@ export const KeysProvider = ({ children }: PropsWithChildren) => {
         name: valuesSearch.index,
       })
       .query({
-        filter: parsedValueQuery ?? {},
+        filter: parsedValueQuery,
         limit: count,
         offset,
         select: {},
