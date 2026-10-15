@@ -4,10 +4,12 @@ import { useMutation } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
 
+import { useDeleteKeyCache } from "./use-delete-key-cache"
 import { FETCH_LIST_ITEMS_QUERY_KEY, transformArray } from "./use-fetch-list-items"
 
 export const useEditListItem = () => {
   const { redis } = useRedis()
+  const { deleteKeyCache } = useDeleteKeyCache()
 
   return useMutation({
     mutationFn: async ({
@@ -98,9 +100,15 @@ export const useEditListItem = () => {
         }
       }
 
-      await pipe.exec()
+      // Redis deletes the key when its last item is removed
+      pipe.exists(dataKey)
+
+      const results = await pipe.exec()
+      return { keyExists: results.at(-1) === 1 }
     },
-    onSuccess: (_, { dataKey }) => {
+    onSuccess: ({ keyExists }, { dataKey }) => {
+      if (!keyExists) deleteKeyCache(dataKey)
+
       queryClient.invalidateQueries({
         queryKey: [FETCH_LIST_ITEMS_QUERY_KEY, dataKey],
       })
