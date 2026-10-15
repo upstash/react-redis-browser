@@ -1,4 +1,5 @@
 import { useRedis } from "@/redis-context"
+import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
 import { useMutation } from "@tanstack/react-query"
 
@@ -8,6 +9,7 @@ export const useDeleteKey = () => {
   const { redis, redisNoPipeline } = useRedis()
   const { deleteKeyCache } = useDeleteKeyCache()
   const { isValuesSearchSelected, valuesSearch } = useTab()
+  const { deselectKeys } = useDatabrowserStore()
 
   const deleteKey = useMutation({
     mutationFn: async ({ keys, reindex }: { keys: string[]; reindex?: boolean }) => {
@@ -21,6 +23,9 @@ export const useDeleteKey = () => {
       for (const key of keys) {
         deleteKeyCache(key)
       }
+
+      // Drop deleted keys from selections so later actions don't include them
+      deselectKeys(keys)
     },
   })
 
