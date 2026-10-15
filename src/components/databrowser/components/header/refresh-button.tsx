@@ -9,8 +9,11 @@ import {
   FETCH_KEYS_QUERY_KEY,
   FETCH_LIST_ITEMS_QUERY_KEY,
   FETCH_SIMPLE_KEY_QUERY_KEY,
+  FETCH_TTL_QUERY_KEY,
   useKeys,
 } from "../../hooks"
+import { FETCH_KEY_LENGTH_QUERY_KEY } from "../../hooks/use-fetch-key-length"
+import { FETCH_KEY_SIZE_QUERY_KEY } from "../../hooks/use-fetch-key-size"
 import { FETCH_KEY_TYPE_QUERY_KEY } from "../../hooks/use-fetch-key-type"
 
 const invalidateAll = () => {
@@ -18,6 +21,9 @@ const invalidateAll = () => {
   queryClient.invalidateQueries({ queryKey: [FETCH_LIST_ITEMS_QUERY_KEY] })
   queryClient.invalidateQueries({ queryKey: [FETCH_SIMPLE_KEY_QUERY_KEY] })
   queryClient.invalidateQueries({ queryKey: [FETCH_KEY_TYPE_QUERY_KEY] })
+  queryClient.invalidateQueries({ queryKey: [FETCH_TTL_QUERY_KEY] })
+  queryClient.invalidateQueries({ queryKey: [FETCH_KEY_LENGTH_QUERY_KEY] })
+  queryClient.invalidateQueries({ queryKey: [FETCH_KEY_SIZE_QUERY_KEY] })
 }
 
 export const RefreshButton = () => {
