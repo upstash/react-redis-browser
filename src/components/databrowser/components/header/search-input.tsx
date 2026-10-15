@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react"
 import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
-import { IconX } from "@tabler/icons-react"
+import { IconSearch, IconX } from "@tabler/icons-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -108,20 +108,22 @@ export const SearchInput = () => {
               }
             }}
           >
+            <IconSearch size={16} className="ml-2.5 shrink-0 text-zinc-400" />
             {prefix && (
               // Cut long folders from the left, the end is closest to the keys
               <span
                 dir="rtl"
                 title={prefix}
-                className="max-w-[50%] shrink-0 cursor-text truncate pl-3 text-sm text-zinc-400"
+                className="ml-1.5 max-w-[50%] shrink-0 cursor-text truncate text-sm text-zinc-400"
               >
                 <span dir="ltr">{prefix}</span>
               </span>
             )}
             <Input
               ref={inputRef}
-              placeholder="Search"
-              className={cn("h-full min-w-0 border-none pr-6", prefix && "pl-0")}
+              // A placeholder after the prefix would read like part of the key
+              placeholder={prefix ? undefined : "Search"}
+              className={cn("h-full min-w-0 border-none pr-6", prefix ? "pl-0" : "pl-1.5")}
               onKeyDown={handleKeyDown}
               onChange={(e) => {
                 setState(e.currentTarget.value)

@@ -63,7 +63,9 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
 
   const keyLabel = selectedKey === "" ? "(Empty Key)" : selectedKey
   const folderLabel = foldersEnabled && keyListView === "folders" ? folder : ""
-  const label = isValuesSearchSelected ? valuesSearch.index : search.key || keyLabel || folderLabel
+  // A search in a folder is relative to it
+  const searchLabel = search.key && folderLabel + search.key
+  const label = isValuesSearchSelected ? valuesSearch.index : searchLabel || keyLabel || folderLabel
   const iconNode = isValuesSearchSelected ? (
     <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-emerald-200 text-emerald-800">
       <IconSearch size={14} />
