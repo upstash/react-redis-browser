@@ -7,10 +7,12 @@ import { FolderBreadcrumb } from "./folder-breadcrumb"
 import { KeysList } from "./keys-list"
 import { KeepScanningSlot, ScanEmpty } from "./scan-status"
 import { LoadingSkeleton } from "./skeleton-buttons"
+import { FlatListBar, useShowViewToggle } from "./view-toggle"
 
 export function Sidebar() {
   const { entries, query, scan, folderView } = useKeys()
   const { search } = useTab()
+  const showViewToggle = useShowViewToggle()
 
   const inFolder =
     folderView.enabled &&
@@ -18,7 +20,7 @@ export function Sidebar() {
 
   return (
     <div className="relative flex h-full flex-col gap-2">
-      {folderView.enabled && <FolderBreadcrumb />}
+      {folderView.enabled ? <FolderBreadcrumb /> : showViewToggle && <FlatListBar />}
       <div className="min-h-0 grow">
         {query.isLoading && entries.length === 0 ? (
           <LoadingSkeleton />

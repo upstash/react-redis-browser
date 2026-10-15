@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SimpleTooltip } from "@/components/ui/tooltip"
 
 import { useKeys } from "../../hooks/use-keys"
+import { ViewToggle } from "./view-toggle"
 
 // Longer paths keep the first and the last crumbs and fold the middle into a menu. Narrow
 // sidebars fold more, so that the open folder stays readable.
@@ -161,7 +162,10 @@ export const FolderBreadcrumb = () => {
         )}
       </div>
 
-      <DelimiterSetting />
+      <div className="flex shrink-0 items-center gap-1.5">
+        <DelimiterSetting />
+        <ViewToggle />
+      </div>
     </nav>
   )
 }

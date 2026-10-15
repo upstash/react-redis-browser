@@ -24,7 +24,6 @@ import { IndexActionsMenu } from "../search/index-actions-menu"
 import { RefreshButton } from "./refresh-button"
 import { SearchInput } from "./search-input"
 import { DataTypeSelector } from "./type-selector"
-import { ViewToggle } from "./view-toggle"
 
 export const Header = ({ tabType, allowSearch }: { tabType: TabType; allowSearch: boolean }) => {
   const { isValuesSearchSelected, setIsValuesSearchSelected } = useTab()
@@ -73,7 +72,6 @@ export const Header = ({ tabType, allowSearch }: { tabType: TabType; allowSearch
 
       {/* Actions */}
       <div className="browser-actions flex shrink-0 items-center gap-1.5">
-        {!isValuesSearchSelected && <ViewToggle />}
         <RefreshButton />
         {isValuesSearchSelected && <ExportResultsButton />}
         {isValuesSearchSelected ? <AddIndexKeyButton /> : <AddKeyModal />}
