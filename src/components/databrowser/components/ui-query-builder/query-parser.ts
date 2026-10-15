@@ -268,7 +268,7 @@ const addMustNotChildren = (group: QueryNode & { type: "group" }, mustNotValue: 
 }
 
 /** Parse a raw query object into a QueryNode */
-const objectToQueryNode = (obj: Record<string, unknown>): QueryNode | null => {
+const objectToQueryNode = (obj: Record<string, unknown>, isRoot = false): QueryNode | null => {
   if (!obj || typeof obj !== "object") return null
 
   const keys = Object.keys(obj)
@@ -280,31 +280,37 @@ const objectToQueryNode = (obj: Record<string, unknown>): QueryNode | null => {
 
   // Handle $and/$or groups (possibly with $mustNot or field conditions as siblings)
   if (hasGroup) {
+    const hasBothGroups = "$and" in obj && "$or" in obj
     const operator: GroupOperator = "$and" in obj ? "and" : "or"
     const groupValue = obj["$and"] ?? obj["$or"]
     const boost = "$boost" in obj ? (obj.$boost as number) : undefined
-    const groupNode = parseGroup(
-      groupValue,
-      operator,
-      nonOperatorKeys.length === 0 ? boost : undefined
-    )
-
-    if (groupNode && groupNode.type === "group" && hasMustNot) {
-      addMustNotChildren(groupNode, obj.$mustNot)
+    const isOnlyGroup = nonOperatorKeys.length === 0 && !hasBothGroups
+    let groupNode = parseGroup(groupValue, operator)
+    if (groupNode && isOnlyGroup && boost !== undefined) {
+      // { $and: { ..., $boost: a }, $boost: b } has two boosts, keep both
+      groupNode =
+        groupNode.boost === undefined
+          ? { ...groupNode, boost }
+          : { id: generateId(), type: "group", groupOperator: "and", children: [groupNode], boost }
     }
 
-    // No sibling field conditions → return group directly
-    if (!groupNode || nonOperatorKeys.length === 0) {
+    // No sibling field conditions or groups → return group directly
+    if (!groupNode || isOnlyGroup) {
+      if (groupNode && groupNode.type === "group" && hasMustNot) {
+        addMustNotChildren(groupNode, obj.$mustNot)
+      }
       return groupNode
     }
 
-    // Sibling field conditions: { field: value, $and: [...] } → wrap in AND
+    // Sibling field conditions or $and next to $or (as older builders wrote an AND group
+    // containing both): { field: value, $and: [...], $or: [...] } → wrap in AND
     const fieldChildren = nonOperatorKeys.map((key) => parseFieldCondition(key, obj[key]))
+    const orNode = hasBothGroups ? parseGroup(obj.$or, "or") : null
     const group: QueryNode & { type: "group" } = {
       id: generateId(),
       type: "group",
       groupOperator: "and",
-      children: [...fieldChildren, groupNode],
+      children: [...fieldChildren, groupNode, ...(orNode ? [orNode] : [])],
       boost,
     }
 
@@ -335,8 +341,20 @@ const objectToQueryNode = (obj: Record<string, unknown>): QueryNode | null => {
   if (nonOperatorKeys.length === 1) {
     const field = nonOperatorKeys[0]
     const condition = parseFieldCondition(field, obj[field])
-    if (nodeBoost !== undefined) condition.boost = nodeBoost
-    return condition
+    if (nodeBoost === undefined) return condition
+    // A numeric node boost can move onto the field, unless the field has its own boost.
+    // At the root it stays on the root group, where the builder put it.
+    if (!isRoot && typeof nodeBoost === "number" && condition.boost === undefined) {
+      condition.boost = nodeBoost
+      return condition
+    }
+    return {
+      id: generateId(),
+      type: "group",
+      groupOperator: "and",
+      children: [condition],
+      boost: nodeBoost,
+    }
   }
 
   // Multiple fields at root → implicit AND
@@ -368,7 +386,7 @@ export const parseQueryStringWithError = (queryString: string): ParseResult => {
     // Normalize $must → $and, $should → $or
     const normalizedObj = normalizeOperators(obj) as Record<string, unknown>
 
-    const root = objectToQueryNode(normalizedObj)
+    const root = objectToQueryNode(normalizedObj, true)
     if (root) {
       // Ensure root is always a group
       if (root.type === "condition") {

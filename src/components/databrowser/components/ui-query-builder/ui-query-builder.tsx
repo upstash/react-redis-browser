@@ -10,20 +10,30 @@ import { QueryGroup } from "./query-group"
 import type { FieldInfo, FieldType, QueryNode, QueryState } from "./types"
 import { useQueryStateSync } from "./use-query-state-sync"
 
-export const UIQueryBuilder = () => {
+export const UIQueryBuilder = ({
+  onUnsupportedQuery,
+}: {
+  /** Called when the query can't be shown in the builder without changing it */
+  onUnsupportedQuery: (error: string) => void
+}) => {
   const { valuesSearch } = useTab()
   const { data: indexDetails } = useFetchSearchIndex(valuesSearch.index)
-  const { queryState, setQueryState } = useQueryStateSync()
+  const { queryState, setQueryState, unsupportedError } = useQueryStateSync()
   const fieldInfos = indexDetails?.schema ? extractFieldInfo(indexDetails.schema) : []
 
-  // Normalize query state values on mount (when switching from text editor to UI builder)
-  const hasNormalized = useRef(false)
   useEffect(() => {
-    if (hasNormalized.current || fieldInfos.length === 0) return
+    if (unsupportedError) onUnsupportedQuery(unsupportedError)
+  }, [unsupportedError, onUnsupportedQuery])
+
+  // Normalize query state values on mount (when switching from text editor to UI builder).
+  // Queries typed in the code editor are opened unchanged, so they are not normalized.
+  const hasNormalized = useRef(valuesSearch.queryWrittenBy === "code")
+  useEffect(() => {
+    if (hasNormalized.current || fieldInfos.length === 0 || unsupportedError) return
     hasNormalized.current = true
 
     setQueryState((state) => normalizeQueryState(state, fieldInfos))
-  }, [fieldInfos, setQueryState])
+  }, [fieldInfos, setQueryState, unsupportedError])
 
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLElement | null>(null)
