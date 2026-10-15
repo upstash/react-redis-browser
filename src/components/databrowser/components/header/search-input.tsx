@@ -48,7 +48,17 @@ export const SearchInput = () => {
     setFocusedIndex(-1)
   }, [filteredHistory.length])
 
+  const isHistoryOpen = isFocus && filteredHistory.length > 0
+
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    // Tab only steps through history once the user is in the list (via the arrow keys),
+    // and moves focus on past either end, so it never traps
+    const isHistoryTab =
+      e.key === "Tab" &&
+      isHistoryOpen &&
+      focusedIndex >= 0 &&
+      (e.shiftKey || focusedIndex < filteredHistory.length - 1)
+
     if (e.key === "Enter") {
       const text =
         focusedIndex >= 0 && focusedIndex < filteredHistory.length
@@ -59,14 +69,14 @@ export const SearchInput = () => {
       setState("")
       setFocusedIndex(-1)
       inputRef.current?.blur()
-    } else if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
+    } else if (e.key === "ArrowDown" || (isHistoryTab && !e.shiftKey)) {
       e.preventDefault()
       if (focusedIndex < filteredHistory.length - 1) {
         setFocusedIndex(focusedIndex + 1)
       } else if (filteredHistory.length > 0) {
         setFocusedIndex(0)
       }
-    } else if (e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
+    } else if (e.key === "ArrowUp" || (isHistoryTab && e.shiftKey)) {
       e.preventDefault()
       if (focusedIndex > 0) {
         setFocusedIndex(focusedIndex - 1)
@@ -81,7 +91,7 @@ export const SearchInput = () => {
 
   return (
     <div className="browser-search relative min-w-0 grow">
-      <Popover open={isFocus && filteredHistory.length > 0}>
+      <Popover open={isHistoryOpen}>
         <PopoverTrigger asChild>
           <div className="h-8 rounded-md border border-zinc-300 font-normal">
             <Input
