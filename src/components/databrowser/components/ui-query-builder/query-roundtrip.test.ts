@@ -279,6 +279,10 @@ const builderStates: [QueryNode, Record<string, unknown>][] = [
     { $or: [{ a: { $eq: "1" } }, { $and: [{}], $mustNot: { b: { $eq: "2" } } }] },
   ],
 
+  // Empty groups add no constraint and are dropped
+  [group("or", [cond("a", "1"), group("and", [])]), { $or: { a: { $eq: "1" } } }],
+  [group("and", [group("or", []), group("and", [group("or", [])])]), {}],
+
   // Negated groups with more than one key stay array items, since the server excludes
   // each key of a $mustNot object separately
   [
