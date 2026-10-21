@@ -147,6 +147,20 @@ describe("UIQueryBuilder", () => {
     expect(unsupported).toEqual([])
   })
 
+  test("switching from a boolean builder query never writes its tree over the new index", async () => {
+    loadSchema("A", { inStock: { type: "BOOL" } })
+    for (const query of [`{ name: "a" }`, `{ $must: { a: 1 }, $should: { b: 2 } }`]) {
+      await setQuery("B", query, "code")
+      await setQuery("A", fmt(`{ inStock: true }`), "ui")
+      await mount()
+
+      await switchIndex("B")
+
+      expect(stored("B")).toEqual({ query, writtenBy: "code" })
+      await act(async () => showBuilder(false))
+    }
+  })
+
   test("a typed query is not normalized to the field types", async () => {
     loadSchema("A", { active: { type: "BOOL" }, name: { type: "TEXT" }, n: { type: "U64" } })
     for (const query of [`{ active: 1 }`, `{ name: true }`, `{ n: "5" }`]) {

@@ -19,6 +19,15 @@ export type QueryWrittenBy = "ui" | "code"
 export const UNSUPPORTED_QUERY_MESSAGE =
   "This query can't be shown in the Query Builder without changing it. Keep editing it in the Code Editor."
 
+/** Whether a query has a { query, value } $boost, which the builder can only show as a number */
+const hasQueryBoost = (value: unknown): boolean => {
+  if (Array.isArray(value)) return value.some((item) => hasQueryBoost(item))
+  if (!value || typeof value !== "object") return false
+  return Object.entries(value).some(
+    ([key, item]) => (key === "$boost" && typeof item !== "number") || hasQueryBoost(item)
+  )
+}
+
 /**
  * Returns why a query typed in the code editor can't be opened in the builder, or undefined.
  * The builder accepts it only if writing its tree back gives a query that runs the same
@@ -27,6 +36,7 @@ export const UNSUPPORTED_QUERY_MESSAGE =
 export const getQueryBuilderError = (queryString: string): string | undefined => {
   const query = parseSearchQuery(queryString)
   if (!query) return INVALID_QUERY_MESSAGE
+  if (hasQueryBoost(query)) return UNSUPPORTED_QUERY_MESSAGE
 
   const state = parseQueryString(queryString) ?? createInitialQueryState()
   const written = parseJSObjectLiteral<unknown>(stringifyQueryState(state))

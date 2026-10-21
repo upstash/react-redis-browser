@@ -61,6 +61,9 @@ describe("getQueryBuilderError (code editor → builder)", () => {
     `{ name: { $fuzzy: { value: "a", prefix: true } } }`,
     // The builder keeps one operator per field
     `{ f1: { $eq: 0, $smart: 1 } }`,
+    // The builder shows a boost as a number and would hide the boost query
+    `{ a: 1, $boost: { query: { b: 1 }, value: 2 } }`,
+    `{ $or: [{ a: 1, $boost: { query: { b: 1 }, value: 2 } }] }`,
     // A lone $boost is not match-all
     `{ $boost: 1 }`,
     `{ $and: { $boost: 1 } }`,
