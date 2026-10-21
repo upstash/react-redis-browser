@@ -3,6 +3,7 @@ import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
 import { IconX } from "@tabler/icons-react"
 
+import { fromKeySearchPattern, toKeySearchPattern } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -19,7 +20,7 @@ const dedupeSearchHistory = (history: string[]) => {
 export const SearchInput = () => {
   const { setSearchKey, search } = useTab()
   const { searchHistory, addSearchHistory } = useDatabrowserStore()
-  const [state, setState] = useState(search.key)
+  const [state, setState] = useState(fromKeySearchPattern(search.key))
 
   const [isFocus, setIsFocus] = useState(false)
   const [focusedIndex, setFocusedIndex] = useState(-1)
@@ -27,21 +28,21 @@ export const SearchInput = () => {
   const inputRef = useRef<HTMLInputElement>(null)
   const historyItemRefs = useRef<(HTMLButtonElement | null)[]>([])
 
+  // The input holds what the user typed; only the applied filter is a glob pattern
   const handleSubmit = (value: string) => {
-    if (value.trim() !== "" && !value.includes("*")) value = `${value}*`
-    addSearchHistory(value)
-    setSearchKey(value)
+    const pattern = toKeySearchPattern(value)
+    addSearchHistory(pattern)
+    setSearchKey(pattern)
     setState(value)
   }
 
   const filteredHistory = dedupeSearchHistory(
     searchHistory
       .filter((item) => item.trim() !== "" && item.trim() !== "*")
+      // Show stored patterns as the text that produces them
+      .map((item) => fromKeySearchPattern(item))
       .filter((item) => item.includes(state) && item !== state)
-  )
-    .slice(0, 5)
-    // If it has a * in the end, remove it
-    .map((item) => (item.endsWith("*") ? item.slice(0, -1) : item))
+  ).slice(0, 5)
 
   // Reset focused index when filtered history changes
   useEffect(() => {
