@@ -33,6 +33,12 @@ describe("getQueryBuilderError (code editor → builder)", () => {
     `{ title: "Error, code: 42" }`,
     `{ $and: { inStock: true }, $mustNot: { category: "electronics" } }`,
     `{ $or: { name: "a", age: 1 } }`,
+    // Spelled differently from what the builder writes, but the server runs the same search
+    `{ $and: { a: "x", b: "x" } }`,
+    `{ $must: { name: "a", age: 1 } }`,
+    `{ $and: [{ name: "a" }, { age: 1 }] }`,
+    `{ $mustNot: { $and: { f1: 1 } } }`,
+    `{ $or: { a: 1 }, $boost: 2 }`,
   ]
   for (const query of accepted) {
     test(`accepts ${query}`, () => {
@@ -51,14 +57,12 @@ describe("getQueryBuilderError (code editor → builder)", () => {
     `{ name: { $fuzzy: { value: "a", prefix: true } } }`,
     // A $mustNot object excludes each key, an $and body inside it is not a query node
     `{ $and: { f3: 1 }, $mustNot: { f1: 1, f2: 1 } }`,
-    `{ $mustNot: { $and: { f1: 1 } } }`,
     // The builder keeps one operator per field
     `{ f1: { $eq: 0, $smart: 1 } }`,
     // A lone $boost is not match-all
     `{ $boost: 1 }`,
     `{ $and: { $boost: 1 } }`,
-    // Only the builder's own output shapes are accepted, not equivalent spellings
-    `{ $must: { name: "a", age: 1 } }`,
+    // How a value is matched depends on the field type, so these are not assumed equal
     `{ age: { $smart: 25 } }`,
     `{ age: { $eq: 25, $boost: 1 } }`,
   ]
@@ -128,12 +132,13 @@ describe("resolveBuilderQuery (stored query → builder)", () => {
     })
   }
 
-  // The builder writes these, the guard alone would refuse them
+  // The builder writes these, and they read back as a different spelling of the same search
   for (const query of [`{ $and: [{ $or: { f1: 1 } }] }`, `{ $and: { f1: 1 }, $boost: 2 }`]) {
-    test(`opens ${query} without the guard when the builder wrote it`, () => {
-      expect(getQueryBuilderError(query)).toBeDefined()
+    test(`opens ${query} whichever editor wrote it`, () => {
+      expect(getQueryBuilderError(query)).toBeUndefined()
       expect(resolveBuilderQuery(query, "ui").success).toBe(true)
-      expect(resolveBuilderQuery(query, "code").success).toBe(false)
+      const fromCode = resolveBuilderQuery(query, "code")
+      expect(fromCode.success && fromCode.rewrite).toBeFalsy()
     })
   }
 
@@ -188,6 +193,15 @@ describe("reloading what the builder wrote", () => {
       if (!second.success || second.rewrite !== undefined) unstable.push(written)
     }
     expect(unstable).toEqual([])
+  })
+
+  test("the guard accepts everything the builder writes", () => {
+    const refused: string[] = []
+    for (let i = 0; i < 6000; i++) {
+      const written = stringifyQueryState({ root: group(3, true) } as QueryState)
+      if (getQueryBuilderError(written)) refused.push(written)
+    }
+    expect(refused).toEqual([])
   })
 
   test("keeps a root $boost next to a field's own $boost", () => {
