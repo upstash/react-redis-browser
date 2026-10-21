@@ -13,9 +13,16 @@ const loadSchema = (index: string, schema: Record<string, { type: string }>) => 
   for (const listener of schemaListeners) listener()
 }
 
+// Module mocks outlive this file, so other test files get the real hook
+const fetchSearchIndex = await import("../../hooks/use-fetch-search-index")
+const realUseFetchSearchIndex = fetchSearchIndex.useFetchSearchIndex
+let isMocked = true
+
 mock.module("../../hooks/use-fetch-search-index", () => ({
-  FETCH_SEARCH_INDEX_QUERY_KEY: "fetch-search-index",
-  useFetchSearchIndex: (index?: string) => {
+  ...fetchSearchIndex,
+  useFetchSearchIndex: (...args: Parameters<typeof realUseFetchSearchIndex>) => {
+    if (!isMocked) return realUseFetchSearchIndex(...args)
+    const [index] = args
     const all = React.useSyncExternalStore(
       (listener) => {
         schemaListeners.add(listener)
@@ -69,6 +76,8 @@ const rootRef = { current: container }
 afterAll(async () => {
   await act(async () => root.unmount())
   await GlobalRegistrator.unregister()
+  isMocked = false
+  delete (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT
 })
 
 const tab = () => store.tabs[0]
@@ -168,6 +177,27 @@ describe("UIQueryBuilder", () => {
     await act(async () => loadSchema("A", { n: { type: "U64" }, active: { type: "BOOL" } }))
 
     expect(stored("A")).toEqual({ query: fmt(`{ n: 5, active: true }`), writtenBy: "ui" })
+  })
+
+  test("a builder query is normalized again when the schema changes", async () => {
+    loadSchema("A", { active: { type: "TEXT" } })
+    await setQuery("A", fmt(`{ active: "true" }`), "ui")
+    await mount()
+    expect(stored("A").query).toBe(fmt(`{ active: "true" }`))
+
+    await act(async () => loadSchema("A", { active: { type: "BOOL" } }))
+
+    expect(stored("A")).toEqual({ query: fmt(`{ active: true }`), writtenBy: "ui" })
+  })
+
+  test("a typed query is not normalized when the schema changes", async () => {
+    loadSchema("A", { active: { type: "TEXT" } })
+    await setQuery("A", `{ active: "true" }`, "code")
+    await mount()
+
+    await act(async () => loadSchema("A", { active: { type: "BOOL" } }))
+
+    expect(stored("A")).toEqual({ query: `{ active: "true" }`, writtenBy: "code" })
   })
 
   test("a builder query is normalized with its own index's schema after a switch", async () => {

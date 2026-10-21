@@ -47,9 +47,8 @@ export const useQueryStateSync = (fieldInfos: FieldInfo[]) => {
   const currentIndex = useRef(index)
   currentIndex.current = index
 
-  // Set while the shown tree was written by the builder and its values have not been
-  // normalized to the index schema yet
-  const needsNormalize = useRef(false)
+  // The schema the shown tree was last normalized with (or seen with, for typed queries)
+  const normalizedWith = useRef<FieldInfo[]>()
 
   // Mirror of the latest state so setQueryState can compute the next state without
   // running side effects inside the useState updater (which executes during render).
@@ -66,13 +65,12 @@ export const useQueryStateSync = (fieldInfos: FieldInfo[]) => {
     setUnsupportedError(result.success ? undefined : result.error)
     if (!result.success) {
       loadedIndex.current = undefined
-      needsNormalize.current = false
       return
     }
 
     queryStateRef.current = result.state
     loadedIndex.current = index
-    needsNormalize.current = queryWrittenBy === "ui"
+    normalizedWith.current = undefined
     setQueryStateInternal(result.state)
 
     // The builder tree is the source of truth, store its string so results match it
@@ -105,19 +103,21 @@ export const useQueryStateSync = (fieldInfos: FieldInfo[]) => {
     [setValuesSearchQuery]
   )
 
-  // Normalize values to the field types once the schema is known, for trees the builder
-  // wrote. Queries typed in the code editor are opened unchanged, so they are not normalized.
+  // Normalize values to the field types once the schema is known (and whenever it changes,
+  // e.g. after the index is edited), for trees the builder wrote. Queries typed in the code
+  // editor are opened unchanged, so they are not normalized.
   useEffect(() => {
-    if (!needsNormalize.current || fieldInfos.length === 0) return
+    if (fieldInfos.length === 0 || normalizedWith.current === fieldInfos) return
     // Wait until the tree shows the stored query of this index (e.g. after a rewrite)
     if (loadedIndex.current !== index || lastSyncedKey.current !== getQueryKey(index, query)) {
       return
     }
-    needsNormalize.current = false
+    normalizedWith.current = fieldInfos
+    if (queryWrittenBy !== "ui") return
 
     // Writing an unchanged string keeps the query's tag (see setValuesSearchQuery)
     setQueryState((state) => normalizeQueryState(state, fieldInfos))
-  }, [fieldInfos, index, query, setQueryState])
+  }, [fieldInfos, index, query, queryWrittenBy, setQueryState])
 
   return {
     queryState,
