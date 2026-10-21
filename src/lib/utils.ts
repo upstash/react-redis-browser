@@ -179,11 +179,12 @@ const NO_CHAR = String.raw`[^\s\S]`
 const literal = (char: string) => String.raw`\u{${char.codePointAt(0)!.toString(16)}}`
 
 /**
- * Parses a `[...]` class starting right after the `[`. Returns undefined when Upstash treats
- * the `[` as a literal: at the end of the pattern or when the class ends with a lone `\`.
+ * Parses a `[...]` class starting right after the `[`. Returns undefined when Upstash gives up
+ * on the pattern and only matches it exactly: for an empty class (also a `[` at the end of the
+ * pattern) or when the class ends with a lone `\`.
  */
 const parseCharClass = (chars: string[], start: number) => {
-  if (start >= chars.length) return
+  if (start >= chars.length || chars[start] === "]") return
 
   let j = start
   const negate = chars[j] === "^"
@@ -222,22 +223,31 @@ export function matchesGlob(pattern: string, value: string) {
   for (let i = 0; i < chars.length; i++) {
     const char = chars[i]
 
-    if (char === "*") {
-      regex += `${ANY_CHAR}*`
-    } else if (char === "?") {
-      regex += ANY_CHAR
-    } else if (char === "\\" && i + 1 < chars.length) {
-      regex += literal(chars[++i])
-    } else if (char === "[") {
-      const charClass = parseCharClass(chars, i + 1)
-      if (charClass) {
+    switch (char) {
+      case "*": {
+        regex += `${ANY_CHAR}*`
+        break
+      }
+      case "?": {
+        regex += ANY_CHAR
+        break
+      }
+      case "\\": {
+        // A trailing `\` makes Upstash match the pattern exactly
+        if (i + 1 >= chars.length) return value === pattern
+        regex += literal(chars[++i])
+        break
+      }
+      case "[": {
+        const charClass = parseCharClass(chars, i + 1)
+        if (!charClass) return value === pattern
         regex += charClass.regex
         i = charClass.end
-      } else {
+        break
+      }
+      default: {
         regex += literal(char)
       }
-    } else {
-      regex += literal(char)
     }
   }
 

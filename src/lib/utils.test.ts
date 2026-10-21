@@ -99,6 +99,14 @@ describe("matchesGlob", () => {
     ["a[\\", "a\\", false],
     ["a[\\", "a[\\", true],
     ["a[b\\", "ab", false],
+    // Patterns Upstash can't turn into a regexp only match themselves
+    ["a[]b", "a[]b", true],
+    ["*[]", "x[]", false],
+    ["*\\", "a\\", false],
+    ["*\\", "*\\", true],
+    ["*[", "x[", false],
+    ["*[", "*[", true],
+    ["*[b\\", "*[b\\", true],
   ])("%p matches %p: %p", (pattern, value, expected) => {
     expect(matchesGlob(pattern, value)).toBe(expected)
   })
