@@ -13,16 +13,118 @@ export function safeParseJSON<T>(value: string): T | undefined {
   }
 }
 
+/** Index of the next character that is not whitespace or a comment, -1 for an unclosed comment */
+const skipWhitespaceAndComments = (value: string, index: number): number => {
+  while (index < value.length) {
+    if (/\s/.test(value[index])) {
+      index++
+    } else if (value.startsWith("//", index)) {
+      const end = value.indexOf("\n", index)
+      index = end === -1 ? value.length : end + 1
+    } else if (value.startsWith("/*", index)) {
+      const end = value.indexOf("*/", index + 2)
+      if (end === -1) return -1
+      index = end + 2
+    } else {
+      break
+    }
+  }
+  return index
+}
+
+/** Whether only semicolons, whitespace and comments are left from index on */
+const isStatementEnd = (value: string, index: number): boolean => {
+  while (index < value.length) {
+    const next = skipWhitespaceAndComments(value, index)
+    if (next === -1) return false
+    if (next !== index) {
+      index = next
+    } else if (value[index] === ";") {
+      index++
+    } else {
+      return false
+    }
+  }
+  return true
+}
+
 /**
- * Parses a JavaScript object literal string (with unquoted keys) into a JS object.
- * Adds double quotes around unquoted keys like `$and:` -> `"$and":`
+ * Parses a JavaScript object literal string into a JS object.
+ * Supports unquoted keys like `$and:`, single quoted strings, comments, trailing commas,
+ * and semicolons ending the statement.
+ * String contents are never rewritten. Returns undefined if the value is not valid.
  */
 export function parseJSObjectLiteral<T>(value: string): T | undefined {
-  // Add double quotes around unquoted keys (handles $ prefixed and regular identifiers)
-  let jsonified = value.replaceAll(/([,{]\s*)(\$?[A-Z_a-z]\w*)\s*:/g, '$1"$2":')
-  // Remove trailing commas before closing braces/brackets (valid in JS, invalid in JSON)
-  jsonified = jsonified.replaceAll(/,\s*([\]}])/g, "$1")
-  return safeParseJSON(jsonified)
+  let json = ""
+  let index = 0
+
+  while (index < value.length) {
+    const char = value[index]
+
+    if (char === '"' || char === "'") {
+      // Copy the string as a double quoted JSON string
+      let content = ""
+      index++
+      while (index < value.length && value[index] !== char) {
+        if (value[index] === "\\") {
+          const escaped = value[index + 1] ?? ""
+          // \' is valid JS in any string but not JSON
+          content += escaped === "'" ? "'" : `\\${escaped}`
+          index += 2
+        } else {
+          const code = value.codePointAt(index)!
+          // JS strings may hold a raw tab (and other control characters but line breaks),
+          // JSON strings may not
+          if (code < 0x20 && value[index] !== "\n" && value[index] !== "\r") {
+            content += String.raw`\u` + code.toString(16).padStart(4, "0")
+          } else {
+            content += value[index] === '"' ? String.raw`\"` : value[index]
+          }
+          index++
+        }
+      }
+      if (index >= value.length) return
+      index++
+      json += `"${content}"`
+      continue
+    }
+
+    const next = skipWhitespaceAndComments(value, index)
+    if (next === -1) return
+    if (next !== index) {
+      json += " "
+      index = next
+      continue
+    }
+
+    const identifier = /^[$A-Z_a-z][\w$]*/.exec(value.slice(index))?.[0]
+    if (identifier) {
+      index += identifier.length
+      // An identifier followed by a colon is an unquoted key
+      json +=
+        value[skipWhitespaceAndComments(value, index)] === ":" ? `"${identifier}"` : identifier
+      continue
+    }
+
+    // The editor holds a statement, so trailing semicolons are valid there but not in JSON
+    if (char === ";" && isStatementEnd(value, index)) break
+
+    // Drop trailing commas before closing braces/brackets (valid in JS, invalid in JSON),
+    // but not a lone comma like {,} which is invalid in JS too
+    if (char === ",") {
+      const after = value[skipWhitespaceAndComments(value, index + 1)]
+      const before = json.trimEnd().at(-1)
+      if ((after === "}" || after === "]") && before !== "{" && before !== "[" && before !== ",") {
+        index++
+        continue
+      }
+    }
+
+    json += char
+    index++
+  }
+
+  return safeParseJSON(json)
 }
 
 const units = {
