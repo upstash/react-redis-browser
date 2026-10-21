@@ -38,6 +38,12 @@ export const useQueryStateSync = () => {
   // (the store doesn't change, so the effect never runs) and swallow the next external change.
   const lastSyncedQuery = useRef<string>(valuesSearch.query)
 
+  // The stored query as of the last render. When it differs from lastSyncedQuery, the tree
+  // still belongs to the previous query (e.g. another index) until the sync effect reloads it,
+  // and child effects that run before it must not write that tree over the new query.
+  const storedQuery = useRef(valuesSearch.query)
+  storedQuery.current = valuesSearch.query
+
   // Mirror of the latest state so setQueryState can compute the next state without
   // running side effects inside the useState updater (which executes during render).
   const queryStateRef = useRef(queryState)
@@ -60,13 +66,14 @@ export const useQueryStateSync = () => {
   // inside the useState updater, so it never fires during another component's render.
   const setQueryState = useCallback(
     (modifier: (state: QueryState) => QueryState) => {
-      if (unsupportedErrorRef.current) return
+      if (unsupportedErrorRef.current || storedQuery.current !== lastSyncedQuery.current) return
 
       const newState = modifier(structuredClone(queryStateRef.current))
       queryStateRef.current = newState
 
       const newQueryString = stringifyQueryState(newState)
       lastSyncedQuery.current = newQueryString
+      storedQuery.current = newQueryString
 
       setQueryStateInternal(newState)
       setValuesSearchQuery(newQueryString)
