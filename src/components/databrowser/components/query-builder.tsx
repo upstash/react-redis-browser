@@ -20,7 +20,7 @@ export const QueryBuilder = () => {
             value={editorValue}
             onChange={(value) => {
               const queryPart = value.slice(PREFIX.length)
-              setValuesSearchQuery(queryPart)
+              setValuesSearchQuery(queryPart, "code")
             }}
             schema={indexDetails}
           />

@@ -50,6 +50,8 @@ export const useTab = () => {
       valuesSearch: {
         ...tabData.valuesSearch,
         query: tabData.valuesSearch.queries[tabData.valuesSearch.index] ?? "",
+        // Queries without a tag could have been typed in the code editor
+        queryWrittenBy: tabData.valuesSearch.queryWrittenBy?.[tabData.valuesSearch.index] ?? "code",
       },
       isValuesSearchSelected: tabData.isValuesSearchSelected,
       queryBuilderMode: tabData.valuesSearch.queryBuilderMode ?? "ui",
@@ -63,7 +65,8 @@ export const useTab = () => {
       setSearchType: (type: DataType | undefined) => setSearchType(tabId, type),
       setValuesSearch: (search: ValuesSearchFilter) => setValuesSearch(tabId, search),
       setValuesSearchIndex: (index: string) => setValuesSearchIndex(tabId, index),
-      setValuesSearchQuery: (query: string) => setValuesSearchQuery(tabId, query),
+      setValuesSearchQuery: (query: string, writtenBy: "ui" | "code") =>
+        setValuesSearchQuery(tabId, query, writtenBy),
       setIsValuesSearchSelected: (isSelected: boolean) =>
         setIsValuesSearchSelected(tabId, isSelected),
       setQueryBuilderMode: (mode: "ui" | "code") => setQueryBuilderMode(tabId, mode),
