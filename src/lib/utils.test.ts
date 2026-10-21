@@ -12,6 +12,11 @@ describe("parseJSObjectLiteral", () => {
     expect(parseJSObjectLiteral<unknown>(`{ a: "// not a comment" }`)).toEqual({
       a: "// not a comment",
     })
+    // A raw tab is valid in a JS string but not in JSON
+    expect(parseJSObjectLiteral<unknown>(`{ a: "x\ty", b: 'x\u0001y' }`)).toEqual({
+      a: "x\ty",
+      b: "x\u0001y",
+    })
   })
 
   test("supports single quotes, comments and trailing commas", () => {
@@ -40,6 +45,11 @@ describe("parseJSObjectLiteral", () => {
     expect(parseJSObjectLiteral<unknown>(`{ a: undefined }`)).toBeUndefined()
     expect(parseJSObjectLiteral<unknown>(`{,}`)).toBeUndefined()
     expect(parseJSObjectLiteral<unknown>(`{ a: [,] }`)).toBeUndefined()
+    expect(parseJSObjectLiteral<unknown>(`{ a: "x\ny" }`)).toBeUndefined()
+    // Unclosed block comments
+    expect(parseJSObjectLiteral<unknown>(`{ a: 1 } /* x`)).toBeUndefined()
+    expect(parseJSObjectLiteral<unknown>(`{ a: 1 }; /* x`)).toBeUndefined()
+    expect(parseJSObjectLiteral<unknown>(`{ a: 1 /* x`)).toBeUndefined()
   })
 })
 
