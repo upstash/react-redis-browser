@@ -141,7 +141,7 @@ const groupToObject = (
         child.not ? { $mustNot: buildMustNot([child]) } : queryNodeToObject(child, false, true)
       ),
     }
-    if (boost && boost !== 1) result.$boost = boost
+    if (hasBoost(boost)) result.$boost = boost
     return result
   }
 

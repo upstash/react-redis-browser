@@ -332,6 +332,10 @@ const builderStates: [QueryNode, Record<string, unknown>][] = [
     { $or: [{ a: { $eq: "1" } }, { $and: [{}], $mustNot: { b: { $eq: "2" } } }] },
   ],
   [
+    group("or", [cond("a", "1"), cond("b", "2", true)], 0),
+    { $or: [{ a: { $eq: "1" } }, { $mustNot: { b: { $eq: "2" } } }], $boost: 0 },
+  ],
+  [
     group("and", [cond("a", "1"), group("or", [cond("b", "2"), cond("c", "3")], 0)]),
     { $and: [{ a: { $eq: "1" } }, { $or: { b: { $eq: "2" }, c: { $eq: "3" } }, $boost: 0 }] },
   ],
