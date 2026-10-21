@@ -9,7 +9,8 @@ export const useFetchSimpleKey = (dataKey: string, type: DataType) => {
   const { redisNoPipeline: redis } = useRedis()
 
   return useQuery({
-    queryKey: [FETCH_SIMPLE_KEY_QUERY_KEY, dataKey],
+    // Keyed by type: the command depends on it, so a type change must not reuse this query
+    queryKey: [FETCH_SIMPLE_KEY_QUERY_KEY, dataKey, type],
     queryFn: async () => {
       let result
       if (type === "string") result = (await redis.get(dataKey)) as string | null
