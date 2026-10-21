@@ -16,6 +16,32 @@ const dedupeSearchHistory = (history: string[]) => {
   })
 }
 
+/**
+ * Whether Tab should step through the history list instead of moving focus. Only once the user
+ * entered the list with the keyboard (a hovered row doesn't count), and never past either end,
+ * so Tab can't trap focus in the input.
+ */
+export const isHistoryTab = ({
+  key,
+  shiftKey,
+  isHistoryOpen,
+  focusedIndex,
+  historyLength,
+  isKeyboardNav,
+}: {
+  key: string
+  shiftKey: boolean
+  isHistoryOpen: boolean
+  focusedIndex: number
+  historyLength: number
+  isKeyboardNav: boolean
+}) =>
+  key === "Tab" &&
+  isHistoryOpen &&
+  isKeyboardNav &&
+  focusedIndex >= 0 &&
+  (shiftKey || focusedIndex < historyLength - 1)
+
 export const SearchInput = () => {
   const { setSearchKey, search } = useTab()
   const { searchHistory, addSearchHistory } = useDatabrowserStore()
@@ -23,6 +49,8 @@ export const SearchInput = () => {
 
   const [isFocus, setIsFocus] = useState(false)
   const [focusedIndex, setFocusedIndex] = useState(-1)
+  // Whether focusedIndex was set with the keyboard rather than by hovering a row
+  const [isKeyboardNav, setIsKeyboardNav] = useState(false)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const historyItemRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -51,13 +79,14 @@ export const SearchInput = () => {
   const isHistoryOpen = isFocus && filteredHistory.length > 0
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    // Tab only steps through history once the user is in the list (via the arrow keys),
-    // and moves focus on past either end, so it never traps
-    const isHistoryTab =
-      e.key === "Tab" &&
-      isHistoryOpen &&
-      focusedIndex >= 0 &&
-      (e.shiftKey || focusedIndex < filteredHistory.length - 1)
+    const isTabInHistory = isHistoryTab({
+      key: e.key,
+      shiftKey: e.shiftKey,
+      isHistoryOpen,
+      focusedIndex,
+      historyLength: filteredHistory.length,
+      isKeyboardNav,
+    })
 
     if (e.key === "Enter") {
       const text =
@@ -69,15 +98,17 @@ export const SearchInput = () => {
       setState("")
       setFocusedIndex(-1)
       inputRef.current?.blur()
-    } else if (e.key === "ArrowDown" || (isHistoryTab && !e.shiftKey)) {
+    } else if (e.key === "ArrowDown" || (isTabInHistory && !e.shiftKey)) {
       e.preventDefault()
+      setIsKeyboardNav(true)
       if (focusedIndex < filteredHistory.length - 1) {
         setFocusedIndex(focusedIndex + 1)
       } else if (filteredHistory.length > 0) {
         setFocusedIndex(0)
       }
-    } else if (e.key === "ArrowUp" || (isHistoryTab && e.shiftKey)) {
+    } else if (e.key === "ArrowUp" || (isTabInHistory && e.shiftKey)) {
       e.preventDefault()
+      setIsKeyboardNav(true)
       if (focusedIndex > 0) {
         setFocusedIndex(focusedIndex - 1)
       } else if (filteredHistory.length > 0 && focusedIndex === 0) {
@@ -128,7 +159,10 @@ export const SearchInput = () => {
                   historyItemRefs.current[index] = el
                 }}
                 onClick={() => handleSubmit(item)}
-                onMouseEnter={() => setFocusedIndex(index)}
+                onMouseEnter={() => {
+                  setFocusedIndex(index)
+                  setIsKeyboardNav(false)
+                }}
                 className={`block w-full truncate rounded-sm p-1 text-left transition-colors ${
                   focusedIndex === index ? "bg-zinc-100" : "hover:bg-zinc-100"
                 }`}
