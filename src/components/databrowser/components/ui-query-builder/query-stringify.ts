@@ -148,11 +148,14 @@ const groupToObject = (
   // Optimization: flatten root AND children into top-level object
   // Conditions become field keys, groups become $and/$or keys — if no key conflicts
   if (isRoot && groupOperator === "and" && negatedChildren.length === 0) {
-    // Single child: just unwrap it
+    // Single child: just unwrap it, unless both have a boost (one $boost key can't hold both)
     if (normalChildren.length === 1) {
       const result = queryNodeToObject(normalChildren[0], false)
-      if (hasBoost(boost)) result.$boost = boost
-      return result
+      if (!hasBoost(boost)) return result
+      if (!("$boost" in result)) {
+        result.$boost = boost
+        return result
+      }
     }
 
     const conditionChildren = normalChildren.filter((c) => c.type === "condition")

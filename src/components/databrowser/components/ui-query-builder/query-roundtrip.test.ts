@@ -341,6 +341,19 @@ const builderStates: [QueryNode, Record<string, unknown>][] = [
     { $and: [{ a: { $eq: "1" } }, { $or: { b: { $eq: "2" }, c: { $eq: "3" } }, $boost: 0 }] },
   ],
 
+  // A boosted root keeps the boost of its only child group
+  [
+    group("and", [group("or", [cond("a", "1"), cond("b", "2", true)], -1)], 0.5),
+    {
+      $and: [{ $or: [{ a: { $eq: "1" } }, { $mustNot: { b: { $eq: "2" } } }], $boost: -1 }],
+      $boost: 0.5,
+    },
+  ],
+  [
+    group("and", [group("and", [cond("a", "1"), cond("a", "2")], 3)], 2),
+    { $and: [{ $and: [{ a: { $eq: "1" } }, { a: { $eq: "2" } }], $boost: 3 }], $boost: 2 },
+  ],
+
   // Empty groups add no constraint and are dropped
   [group("or", [cond("a", "1"), group("and", [])]), { $or: { a: { $eq: "1" } } }],
   [group("and", [group("or", []), group("and", [group("or", [])])]), {}],
