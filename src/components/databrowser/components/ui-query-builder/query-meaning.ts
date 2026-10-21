@@ -132,14 +132,35 @@ const parseQueryObject = (obj: Record<string, unknown>): QueryNode => {
 
 const hasPositive = (subqueries: Subquery[]) => subqueries.some((sub) => sub.occur !== "mustNot")
 
+// The clauses of each boolean query key built during the current getQueryMeaning call
+const booleanClauses = new Map<string, Subquery[]>()
+
 /** The order of boolean clauses doesn't matter, so they are sorted */
-const booleanQuery = (subqueries: Subquery[]) =>
-  `bool(${subqueries
+const booleanQuery = (subqueries: Subquery[]) => {
+  const query = `bool(${subqueries
     .map((sub) => `${sub.occur}:${sub.query}`)
     .sort()
     .join(",")})`
+  booleanClauses.set(query, subqueries)
+  return query
+}
 
-const boostQuery = (query: string, boost: number) => `boost(${query},${boost})`
+/**
+ * Excluded clauses add no score, so boosting a boolean query with one scoring clause is
+ * boosting that clause. The boost is moved onto it, so both spellings get the same key.
+ */
+const boostQuery = (query: string, boost: number): string => {
+  const subqueries = booleanClauses.get(query)
+  const scoring = subqueries?.filter((sub) => sub.occur !== "mustNot")
+  if (subqueries && scoring?.length === 1) {
+    return booleanQuery(
+      subqueries.map((sub) =>
+        sub === scoring[0] ? { ...sub, query: boostQuery(sub.query, boost) } : sub
+      )
+    )
+  }
+  return `boost(${query},${boost})`
+}
 
 const finishBool = (input: Subquery[], boost?: number): string => {
   const subqueries = input.length === 0 ? [{ occur: "must" as const, query: "all" }] : [...input]
@@ -251,6 +272,7 @@ const lowerGroup = (body: GroupBody, occur: "must" | "should"): string => {
  */
 export const getQueryMeaning = (query: unknown): string | undefined => {
   if (!isPlainObject(query)) return
+  booleanClauses.clear()
   try {
     return lowerQuery(parseQueryObject(query))
   } catch (error) {

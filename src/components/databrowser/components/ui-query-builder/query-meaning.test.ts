@@ -23,6 +23,15 @@ describe("getQueryMeaning", () => {
     [`{ $mustNot: { $and: { a: 1 } } }`, `{ $mustNot: { a: 1 } }`],
     [`{ a: { $gte: 1, $lte: 2 } }`, `{ a: { $lte: 2, $gte: 1 } }`],
     [``, `{}`],
+    // Excluded clauses add no score, so a boost next to them only boosts the scoring clause
+    [
+      `{ $and: { a: 1 }, $mustNot: { b: 1 }, $boost: 2 }`,
+      `{ $and: { a: 1, $boost: 2 }, $mustNot: { b: 1 } }`,
+    ],
+    [
+      `{ $and: [{ $and: { a: 1 }, $mustNot: { b: 1 } }], $boost: 2 }`,
+      `{ a: { $eq: 1, $boost: 2 }, $mustNot: { b: 1 } }`,
+    ],
     // Without a must clause the lone $or still has to match
     [`{ $or: { a: 1 }, $mustNot: { b: 1 } }`, `{ $and: [{ $or: { a: 1 } }], $mustNot: { b: 1 } }`],
   ]
@@ -50,6 +59,8 @@ describe("getQueryMeaning", () => {
     [`{ a: { $eq: 1, $boost: 1 } }`, `{ a: 1 }`],
     [`{ a: "x", $boost: 2 }`, `{ a: "x" }`],
     [`{ $and: { a: "x", $boost: 3 }, $boost: 2 }`, `{ a: "x", $boost: 3 }`],
+    // With two scoring clauses a boost on the group is not a boost on one of them
+    [`{ a: 1, b: 1, $boost: 2 }`, `{ a: { $eq: 1, $boost: 2 }, b: 1 }`],
     // Next to a must clause the $or is optional
     [`{ a: 1, $or: { b: 1 } }`, `{ a: 1, $and: { b: 1 } }`],
   ]

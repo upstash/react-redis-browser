@@ -157,7 +157,7 @@ describe("reloading what the builder wrote", () => {
   // Deterministic random builder trees
   let seed = 1
   const rnd = () => {
-    seed = (seed * 1_103_515_245 + 12_345) & 0x7F_FF_FF_FF
+    seed = (Math.imul(seed, 1_103_515_245) + 12_345) & 0x7F_FF_FF_FF
     return seed / 0x7F_FF_FF_FF
   }
   const pick = <T>(items: T[]): T => items[Math.floor(rnd() * items.length)]
