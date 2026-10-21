@@ -31,9 +31,25 @@ const skipWhitespaceAndComments = (value: string, index: number): number => {
   return index
 }
 
+/** Whether only semicolons, whitespace and comments are left from index on */
+const isStatementEnd = (value: string, index: number): boolean => {
+  while (index < value.length) {
+    const next = skipWhitespaceAndComments(value, index)
+    if (next !== index) {
+      index = next
+    } else if (value[index] === ";") {
+      index++
+    } else {
+      return false
+    }
+  }
+  return true
+}
+
 /**
  * Parses a JavaScript object literal string into a JS object.
- * Supports unquoted keys like `$and:`, single quoted strings, comments, and trailing commas.
+ * Supports unquoted keys like `$and:`, single quoted strings, comments, trailing commas,
+ * and semicolons ending the statement.
  * String contents are never rewritten. Returns undefined if the value is not valid.
  */
 export function parseJSObjectLiteral<T>(value: string): T | undefined {
@@ -79,6 +95,9 @@ export function parseJSObjectLiteral<T>(value: string): T | undefined {
         value[skipWhitespaceAndComments(value, index)] === ":" ? `"${identifier}"` : identifier
       continue
     }
+
+    // The editor holds a statement, so trailing semicolons are valid there but not in JSON
+    if (char === ";" && isStatementEnd(value, index)) break
 
     // Drop trailing commas before closing braces/brackets (valid in JS, invalid in JSON),
     // but not a lone comma like {,} which is invalid in JS too

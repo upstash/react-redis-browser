@@ -125,6 +125,19 @@ const groupToObject = (
     return { $mustNot: [inner] }
   }
 
+  // OR group with negated children: each one is its own alternative in the $or array.
+  // Next to $or, the server ANDs a $mustNot ({ $or: a, $mustNot: b } is a and not b).
+  // An item with only $mustNot matches every document it doesn't exclude.
+  if (groupOperator === "or" && negatedChildren.length > 0) {
+    const result: Record<string, unknown> = {
+      $or: children.map((child) =>
+        child.not ? { $mustNot: buildMustNot([child]) } : queryNodeToObject(child, false, true)
+      ),
+    }
+    if (boost && boost !== 1) result.$boost = boost
+    return result
+  }
+
   // Optimization: flatten root AND children into top-level object
   // Conditions become field keys, groups become $and/$or keys — if no key conflicts
   if (isRoot && groupOperator === "and" && negatedChildren.length === 0) {
@@ -193,6 +206,7 @@ const groupToObject = (
   }
 
   // Standard format: $and/$or for normal children, $mustNot as sibling for negated children
+  // (only reached by AND groups when there are negated children)
   const result: Record<string, unknown> = {}
 
   if (normalChildren.length > 0) {
