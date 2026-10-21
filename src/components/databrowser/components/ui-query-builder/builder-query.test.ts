@@ -39,6 +39,10 @@ describe("getQueryBuilderError (code editor → builder)", () => {
     `{ $and: [{ name: "a" }, { age: 1 }] }`,
     `{ $mustNot: { $and: { f1: 1 } } }`,
     `{ $or: { a: 1 }, $boost: 2 }`,
+    // A $mustNot object excludes each of its keys, which the builder reads as separate negations
+    `{ $and: { f3: 1 }, $mustNot: { f1: 1, f2: 1 } }`,
+    // Next to only a $mustNot, an $or still has to match
+    `{ $or: { a: 1 }, $mustNot: { b: 1 } }`,
   ]
   for (const query of accepted) {
     test(`accepts ${query}`, () => {
@@ -55,8 +59,6 @@ describe("getQueryBuilderError (code editor → builder)", () => {
     `{ $or: [{ f3: "x" }, { $and: [{}] }] }`,
     `{ $must: { name: "a" }, $should: { title: "b" } }`,
     `{ name: { $fuzzy: { value: "a", prefix: true } } }`,
-    // A $mustNot object excludes each key, an $and body inside it is not a query node
-    `{ $and: { f3: 1 }, $mustNot: { f1: 1, f2: 1 } }`,
     // The builder keeps one operator per field
     `{ f1: { $eq: 0, $smart: 1 } }`,
     // A lone $boost is not match-all
@@ -231,5 +233,35 @@ describe("reloading what the builder wrote", () => {
     if (!first.success || first.rewrite === undefined) throw new Error("expected a rewrite")
     const second = resolveBuilderQuery(first.rewrite, "ui")
     expect(second.success && second.rewrite).toBeUndefined()
+  })
+})
+
+describe("resolveBuilderQuery for typed queries", () => {
+  test("an empty query in any spelling opens as an empty tree", () => {
+    for (const query of ["", "  ", "{}", "{ }", "{\n}", "{ /* nothing */ }", "{};"]) {
+      const result = resolveBuilderQuery(query, "code")
+      expect(result.success).toBe(true)
+      if (result.success) expect(result.state.root).toMatchObject({ type: "group", children: [] })
+    }
+  })
+
+  test("a trailing semicolon opens like the query without it", () => {
+    const result = resolveBuilderQuery(`{ name: "x" };`, "code")
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.state.root).toMatchObject({ type: "group", children: [{ type: "condition" }] })
+    }
+  })
+
+  test("queries the builder can't show are refused", () => {
+    for (const query of [
+      `{ name: "x"`,
+      `{ name: "x" }; {}`,
+      `[1]`,
+      `{ $boost: 2 }`,
+      `{ $must: { a: 1 }, $should: { b: 2 } }`,
+    ]) {
+      expect(resolveBuilderQuery(query, "code").success).toBe(false)
+    }
   })
 })

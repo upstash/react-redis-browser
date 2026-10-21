@@ -144,6 +144,12 @@ const boostQuery = (query: string, boost: number) => `boost(${query},${boost})`
 const finishBool = (input: Subquery[], boost?: number): string => {
   const subqueries = input.length === 0 ? [{ occur: "must" as const, query: "all" }] : [...input]
   if (!hasPositive(subqueries)) subqueries.push({ occur: "must", query: "const0(all)" })
+  // Without must clauses a boolean query needs one should clause to match, so a lone should
+  // clause is a must clause
+  const shoulds = subqueries.filter((sub) => sub.occur === "should")
+  if (shoulds.length === 1 && !subqueries.some((sub) => sub.occur === "must")) {
+    shoulds[0].occur = "must"
+  }
   const query = subqueries.length === 1 ? subqueries[0].query : booleanQuery(subqueries)
   return boost === undefined ? query : boostQuery(query, boost)
 }
