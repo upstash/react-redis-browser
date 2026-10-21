@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useTab, useTabId } from "@/tab-provider"
 import { IconArrowLeft } from "@tabler/icons-react"
 import { Panel, PanelGroup } from "react-resizable-panels"
@@ -23,7 +23,7 @@ import { WizardButton } from "./query-wizard/wizard-button"
 import { SearchEmptyState } from "./search-empty-state"
 import { Sidebar } from "./sidebar"
 import { UIQueryBuilder } from "./ui-query-builder"
-import { hasMustShouldCombination } from "./ui-query-builder/query-parser"
+import { parseBuilderQuery } from "./ui-query-builder/query-parser"
 
 export const PREFIX = "const query: Query = "
 
@@ -33,15 +33,22 @@ const QueryBuilderContent = () => {
   const compact = useCompactLayout()
   const { valuesSearch, queryBuilderMode, setQueryBuilderMode } = useTab()
   const { query } = useKeys()
-  const [switchError, setSwitchError] = useState<string>()
+  // A switch error is about the query it was raised for, so it doesn't hide later query errors
+  const [switchErrorState, setSwitchErrorState] = useState<{ error: string; query: string }>()
+  const switchError =
+    switchErrorState?.query === valuesSearch.query ? switchErrorState.error : undefined
+  const setSwitchError = useCallback(
+    (error: string | undefined) =>
+      setSwitchErrorState(error ? { error, query: valuesSearch.query } : undefined),
+    [valuesSearch.query]
+  )
 
   const handleModeChange = (value: string) => {
     const newMode = value as QueryBuilderMode
     if (newMode === "ui") {
-      if (hasMustShouldCombination(valuesSearch.query)) {
-        setSwitchError(
-          "Queries using both $must and $should are not supported in the UI query builder"
-        )
+      const result = parseBuilderQuery(valuesSearch.query)
+      if (!result.success) {
+        setSwitchError(result.error)
         return
       }
       setSwitchError(undefined)
@@ -50,6 +57,15 @@ const QueryBuilderContent = () => {
     }
     setQueryBuilderMode(newMode)
   }
+
+  // The builder found a query it can't show (e.g. after switching the index)
+  const handleUnsupportedQuery = useCallback(
+    (error: string) => {
+      setSwitchError(error)
+      setQueryBuilderMode("code")
+    },
+    [setSwitchError, setQueryBuilderMode]
+  )
 
   const errorMessage =
     switchError ?? (query.error ? formatUpstashErrorMessage(query.error) : undefined)
@@ -74,7 +90,11 @@ const QueryBuilderContent = () => {
         />
       </div>
       <div className="min-h-0 grow">
-        {queryBuilderMode === "ui" ? <UIQueryBuilder /> : <QueryBuilder />}
+        {queryBuilderMode === "ui" ? (
+          <UIQueryBuilder onUnsupportedQuery={handleUnsupportedQuery} />
+        ) : (
+          <QueryBuilder />
+        )}
       </div>
       <QueryBuilderError error={errorMessage} autoHide={Boolean(switchError)} />
       <DocsLink
