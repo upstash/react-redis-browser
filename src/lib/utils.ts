@@ -13,7 +13,7 @@ export function safeParseJSON<T>(value: string): T | undefined {
   }
 }
 
-/** Index of the next character that is not whitespace or a comment */
+/** Index of the next character that is not whitespace or a comment, -1 for an unclosed comment */
 const skipWhitespaceAndComments = (value: string, index: number): number => {
   while (index < value.length) {
     if (/\s/.test(value[index])) {
@@ -23,7 +23,8 @@ const skipWhitespaceAndComments = (value: string, index: number): number => {
       index = end === -1 ? value.length : end + 1
     } else if (value.startsWith("/*", index)) {
       const end = value.indexOf("*/", index + 2)
-      index = end === -1 ? value.length : end + 2
+      if (end === -1) return -1
+      index = end + 2
     } else {
       break
     }
@@ -35,6 +36,7 @@ const skipWhitespaceAndComments = (value: string, index: number): number => {
 const isStatementEnd = (value: string, index: number): boolean => {
   while (index < value.length) {
     const next = skipWhitespaceAndComments(value, index)
+    if (next === -1) return false
     if (next !== index) {
       index = next
     } else if (value[index] === ";") {
@@ -70,7 +72,14 @@ export function parseJSObjectLiteral<T>(value: string): T | undefined {
           content += escaped === "'" ? "'" : `\\${escaped}`
           index += 2
         } else {
-          content += value[index] === '"' ? String.raw`\"` : value[index]
+          const code = value.codePointAt(index)!
+          // JS strings may hold a raw tab (and other control characters but line breaks),
+          // JSON strings may not
+          if (code < 0x20 && value[index] !== "\n" && value[index] !== "\r") {
+            content += String.raw`\u` + code.toString(16).padStart(4, "0")
+          } else {
+            content += value[index] === '"' ? String.raw`\"` : value[index]
+          }
           index++
         }
       }
@@ -81,6 +90,7 @@ export function parseJSObjectLiteral<T>(value: string): T | undefined {
     }
 
     const next = skipWhitespaceAndComments(value, index)
+    if (next === -1) return
     if (next !== index) {
       json += " "
       index = next
