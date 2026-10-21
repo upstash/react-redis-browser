@@ -2,6 +2,10 @@ import { toJsLiteral } from "@/lib/utils"
 
 import type { FieldOperator, QueryNode, QueryState } from "./types"
 
+/** A group with no conditions anywhere inside it adds no constraint, so it is skipped */
+const isEmptyGroup = (node: QueryNode): boolean =>
+  node.type === "group" && node.children.every((child) => isEmptyGroup(child))
+
 /** Build the operator value for a condition (handles fuzzy and phrase specially) */
 const buildOperatorValue = (
   operator: FieldOperator,
@@ -102,14 +106,15 @@ const groupToObject = (
   isRoot: boolean,
   forArray: boolean = false
 ): Record<string, unknown> => {
-  const { groupOperator, children, boost, not } = node
+  const { groupOperator, boost, not } = node
+  const children = node.children.filter((c) => !isEmptyGroup(c))
 
   // Separate children into normal and negated ($mustNot)
   const normalChildren = children.filter((c) => !c.not)
   const negatedChildren = children.filter((c) => c.not)
 
   // Empty root group should return empty object, not $and: []
-  if (isRoot && children.length === 0 && !not && !boost) {
+  if (isRoot && children.length === 0) {
     return {}
   }
 
@@ -216,7 +221,7 @@ const groupToObject = (
       // Not done for OR, since the fields of a plain object are always ANDed.
       if (child.type === "group") {
         const groupChild = child as QueryNode & { type: "group" }
-        const gc = groupChild.children
+        const gc = groupChild.children.filter((c) => !isEmptyGroup(c))
         const gcNormal = gc.filter((c) => !c.not)
         const gcNegated = gc.filter((c) => c.not)
         if (
