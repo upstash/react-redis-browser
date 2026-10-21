@@ -160,22 +160,23 @@ const groupToObject = (
     )
 
     if (!hasConflictingGroupChild) {
-      // Check for key conflicts: duplicate fields or duplicate group operators
-      const fields = conditionChildren.map(
-        (c) => (c as QueryNode & { type: "condition" }).condition.field
-      )
-      const groupOps = groupChildren.map((c) => `$${c.groupOperator}`)
-      const allKeys = [...fields, ...groupOps]
-      const hasConflicts = new Set(allKeys).size !== allKeys.length
+      const childObjects = [
+        ...conditionChildren.map((c) => conditionToObject(c as QueryNode & { type: "condition" })),
+        ...groupChildren.map((c) => groupToObject(c, false)),
+      ]
+      const keys = childObjects.flatMap((obj) => Object.keys(obj))
+      // Next to other keys, a top-level $or only boosts the score instead of filtering,
+      // and a child's $boost would apply to the whole query, so those can't be flattened.
+      // A child's $mustNot is kept with its group so the builder tree parses back the same.
+      // Duplicate keys (fields or group operators) would overwrite each other.
+      const canFlatten =
+        !keys.includes("$or") &&
+        !keys.includes("$boost") &&
+        !keys.includes("$mustNot") &&
+        new Set(keys).size === keys.length
 
-      if (!hasConflicts) {
-        const result: Record<string, unknown> = {}
-        for (const child of conditionChildren) {
-          Object.assign(result, conditionToObject(child as QueryNode & { type: "condition" }))
-        }
-        for (const child of groupChildren) {
-          Object.assign(result, groupToObject(child, false))
-        }
+      if (canFlatten) {
+        const result: Record<string, unknown> = Object.assign({}, ...childObjects)
         if (boost && boost !== 1) result.$boost = boost
         return result
       }
