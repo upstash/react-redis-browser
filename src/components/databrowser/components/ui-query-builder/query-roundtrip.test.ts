@@ -212,7 +212,52 @@ const queries: (Record<string, unknown> | [Record<string, unknown>, Record<strin
     { $and: [{}], $mustNot: { name: "foo" } },
   ],
   { $and: [{}], $mustNot: { name: "foo" } },
-  { $or: [{}], $mustNot: { name: "foo" } },
+  // next to $or the server ANDs $mustNot, so it is read (and written back) as an AND
+  [
+    { $or: [{}], $mustNot: { name: "foo" } },
+    { $and: [{}], $mustNot: { name: "foo" } },
+  ],
+  [
+    { $or: { name: "foo" }, $mustNot: { age: 18 } },
+    { $and: [{ $or: { name: "foo" } }], $mustNot: { age: 18 } },
+  ],
+  [
+    { $or: [{ name: "foo" }, { title: "bar" }], $mustNot: { age: 18 }, $boost: 2 },
+    { $and: [{ $or: { name: "foo", title: "bar" } }], $mustNot: { age: 18 }, $boost: 2 },
+  ],
+  // negated children of an OR are alternatives inside the $or array
+  { $or: [{ name: "foo" }, { $mustNot: { age: 18 } }] },
+  { $or: [{ $mustNot: { name: "foo" } }, { $mustNot: { age: 18 } }] },
+  { $or: [{ $mustNot: { name: "foo" } }], $boost: 2 },
+  [
+    { $or: { name: "foo", $mustNot: { age: 18 } } },
+    { $or: [{ name: "foo" }, { $mustNot: { age: 18 } }] },
+  ],
+  // in an OR object, all exclusions together are one alternative
+  [
+    { $or: { name: "foo", $mustNot: [{ age: 18 }, { title: "bar" }] } },
+    { $or: [{ name: "foo" }, { $and: [{}], $mustNot: [{ age: 18 }, { title: "bar" }] }] },
+  ],
+  [
+    { $and: { name: "foo", $mustNot: { age: 18 } } },
+    { $and: { name: "foo" }, $mustNot: { age: 18 } },
+  ],
+  // each key of a $mustNot object is excluded on its own
+  [{ $mustNot: { name: "foo", age: 18 } }, { $mustNot: [{ name: "foo" }, { age: 18 }] }],
+  [
+    { name: "foo", $mustNot: { age: 18, title: "bar" } },
+    { $and: { name: "foo" }, $mustNot: [{ age: 18 }, { title: "bar" }] },
+  ],
+  // a double negation keeps both negations
+  [
+    { $mustNot: [{ $mustNot: { name: "foo" } }] },
+    { $mustNot: [{ $and: [{}], $mustNot: { name: "foo" } }] },
+  ],
+  // fields, $and and $mustNot siblings: each $mustNot item is excluded once
+  [
+    { name: "foo", $and: [{ age: 18 }, { title: "bar" }], $mustNot: { status: "x" } },
+    { $and: [{ name: "foo" }, { age: 18, title: "bar" }], $mustNot: { status: "x" } },
+  ],
   // must not flattened
   [
     { $and: [{}], $mustNot: [{ name: "foo" }] },
@@ -270,6 +315,28 @@ const builderStates: [QueryNode, Record<string, unknown>][] = [
   [
     group("or", [cond("a", "1"), group("and", [cond("b", "2", true)])]),
     { $or: [{ a: { $eq: "1" } }, { $and: [{}], $mustNot: { b: { $eq: "2" } } }] },
+  ],
+
+  // Negated children of an OR are alternatives inside the $or array, not a sibling $mustNot
+  // (which the server ANDs with the $or)
+  [
+    group("or", [cond("a", "1", true), cond("b", "2", true)]),
+    { $or: [{ $mustNot: { a: { $eq: "1" } } }, { $mustNot: { b: { $eq: "2" } } }] },
+  ],
+  [
+    group("or", [cond("a", "1"), cond("b", "2", true), cond("c", "3")]),
+    { $or: [{ a: { $eq: "1" } }, { $mustNot: { b: { $eq: "2" } } }, { c: { $eq: "3" } }] },
+  ],
+  [
+    group("or", [cond("a", "1"), { ...group("and", [cond("b", "2"), cond("c", "3")]), not: true }]),
+    {
+      $or: [{ a: { $eq: "1" } }, { $mustNot: { $and: { b: { $eq: "2" }, c: { $eq: "3" } } } }],
+    },
+  ],
+  [group("or", [cond("a", "1", true)], 2), { $or: [{ $mustNot: { a: { $eq: "1" } } }], $boost: 2 }],
+  [
+    { ...group("or", [cond("a", "1"), cond("b", "2", true)]), not: true },
+    { $mustNot: [{ $or: [{ a: { $eq: "1" } }, { $mustNot: { b: { $eq: "2" } } }] }] },
   ],
 
   // Negated groups with more than one key stay array items, since the server excludes
