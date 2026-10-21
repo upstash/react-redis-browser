@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import {
   Select,
@@ -22,7 +22,13 @@ export const ContentTypeSelect = ({
   onChange: (value: ContentType) => void
   data: string
 }) => {
-  const isValidJSON = useMemo(() => checkIsValidJSON(data), [data])
+  // Parsing a large value on every keystroke is slow, so check it once typing pauses
+  const [checkedData, setCheckedData] = useState(data)
+  useEffect(() => {
+    const timer = setTimeout(() => setCheckedData(data), 300)
+    return () => clearTimeout(timer)
+  }, [data])
+  const isValidJSON = useMemo(() => checkIsValidJSON(checkedData), [checkedData])
 
   return (
     <Select value={value} onValueChange={onChange}>

@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test"
 
-import { formatJSON, getJSONSource, toStoredValue } from "./format-json"
+import {
+  formatJSON,
+  getJSONSource,
+  registerStoredValueMapper,
+  toStoredValue,
+  toStoredValues,
+} from "./format-json"
 
 describe("formatJSON", () => {
   test("matches JSON.stringify indentation", () => {
@@ -43,5 +49,51 @@ describe("toStoredValue", () => {
     const scalar = getJSONSource("42\n")!
     expect(scalar.formatted).toBe("42")
     expect(toStoredValue("42\n\n", scalar)).toBe("42\n\n")
+  })
+})
+
+describe("getJSONSource", () => {
+  test("formats canonical compact JSON natively", () => {
+    expect(getJSONSource('{"a":[1,"x"]}')).toEqual({
+      data: '{"a":[1,"x"]}',
+      formatted: '{\n  "a": [\n    1,\n    "x"\n  ]\n}',
+      isCompact: true,
+    })
+  })
+
+  test("detects compact JSON that native formatting would change", () => {
+    const source = getJSONSource(String.raw`{"a":1.50,"b":"\u00e9"}`)!
+    expect(source.isCompact).toBe(true)
+    expect(source.formatted).toBe('{\n  "a": 1.50,\n  "b": "\\u00e9"\n}')
+    expect(toStoredValue(source.formatted.replace("1.50", "2.50"), source)).toBe(
+      String.raw`{"a":2.50,"b":"\u00e9"}`
+    )
+  })
+
+  test("rejects invalid JSON", () => {
+    expect(getJSONSource("{")).toBeUndefined()
+  })
+})
+
+describe("toStoredValues", () => {
+  test("maps registered fields when saving and leaves the rest", () => {
+    const form = { control: {} }
+    const source = getJSONSource('{"id":1}')!
+    const unregister = registerStoredValueMapper(form.control, "value", (value) =>
+      toStoredValue(value, source)
+    )
+    const values = { key: '{\n  "id": 2\n}', value: '{\n  "id": 2\n}' }
+    expect(toStoredValues(form, values)).toEqual({ key: values.key, value: '{"id":2}' })
+
+    unregister()
+    expect(toStoredValues(form, values)).toEqual(values)
+  })
+
+  test("keeps the newer mapper when an older one unregisters", () => {
+    const form = { control: {} }
+    const unregisterOld = registerStoredValueMapper(form.control, "value", () => "old")
+    registerStoredValueMapper(form.control, "value", () => "new")
+    unregisterOld()
+    expect(toStoredValues(form, { value: "x" })).toEqual({ value: "new" })
   })
 })
