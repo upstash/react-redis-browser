@@ -158,7 +158,7 @@ const groupToObject = (
       }
       const result = queryNodeToObject(child, false)
       if (!hasBoost(boost)) return result
-      if (!("$boost" in result)) {
+      if (!("$boost" in result) && !("$mustNot" in result)) {
         result.$boost = boost
         return result
       }

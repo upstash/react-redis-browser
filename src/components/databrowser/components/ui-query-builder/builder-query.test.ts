@@ -231,6 +231,14 @@ describe("reloading what the builder wrote", () => {
     expect(root.children[0].boost).toBe(3)
   })
 
+  test("a boosted root keeps its only child's negated conditions in the child", () => {
+    const query = `{ $and: [{ $and: { a: "x" }, $boost: 3, $mustNot: { c: "x" } }], $boost: 2 }`
+    const first = resolveBuilderQuery(query, "ui")
+    if (!first.success) throw new Error(first.error)
+    const second = resolveBuilderQuery(first.rewrite ?? query, "ui")
+    expect(second.success && second.rewrite).toBeUndefined()
+  })
+
   test("settles { $and: { n3: { $gte: 3 }, $boost: 0.5 } } in one load", () => {
     const first = resolveBuilderQuery(`{ $and: { n3: { $gte: 3 }, $boost: 0.5 } }`, "ui")
     if (!first.success || first.rewrite === undefined) throw new Error("expected a rewrite")
