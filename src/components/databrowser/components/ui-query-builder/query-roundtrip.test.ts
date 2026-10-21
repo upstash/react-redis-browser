@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test"
 
 import { parseJSObjectLiteral } from "@/lib/utils"
 
-import { parseQueryString } from "./query-parser"
+import { parseBuilderQuery, parseQueryString } from "./query-parser"
 import { stringifyQueryState } from "./query-stringify"
 import type { QueryNode } from "./types"
 
@@ -288,6 +288,8 @@ describe("query roundtrip: parse → stringify", () => {
       const result = roundtrip(input)
       expect(result).not.toBeUndefined()
       expect(result).toEqual(expected)
+      // What the builder writes can always be opened in the builder again
+      expect(parseBuilderQuery(JSON.stringify(expected)).success).toBe(true)
     })
   }
 })
@@ -370,7 +372,41 @@ describe("builder → stringify → parse → stringify is stable", () => {
     test(JSON.stringify(expected), () => {
       const str = stringifyQueryState({ root })
       expect(parseJSObjectLiteral<Record<string, unknown>>(str)).toEqual(expected)
-      expect(stringifyQueryState(parseQueryString(str)!)).toEqual(str)
+      const parsed = parseBuilderQuery(str)
+      expect(parsed.success).toBe(true)
+      if (parsed.success) expect(stringifyQueryState(parsed.state)).toEqual(str)
+    })
+  }
+})
+
+describe("parseBuilderQuery refuses $or/$should that only boosts the score", () => {
+  // Next to a required key in a query object, the server only uses $or/$should for scoring
+  const refused = [
+    { name: "foo", $should: { age: 18 } },
+    { name: "foo", $or: { age: 18 } },
+    { $and: [{ name: "foo" }], $or: [{ age: 18 }] },
+    { $must: { name: "foo" }, $or: { age: 18 } },
+    { $or: [{ name: "foo", $or: { age: 18 } }, { title: "bar" }] },
+    { $mustNot: [{ name: "foo", $should: { age: 18 } }] },
+    { $and: { title: "bar", $or: [{ name: "foo", $should: { age: 18 } }] } },
+  ]
+  for (const query of refused) {
+    test(JSON.stringify(query), () => {
+      expect(parseBuilderQuery(JSON.stringify(query)).success).toBe(false)
+    })
+  }
+
+  // $or next to only $mustNot or a numeric $boost filters, and so does every key of an
+  // $and/$or object
+  const accepted = [
+    { $or: { age: 18 }, $mustNot: { name: "foo" } },
+    { $or: { age: 18, name: "foo" }, $boost: 2 },
+    { $and: { name: "foo", $or: { age: 18, title: "bar" } } },
+    { $or: { name: "foo", $and: { age: 18, title: "bar" } } },
+  ]
+  for (const query of accepted) {
+    test(JSON.stringify(query), () => {
+      expect(parseBuilderQuery(JSON.stringify(query)).success).toBe(true)
     })
   }
 })
