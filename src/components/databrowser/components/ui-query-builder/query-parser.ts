@@ -62,6 +62,20 @@ export const hasMustShouldCombination = (queryString: string): boolean => {
 }
 
 /**
+ * Parse a query string for the UI query builder. Fails for invalid queries and for queries
+ * the builder can't show, so the builder never shows (and writes back) a different query.
+ */
+export const parseBuilderQuery = (queryString: string): ParseResult => {
+  if (hasMustShouldCombination(queryString)) {
+    return {
+      success: false,
+      error: "Queries using both $must and $should are not supported in the UI query builder",
+    }
+  }
+  return parseQueryStringWithError(queryString)
+}
+
+/**
  * Normalize operator keys: $must → $and, $should → $or
  */
 const normalizeOperators = (obj: unknown): unknown => {
@@ -363,7 +377,12 @@ export const parseQueryStringWithError = (queryString: string): ParseResult => {
 
   try {
     const obj = parseJSObjectLiteral<Record<string, unknown>>(queryString)
-    if (!obj) return { success: false, error: "Invalid query syntax" }
+    // Only an object is a query, an array like [1] would otherwise read as a field named "0"
+    if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
+      return { success: false, error: "Invalid query syntax" }
+    }
+    // An empty object written differently, like { }
+    if (Object.keys(obj).length === 0) return { success: true, state: createInitialQueryState() }
 
     // Normalize $must → $and, $should → $or
     const normalizedObj = normalizeOperators(obj) as Record<string, unknown>
