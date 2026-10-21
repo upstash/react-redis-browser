@@ -10,6 +10,14 @@ describe("loadBuilderQuery", () => {
     expect(loaded.state.root).toMatchObject({ type: "group", children: [{ type: "condition" }] })
   })
 
+  test("an empty query in any spelling loads as an empty tree", () => {
+    for (const query of ["", "  ", "{}", "{ }", "{\n}"]) {
+      const loaded = loadBuilderQuery(query)
+      expect(loaded.error).toBeUndefined()
+      expect(loaded.state.root).toMatchObject({ type: "group", children: [] })
+    }
+  })
+
   test("an unparseable query gives an error and an empty tree, never a previous one", () => {
     for (const query of [
       `{ name: "x"`,

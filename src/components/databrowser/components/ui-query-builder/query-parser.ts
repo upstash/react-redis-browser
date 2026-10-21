@@ -381,6 +381,8 @@ export const parseQueryStringWithError = (queryString: string): ParseResult => {
     if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
       return { success: false, error: "Invalid query syntax" }
     }
+    // An empty object written differently, like { }
+    if (Object.keys(obj).length === 0) return { success: true, state: createInitialQueryState() }
 
     // Normalize $must → $and, $should → $or
     const normalizedObj = normalizeOperators(obj) as Record<string, unknown>
