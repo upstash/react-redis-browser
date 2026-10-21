@@ -24,6 +24,17 @@ describe("parseJSObjectLiteral", () => {
     ).toEqual({ name: `it's "x"`, $and: [1, 2] })
   })
 
+  test("supports semicolons ending the statement", () => {
+    expect(parseJSObjectLiteral<unknown>(`{ name: "foo" };`)).toEqual({ name: "foo" })
+    expect(parseJSObjectLiteral<unknown>(`{ name: "foo" } ;\n\n`)).toEqual({ name: "foo" })
+    expect(parseJSObjectLiteral<unknown>(`{ name: "foo" }; // done`)).toEqual({ name: "foo" })
+    expect(parseJSObjectLiteral<unknown>(`{ a: ";" };;`)).toEqual({ a: ";" })
+    expect(parseJSObjectLiteral<unknown>(`{};`)).toEqual({})
+    expect(parseJSObjectLiteral<unknown>(`;`)).toBeUndefined()
+    expect(parseJSObjectLiteral<unknown>(`{ a: 1 }; { b: 2 }`)).toBeUndefined()
+    expect(parseJSObjectLiteral<unknown>(`{ a: 1; }`)).toBeUndefined()
+  })
+
   test("returns undefined for invalid input", () => {
     expect(parseJSObjectLiteral<unknown>(`{ title: "unterminated }`)).toBeUndefined()
     expect(parseJSObjectLiteral<unknown>(`{ a: undefined }`)).toBeUndefined()
