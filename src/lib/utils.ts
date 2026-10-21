@@ -127,6 +127,19 @@ export function parseJSObjectLiteral<T>(value: string): T | undefined {
   return safeParseJSON(json)
 }
 
+export const INVALID_QUERY_MESSAGE = "Invalid query syntax"
+
+/**
+ * Parses a search query string into a filter object. An empty query matches everything,
+ * undefined means the query is invalid and must not be run.
+ */
+export const parseSearchQuery = (query: string): Record<string, unknown> | undefined => {
+  if (!query.trim()) return {}
+  const parsed = parseJSObjectLiteral<unknown>(query)
+  if (typeof parsed !== "object" || !parsed || Array.isArray(parsed)) return
+  return parsed as Record<string, unknown>
+}
+
 const units = {
   year: 24 * 60 * 60 * 1000 * 365,
   month: (24 * 60 * 60 * 1000 * 365) / 12,
