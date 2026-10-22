@@ -1,7 +1,8 @@
 import { QueryClient, QueryObserver } from "@tanstack/react-query"
 import { describe, expect, test } from "bun:test"
 
-import { FETCH_KEYS_QUERY_KEY } from "../../hooks"
+import { FETCH_KEYS_QUERY_KEY, FETCH_LIST_ITEMS_QUERY_KEY } from "../../hooks"
+import { FETCH_HASH_FIELD_TTLS_QUERY_KEY } from "../../hooks/use-fetch-hash-ttl"
 import { FETCH_KEY_LENGTH_QUERY_KEY } from "../../hooks/use-fetch-key-length"
 import { FETCH_KEY_TYPE_QUERY_KEY } from "../../hooks/use-fetch-key-type"
 import { invalidateAll } from "./refresh-button"
@@ -93,5 +94,35 @@ describe("invalidateAll", () => {
     await refresh()
     expect(events).not.toContain("scard")
     unsubscribe()
+  })
+
+  test("refetches hash field ttls only while the key is still a hash", async () => {
+    for (const [type, refetched] of [
+      ["hash", true],
+      ["set", false],
+    ] as const) {
+      const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      const events: string[] = []
+      const observers = [
+        new QueryObserver(client, {
+          queryKey: [FETCH_LIST_ITEMS_QUERY_KEY, "h", "hash"],
+          queryFn: async () => [],
+        }),
+        new QueryObserver(client, {
+          queryKey: [FETCH_HASH_FIELD_TTLS_QUERY_KEY, "h", ["f"]],
+          queryFn: async () => {
+            events.push("httl")
+            return {}
+          },
+        }),
+      ]
+      const unsubscribers = observers.map((observer) => observer.subscribe(() => {}))
+      await new Promise((resolve) => setTimeout(resolve, 5))
+      events.length = 0
+
+      await invalidateAll({ type: async () => type } as Parameters<typeof invalidateAll>[0], client)
+      expect(events.includes("httl")).toBe(refetched)
+      for (const fn of unsubscribers) fn()
+    }
   })
 })
