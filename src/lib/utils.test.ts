@@ -99,6 +99,13 @@ describe("matchesGlob", () => {
     ["a[\\", "a\\", false],
     ["a[\\", "a[\\", true],
     ["a[b\\", "ab", false],
+    // Upstash runs the class as a Go regex, where `\d`, `\w` and `\t` are escapes
+    [String.raw`user:[\d]*`, "user:1", true],
+    [String.raw`user:[\d]*`, "user:d", false],
+    [String.raw`[\w-]`, "_", true],
+    [String.raw`[^\s]`, "x", true],
+    [String.raw`a[\t]b`, "a\tb", true],
+    [String.raw`a[\q]b`, "aqb", false],
     // Patterns Upstash can't turn into a regexp only match themselves
     ["a[]b", "a[]b", true],
     ["*[]", "x[]", false],

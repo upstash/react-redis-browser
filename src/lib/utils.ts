@@ -176,6 +176,21 @@ export const formatUpstashErrorMessage = (error: Error): string => {
 
 const ANY_CHAR = String.raw`[\s\S]`
 const NO_CHAR = String.raw`[^\s\S]`
+// Go regex escapes, written so JS matches the same characters. The rest (`\S`, `\pN`, `\x7F`,
+// octal) are treated as matching nothing, which only means a new key waits for the next scan.
+const GO_CLASS_ESCAPES: Record<string, string> = {
+  d: String.raw`\d`,
+  D: String.raw`\D`,
+  w: String.raw`\w`,
+  W: String.raw`\W`,
+  s: String.raw`\t\n\f\r `,
+  a: String.raw`\x07`,
+  f: String.raw`\f`,
+  t: String.raw`\t`,
+  n: String.raw`\n`,
+  r: String.raw`\r`,
+  v: String.raw`\v`,
+}
 const literal = (char: string) => String.raw`\u{${char.codePointAt(0)!.toString(16)}}`
 
 /**
@@ -191,10 +206,16 @@ const parseCharClass = (chars: string[], start: number) => {
   if (negate) j++
 
   let charClass = ""
+  let matchesNothing = false
   while (j < chars.length && chars[j] !== "]") {
     if (chars[j] === "\\") {
       if (j + 1 >= chars.length) return
-      charClass += literal(chars[j + 1])
+      // Upstash copies the class into a Go regex, so a letter or digit after `\` is a regex
+      // escape. Go rejects most other letter escapes, failing the whole pattern.
+      const escaped = chars[j + 1]
+      if (Object.hasOwn(GO_CLASS_ESCAPES, escaped)) charClass += GO_CLASS_ESCAPES[escaped]
+      else if (/^[\dA-Za-z]$/.test(escaped)) matchesNothing = true
+      else charClass += literal(escaped)
       j += 2
     } else if (chars[j + 1] === "-" && j + 2 < chars.length && chars[j + 2] !== "]") {
       // Reversed ranges match nothing
@@ -209,7 +230,10 @@ const parseCharClass = (chars: string[], start: number) => {
   }
 
   // An unterminated class runs until the end of the pattern
-  return { regex: charClass ? `[${negate ? "^" : ""}${charClass}]` : NO_CHAR, end: j }
+  return {
+    regex: charClass && !matchesNothing ? `[${negate ? "^" : ""}${charClass}]` : NO_CHAR,
+    end: j,
+  }
 }
 
 /**
