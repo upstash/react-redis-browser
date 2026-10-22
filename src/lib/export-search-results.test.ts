@@ -40,27 +40,39 @@ describe("exportSearchResults", () => {
     const redis = fakeRedis({ total: 1, values: { "*": '{"name":"Ann","meta":{"age":3}}' } })
 
     expect(JSON.parse(await content(redis, "json"))).toEqual([
-      { key: "k:0", name: "Ann", meta: { age: 3 } },
+      { key: "k:0", score: 1, data: { name: "Ann", meta: { age: 3 } } },
     ])
-    expect(await content(redis, "json", "csv")).toBe("key,meta.age,name\nk:0,3,Ann")
+    expect(await content(redis, "json", "csv")).toBe(
+      "key,score,data.meta.age,data.name\nk:0,1,3,Ann"
+    )
   })
 
   test("keeps every digit of integers past 2^53", async () => {
     const redis = fakeRedis({ total: 1, values: { "*": '{"big":12345678901234567890,"n":1.5}' } })
 
     expect(await content(redis, "json")).toContain('"big": 12345678901234567890,')
-    expect(await content(redis, "json", "csv")).toBe("key,big,n\nk:0,12345678901234567890,1.5")
+    expect(await content(redis, "json", "csv")).toBe(
+      "key,score,data.big,data.n\nk:0,1,12345678901234567890,1.5"
+    )
   })
 
   test("keeps a top-level big integer as the value", async () => {
     const redis = fakeRedis({ total: 1, values: { "*": "12345678901234567890" } })
 
-    expect(await content(redis, "string")).toContain('"value": 12345678901234567890')
-    expect(await content(redis, "string", "csv")).toBe("key,value\nk:0,12345678901234567890")
+    expect(await content(redis, "string")).toContain('"data": 12345678901234567890')
+    expect(await content(redis, "string", "csv")).toBe("key,score,data\nk:0,1,12345678901234567890")
   })
 
   test("keeps non-json string values as-is", async () => {
     const redis = fakeRedis({ total: 1, values: { "*": "plain" } })
-    expect(await content(redis, "string", "csv")).toBe("key,value\nk:0,plain")
+    expect(await content(redis, "string", "csv")).toBe("key,score,data\nk:0,1,plain")
+  })
+
+  test("hash fields named key or score don't overwrite the document key", async () => {
+    const redis = fakeRedis({ total: 1, values: { "*": { key: "field", score: "x" } } })
+
+    expect(JSON.parse(await content(redis, "hash"))).toEqual([
+      { key: "k:0", score: 1, data: { key: "field", score: "x" } },
+    ])
   })
 })
