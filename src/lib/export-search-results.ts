@@ -163,16 +163,14 @@ export const estimateExportBytes = (
   return Math.round(perRow * count)
 }
 
-const serializeJson = (docs: SearchDoc[]): string => {
-  const rows = docs.map((d) => ({
-    key: d.key,
-    // A top-level big integer is a rawJSON object, but it's a value, not fields
-    ...(d.data && typeof d.data === "object" && !isRawJSON?.(d.data)
-      ? (d.data as Record<string, unknown>)
-      : { value: d.data }),
-  }))
-  return JSON.stringify(rows, undefined, 2)
-}
+// Same { key, score, data } shape as SDK query results, so document fields can't
+// clobber `key` or `score`.
+const serializeJson = (docs: SearchDoc[]): string =>
+  JSON.stringify(
+    docs.map(({ key, score, data }) => ({ key, score, data })),
+    undefined,
+    2
+  )
 
 const flatten = (
   value: unknown,
@@ -205,32 +203,23 @@ const escapeCsvCell = (value: unknown): string => {
   return str
 }
 
+// Columns mirror the JSON rows flattened with dot paths: key, score, data.<field>...
 const serializeCsv = (docs: SearchDoc[]): string => {
-  const flatRows = docs.map((d) => {
-    const out: Record<string, unknown> = {}
-    if (d.data && typeof d.data === "object" && !isRawJSON?.(d.data)) {
-      flatten(d.data, "", out)
-    } else {
-      out.value = d.data
-    }
-    return out
-  })
+  const flatRows = docs.map((d) => flatten(d.data, "data", {}))
 
   const dataColumns = new Set<string>()
   for (const row of flatRows) {
     for (const col of Object.keys(row)) dataColumns.add(col)
   }
-  const columns = ["key", ...[...dataColumns].sort()]
+  const columns = [...dataColumns].sort()
 
   const lines: string[] = []
-  lines.push(columns.map((c) => escapeCsvCell(c)).join(","))
+  lines.push(["key", "score", ...columns].map((c) => escapeCsvCell(c)).join(","))
 
   for (const [i, doc] of docs.entries()) {
     const row = flatRows[i]
-    const cells = columns.map((col) =>
-      col === "key" ? escapeCsvCell(doc.key) : escapeCsvCell(row[col])
-    )
-    lines.push(cells.join(","))
+    const cells = [doc.key, doc.score, ...columns.map((col) => row[col])]
+    lines.push(cells.map((c) => escapeCsvCell(c)).join(","))
   }
 
   return lines.join("\n")
