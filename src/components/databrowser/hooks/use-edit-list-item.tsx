@@ -4,6 +4,8 @@ import { useMutation } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
 
+import { FETCH_KEY_LENGTH_QUERY_KEY } from "./use-fetch-key-length"
+import { FETCH_KEY_SIZE_QUERY_KEY } from "./use-fetch-key-size"
 import { FETCH_LIST_ITEMS_QUERY_KEY, transformArray } from "./use-fetch-list-items"
 
 export const useEditListItem = () => {
@@ -103,6 +105,12 @@ export const useEditListItem = () => {
     onSuccess: (_, { dataKey }) => {
       queryClient.invalidateQueries({
         queryKey: [FETCH_LIST_ITEMS_QUERY_KEY, dataKey],
+      })
+      queryClient.invalidateQueries({
+        queryKey: [FETCH_KEY_LENGTH_QUERY_KEY, dataKey],
+      })
+      queryClient.invalidateQueries({
+        queryKey: [FETCH_KEY_SIZE_QUERY_KEY, dataKey],
       })
     },
   })
