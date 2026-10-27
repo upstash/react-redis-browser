@@ -8,7 +8,7 @@ import { queryClient } from "@/lib/clients"
 import { listSearchIndexes } from "@/lib/list-search-indexes"
 import { parseJSObjectLiteral } from "@/lib/utils"
 
-import { FETCH_KEY_TYPE_QUERY_KEY } from "./use-fetch-key-type"
+import { FETCH_KEY_TYPE_QUERY_KEY, useFetchKeyType } from "./use-fetch-key-type"
 import { useFetchSearchIndex } from "./use-fetch-search-index"
 
 const KeysContext = createContext<
@@ -283,5 +283,8 @@ export const useKeyType = (key?: string) => {
 
   const keyTuple = useMemo(() => keys.find(([k, _]) => k === key), [keys, key])
 
-  return keyTuple?.[1]
+  // Fall back to TYPE for keys missing from the list, e.g. a new key not matching the filters
+  const { data: fetchedType } = useFetchKeyType(key)
+
+  return keyTuple?.[1] ?? (fetchedType === "none" ? undefined : (fetchedType as DataType))
 }
