@@ -29,6 +29,14 @@ export const useEditListItem = () => {
       // Only used for list data type, uses lpush if true
       isNew?: boolean
     }) => {
+      if (
+        newKey === "" &&
+        (isNew || newKey !== itemKey) &&
+        (type === "set" || type === "zset" || type === "hash")
+      ) {
+        throw new Error(`${type === "hash" ? "Field" : "Value"} cannot be empty`)
+      }
+
       const pipe = redis.pipeline()
       const shouldDelete = !isNew && (newKey === undefined || newKey !== itemKey)
 
@@ -37,7 +45,7 @@ export const useEditListItem = () => {
           if (shouldDelete) {
             pipe.srem(dataKey, itemKey)
           }
-          if (newKey) {
+          if (newKey !== undefined) {
             pipe.sadd(dataKey, newKey)
           }
 
@@ -49,7 +57,7 @@ export const useEditListItem = () => {
           }
 
           if (shouldDelete) pipe.zrem(dataKey, itemKey)
-          if (newKey)
+          if (newKey !== undefined)
             pipe.zadd(dataKey, {
               member: newKey,
               score: Number(newValue),
@@ -59,7 +67,7 @@ export const useEditListItem = () => {
         }
         case "hash": {
           if (shouldDelete) pipe.hdel(dataKey, itemKey)
-          if (newKey)
+          if (newKey !== undefined)
             pipe.hset(dataKey, {
               [newKey]: newValue,
             })
