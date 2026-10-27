@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
 
+import { FETCH_KEY_SIZE_QUERY_KEY } from "./use-fetch-key-size"
 import { FETCH_SIMPLE_KEY_QUERY_KEY } from "./use-fetch-simple-key"
 
 export const useSetSimpleKey = (dataKey: string, type: SimpleDataType) => {
@@ -25,6 +26,7 @@ export const useSetSimpleKey = (dataKey: string, type: SimpleDataType) => {
       queryClient.invalidateQueries({
         queryKey: [FETCH_SIMPLE_KEY_QUERY_KEY, dataKey],
       })
+      queryClient.invalidateQueries({ queryKey: [FETCH_KEY_SIZE_QUERY_KEY, dataKey] })
     },
   })
 }
