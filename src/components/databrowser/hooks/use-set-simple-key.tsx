@@ -11,7 +11,8 @@ export const useSetSimpleKey = (dataKey: string, type: SimpleDataType) => {
   return useMutation({
     mutationFn: async (value: string) => {
       if (type === "string") {
-        await redis.set(dataKey, value)
+        // Plain SET would clear the key's TTL
+        await redis.set(dataKey, value, { keepTtl: true })
       } else if (type === "json") {
         await redis.json.set(dataKey, "$", JSON.parse(value))
       } else {
