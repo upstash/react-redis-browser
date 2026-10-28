@@ -22,7 +22,7 @@ import { DocsLink } from "../docs-link"
 import { TypeTag } from "../type-tag"
 import { SaveSchemaModal } from "./save-schema-modal"
 import { SCHEMA_DEFAULT, SchemaEditor } from "./schema-editor"
-import { parseSchemaFromEditorValue } from "./schema-parser"
+import { parsePrefixes, parseSchemaFromEditorValue, validateIndexDefinition } from "./schema-parser"
 import { schemaToEditorValue } from "./schema-stringify"
 
 type FormValues = {
@@ -103,6 +103,14 @@ export const SearchDisplay = ({
       const result = parseSchemaFromEditorValue(values.editorValue)
       if (!result.success) {
         setParseError(result.error)
+        return
+      }
+      const validationError = validateIndexDefinition({
+        schema: result.schema,
+        prefixes: parsePrefixes(values.prefixes),
+      })
+      if (validationError) {
+        setParseError(validationError)
         return
       }
       setPendingFormValues({ ...values, indexName: indexName! })

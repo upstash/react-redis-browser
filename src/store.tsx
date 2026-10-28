@@ -188,6 +188,7 @@ type DatabrowserStore = {
   setSelectedKey: (tabId: TabId, key: string | undefined) => void
   setSelectedKeys: (tabId: TabId, keys: string[]) => void
   setSelectedListItem: (tabId: TabId, item?: { key: string; isNew?: boolean }) => void
+  deselectKeys: (keys: string[]) => void
 
   setSearch: (tabId: TabId, search: SearchFilter) => void
   setSearchKey: (tabId: TabId, key: string) => void
@@ -433,6 +434,23 @@ export const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
 
         return { ...old, tabs: newTabs }
       })
+    },
+
+    // Drops keys (e.g. deleted ones) from every tab's selection, closed tabs included
+    deselectKeys: (keys) => {
+      const prune = (data: TabData): TabData =>
+        data.selectedKeys?.some((key) => keys.includes(key))
+          ? {
+              ...data,
+              selectedKeys: data.selectedKeys.filter((key) => !keys.includes(key)),
+              selectedListItem: undefined,
+            }
+          : data
+
+      set((old) => ({
+        tabs: old.tabs.map(([id, data]) => [id, prune(data)]),
+        closedTabs: old.closedTabs.map((group) => group.map((data) => prune(data))),
+      }))
     },
 
     setSelectedListItem: (tabId, item) => {
