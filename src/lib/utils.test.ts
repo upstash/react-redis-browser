@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test"
 
-import { fromKeySearchPattern, matchesGlob, parseJSObjectLiteral, toKeySearchPattern } from "./utils"
+import {
+  fromKeySearchPattern,
+  matchesGlob,
+  parseJSObjectLiteral,
+  toKeySearchPattern,
+} from "./utils"
 
 describe("parseJSObjectLiteral", () => {
   test("never rewrites string contents", () => {
