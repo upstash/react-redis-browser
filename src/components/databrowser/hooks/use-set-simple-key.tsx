@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query"
 
 import { queryClient } from "@/lib/clients"
 
+import { FETCH_KEY_SIZE_QUERY_KEY } from "./use-fetch-key-size"
 import { FETCH_SIMPLE_KEY_QUERY_KEY } from "./use-fetch-simple-key"
 
 export const useSetSimpleKey = (dataKey: string, type: SimpleDataType) => {
@@ -11,7 +12,8 @@ export const useSetSimpleKey = (dataKey: string, type: SimpleDataType) => {
   return useMutation({
     mutationFn: async (value: string) => {
       if (type === "string") {
-        await redis.set(dataKey, value)
+        // Plain SET would clear the key's TTL
+        await redis.set(dataKey, value, { keepTtl: true })
       } else if (type === "json") {
         await redis.json.set(dataKey, "$", JSON.parse(value))
       } else {
@@ -20,10 +22,11 @@ export const useSetSimpleKey = (dataKey: string, type: SimpleDataType) => {
     },
     onSuccess: (_, value) => {
       // Update the cache
-      queryClient.setQueryData([FETCH_SIMPLE_KEY_QUERY_KEY, dataKey], value)
+      queryClient.setQueryData([FETCH_SIMPLE_KEY_QUERY_KEY, dataKey, type], value)
       queryClient.invalidateQueries({
         queryKey: [FETCH_SIMPLE_KEY_QUERY_KEY, dataKey],
       })
+      queryClient.invalidateQueries({ queryKey: [FETCH_KEY_SIZE_QUERY_KEY, dataKey] })
     },
   })
 }
