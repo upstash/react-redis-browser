@@ -4,6 +4,10 @@ export type ExportFormat = "csv" | "json"
 
 const PAGE_SIZE = 1000
 const SAMPLE_SIZE = 50
+// SEARCH.QUERY rejects OFFSET above 10,000 and has no cursor, so only the first
+// MAX_OFFSET + PAGE_SIZE results of a query can be read.
+const MAX_OFFSET = 10_000
+export const MAX_EXPORT_RESULTS = MAX_OFFSET + PAGE_SIZE
 
 type IndexDataType = "string" | "hash" | "json"
 
@@ -65,7 +69,7 @@ export const exportSearchResults = async (opts: {
   format: ExportFormat
   signal?: AbortSignal
   onProgress?: (p: { count: number; bytes: number }) => void
-}): Promise<{ content: string; count: number; bytes: number }> => {
+}): Promise<{ content: string; count: number; bytes: number; truncated: boolean }> => {
   const { searchRedis, readRedis, indexName, filter, dataType, format, signal, onProgress } = opts
 
   const index = searchRedis.search.index({ name: indexName })
@@ -73,7 +77,7 @@ export const exportSearchResults = async (opts: {
   let offset = 0
   let bytes = 0
 
-  for (;;) {
+  while (offset <= MAX_OFFSET) {
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError")
 
     // `select: {}` -> NOCONTENT -> returns just { key, score } for each match (the proven path).
@@ -103,11 +107,21 @@ export const exportSearchResults = async (opts: {
     if (rows.length < PAGE_SIZE) break
   }
 
+  // Reading up to the offset cap means there may be more matches.
+  const truncated =
+    docs.length === MAX_EXPORT_RESULTS &&
+    (await index.count({ filter }).then(
+      ({ count }) => count > docs.length,
+      () => true
+    ))
+
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError")
+
   const content = format === "csv" ? serializeCsv(docs) : serializeJson(docs)
 
   // Report the actual serialized output size (the running `bytes` above is a raw
   // approximation used only for live progress and won't match the final file).
-  return { content, count: docs.length, bytes: new Blob([content]).size }
+  return { content, count: docs.length, bytes: new Blob([content]).size, truncated }
 }
 
 /**
@@ -163,16 +177,14 @@ export const estimateExportBytes = (
   return Math.round(perRow * count)
 }
 
-const serializeJson = (docs: SearchDoc[]): string => {
-  const rows = docs.map((d) => ({
-    key: d.key,
-    // A top-level big integer is a rawJSON object, but it's a value, not fields
-    ...(d.data && typeof d.data === "object" && !isRawJSON?.(d.data)
-      ? (d.data as Record<string, unknown>)
-      : { value: d.data }),
-  }))
-  return JSON.stringify(rows, undefined, 2)
-}
+// Same { key, score, data } shape as SDK query results, so document fields can't
+// clobber `key` or `score`.
+const serializeJson = (docs: SearchDoc[]): string =>
+  JSON.stringify(
+    docs.map(({ key, score, data }) => ({ key, score, data })),
+    undefined,
+    2
+  )
 
 const flatten = (
   value: unknown,
@@ -205,32 +217,23 @@ const escapeCsvCell = (value: unknown): string => {
   return str
 }
 
+// Columns mirror the JSON rows flattened with dot paths: key, score, data.<field>...
 const serializeCsv = (docs: SearchDoc[]): string => {
-  const flatRows = docs.map((d) => {
-    const out: Record<string, unknown> = {}
-    if (d.data && typeof d.data === "object" && !isRawJSON?.(d.data)) {
-      flatten(d.data, "", out)
-    } else {
-      out.value = d.data
-    }
-    return out
-  })
+  const flatRows = docs.map((d) => flatten(d.data, "data", {}))
 
   const dataColumns = new Set<string>()
   for (const row of flatRows) {
     for (const col of Object.keys(row)) dataColumns.add(col)
   }
-  const columns = ["key", ...[...dataColumns].sort()]
+  const columns = [...dataColumns].sort()
 
   const lines: string[] = []
-  lines.push(columns.map((c) => escapeCsvCell(c)).join(","))
+  lines.push(["key", "score", ...columns].map((c) => escapeCsvCell(c)).join(","))
 
   for (const [i, doc] of docs.entries()) {
     const row = flatRows[i]
-    const cells = columns.map((col) =>
-      col === "key" ? escapeCsvCell(doc.key) : escapeCsvCell(row[col])
-    )
-    lines.push(cells.join(","))
+    const cells = [doc.key, doc.score, ...columns.map((col) => row[col])]
+    lines.push(cells.map((c) => escapeCsvCell(c)).join(","))
   }
 
   return lines.join("\n")
