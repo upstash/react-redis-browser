@@ -17,6 +17,7 @@ import { toast } from "@/components/ui/use-toast"
 
 import { FETCH_SEARCH_INDEX_QUERY_KEY } from "../../hooks/use-fetch-search-index"
 import { FETCH_SEARCH_INDEXES_QUERY_KEY } from "../../hooks/use-fetch-search-indexes"
+import { FETCH_KEYS_QUERY_KEY } from "../../hooks/use-keys"
 import { replaceIndex } from "./replace-index"
 import { parsePrefixes, parseSchemaFromEditorValue, validateIndexDefinition } from "./schema-parser"
 
@@ -27,6 +28,7 @@ const invalidateIndexQueries = (indexName: string) => {
   queryClient.invalidateQueries({
     queryKey: [FETCH_SEARCH_INDEXES_QUERY_KEY],
   })
+  queryClient.invalidateQueries({ queryKey: [FETCH_KEYS_QUERY_KEY] })
 }
 
 type FormValues = {

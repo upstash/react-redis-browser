@@ -1,10 +1,11 @@
 import { useRedis } from "@/redis-context"
 import type { SearchFilter, ValuesSearchFilter } from "@/store"
-import type { DataType, RedisKey } from "@/types"
+import type { DataType } from "@/types"
 import { useMutation, type InfiniteData, type QueryClient } from "@tanstack/react-query"
 import type { Redis } from "@upstash/redis"
 
 import { queryClient } from "@/lib/clients"
+import type { KeyListEntry } from "@/lib/folders"
 import { matchesGlob } from "@/lib/utils"
 
 import { FETCH_KEY_TYPE_QUERY_KEY } from "./use-fetch-key-type"
@@ -13,13 +14,14 @@ import { FETCH_KEYS_QUERY_KEY } from "./use-keys"
 
 // Reads the query key of a key list, see KeysProvider
 const parseKeysQueryKey = (queryKey: readonly unknown[]) => {
-  const [, search, valuesSearch, isValuesSearchSelected] = queryKey as [
+  const [, search, valuesSearch, isValuesSearchSelected, folderQuery] = queryKey as [
     string,
     SearchFilter,
     ValuesSearchFilter,
     boolean,
+    unknown,
   ]
-  return { search, valuesSearch, isValuesSearchSelected }
+  return { search, valuesSearch, isValuesSearchSelected, isFolderView: Boolean(folderQuery) }
 }
 
 /** Whether a key scan with these filters lists a key of this type */
@@ -53,15 +55,15 @@ export const updateCacheAfterAddKey = ({
 
   client.setQueriesData<
     InfiniteData<{
-      keys: RedisKey[]
+      entries: KeyListEntry[]
       hasNextPage: boolean
     }>
   >(
     {
       queryKey: [FETCH_KEYS_QUERY_KEY],
       predicate: ({ queryKey }) => {
-        const { search, isValuesSearchSelected } = parseKeysQueryKey(queryKey)
-        return !isValuesSearchSelected && keyScanMatches(search, key, type)
+        const { search, isValuesSearchSelected, isFolderView } = parseKeysQueryKey(queryKey)
+        return !isValuesSearchSelected && !isFolderView && keyScanMatches(search, key, type)
       },
     },
     (data) => {
@@ -69,11 +71,17 @@ export const updateCacheAfterAddKey = ({
       return {
         ...data,
         pages: data.pages.map((page, i) =>
-          i === 0 ? { ...page, keys: [[key, type] as RedisKey, ...page.keys] } : page
+          i === 0 ? { ...page, entries: [{ kind: "key", key, type }, ...page.entries] } : page
         ),
       }
     }
   )
+
+  // The folder view lists the key under its folder, which only a new scan can tell
+  void client.invalidateQueries({
+    queryKey: [FETCH_KEYS_QUERY_KEY],
+    predicate: ({ queryKey }) => parseKeysQueryKey(queryKey).isFolderView,
+  })
 
   const indexes = new Set<string>()
   for (const query of client.getQueryCache().findAll({ queryKey: [FETCH_KEYS_QUERY_KEY] })) {

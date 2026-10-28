@@ -16,6 +16,7 @@ import {
 import { Progress } from "@/components/ui/progress"
 
 import { FETCH_SEARCH_INDEXES_QUERY_KEY } from "../hooks/use-fetch-search-indexes"
+import { FETCH_KEYS_QUERY_KEY } from "../hooks/use-keys"
 
 const INDEX_NAME = "users-index"
 const USER_COUNT = 100
@@ -233,6 +234,7 @@ export const ImportSampleDatasetModal = ({
       queryClient.invalidateQueries({
         queryKey: [FETCH_SEARCH_INDEXES_QUERY_KEY],
       })
+      queryClient.invalidateQueries({ queryKey: [FETCH_KEYS_QUERY_KEY] })
       setValuesSearchIndex(INDEX_NAME)
 
       onOpenChange(false)

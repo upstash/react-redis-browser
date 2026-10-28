@@ -4,6 +4,7 @@ import { useTab } from "@/tab-provider"
 import {
   IconArrowsMinimize,
   IconCopyPlus,
+  IconFolder,
   IconPin,
   IconRestore,
   IconSearch,
@@ -22,11 +23,14 @@ import {
 } from "@/components/ui/context-menu"
 import { SimpleTooltip } from "@/components/ui/tooltip"
 
+import { useFoldersEnabled } from "../hooks/use-folders-enabled"
 import { TabTypeIcon } from "./tab-type-icon"
 
 export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
-  const { active, search, selectedKey, valuesSearch, pinned, isValuesSearchSelected } = useTab()
+  const { active, search, selectedKey, valuesSearch, pinned, isValuesSearchSelected, folder } =
+    useTab()
   const {
+    keyListView,
     selectTab,
     removeTab,
     forceRemoveTab,
@@ -39,6 +43,7 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
     reopenClosedTab,
   } = useDatabrowserStore()
   const rootRef = useDatabrowserRootRef()
+  const foldersEnabled = useFoldersEnabled()
 
   const hasPinnedTabs = tabs.some(([, data]) => data.pinned)
 
@@ -57,10 +62,13 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
   }
 
   const keyLabel = selectedKey === "" ? "(Empty Key)" : selectedKey
-  // Show plain-text searches unescaped with their trailing "*", user globs as written
+  const folderLabel = foldersEnabled && keyListView === "folders" ? folder : ""
+  // Show plain-text searches unescaped with their trailing "*", user globs as written.
+  // A search in a folder is relative to it.
   const searchText = fromKeySearchPattern(search.key)
-  const searchLabel = search.key && (searchText === search.key ? search.key : `${searchText}*`)
-  const label = isValuesSearchSelected ? valuesSearch.index : searchLabel || keyLabel
+  const searchLabel =
+    search.key && folderLabel + (searchText === search.key ? search.key : `${searchText}*`)
+  const label = isValuesSearchSelected ? valuesSearch.index : searchLabel || keyLabel || folderLabel
   const iconNode = isValuesSearchSelected ? (
     <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-emerald-200 text-emerald-800">
       <IconSearch size={14} />
@@ -69,7 +77,13 @@ export const Tab = ({ id, isList }: { id: TabId; isList?: boolean }) => {
     <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-zinc-100 text-zinc-600">
       <IconSearch size={14} />
     </div>
-  ) : selectedKey === undefined ? undefined : (
+  ) : selectedKey === undefined ? (
+    folderLabel ? (
+      <div className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-emerald-100 text-emerald-700">
+        <IconFolder size={14} />
+      </div>
+    ) : undefined
+  ) : (
     <TabTypeIcon selectedKey={selectedKey} />
   )
 

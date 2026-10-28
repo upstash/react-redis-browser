@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react"
 import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
-import { IconX } from "@tabler/icons-react"
+import { IconSearch, IconX } from "@tabler/icons-react"
 
-import { fromKeySearchPattern, toKeySearchPattern } from "@/lib/utils"
+import { cn, fromKeySearchPattern, toKeySearchPattern } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+
+import { useKeys } from "../../hooks/use-keys"
 
 const dedupeSearchHistory = (history: string[]) => {
   const seen = new Set()
@@ -45,8 +47,16 @@ export const isHistoryTab = ({
 
 export const SearchInput = () => {
   const { setSearchKey, search } = useTab()
+  const { folderView } = useKeys()
   const { searchHistory, addSearchHistory } = useDatabrowserStore()
   const [state, setState] = useState(fromKeySearchPattern(search.key))
+
+  // Opening a folder clears the search. Text that already produces the filter is kept as typed.
+  useEffect(() => {
+    setState((current) =>
+      toKeySearchPattern(current) === search.key ? current : fromKeySearchPattern(search.key)
+    )
+  }, [search.key])
 
   const [isFocus, setIsFocus] = useState(false)
   const [focusedIndex, setFocusedIndex] = useState(-1)
@@ -56,16 +66,22 @@ export const SearchInput = () => {
   const inputRef = useRef<HTMLInputElement>(null)
   const historyItemRefs = useRef<(HTMLButtonElement | null)[]>([])
 
+  // Inside a folder the search is relative to it, so the folder shows as a fixed prefix
+  const prefix = folderView.enabled ? folderView.folder : ""
+
   // The input holds what the user typed; only the applied filter is a glob pattern
   const handleSubmit = (value: string) => {
     const pattern = toKeySearchPattern(value)
-    addSearchHistory(pattern)
+    // History keeps the full pattern, so it only comes up again in the same folder
+    if (pattern) addSearchHistory(prefix + pattern)
     setSearchKey(pattern)
     setState(value)
   }
 
   const filteredHistory = dedupeSearchHistory(
     searchHistory
+      .filter((item) => item.startsWith(prefix))
+      .map((item) => item.slice(prefix.length))
       .filter((item) => item.trim() !== "" && item.trim() !== "*")
       // Show stored patterns as the text that produces them
       .map((item) => fromKeySearchPattern(item))
@@ -126,11 +142,32 @@ export const SearchInput = () => {
     <div className="browser-search relative min-w-0 grow">
       <Popover open={isHistoryOpen}>
         <PopoverTrigger asChild>
-          <div className="h-8 rounded-md border border-zinc-300 font-normal">
+          <div
+            className="flex h-8 items-center rounded-md border border-zinc-300 bg-white font-normal"
+            onMouseDown={(e) => {
+              // Clicking the prefix focuses the input
+              if (e.target !== inputRef.current) {
+                e.preventDefault()
+                inputRef.current?.focus()
+              }
+            }}
+          >
+            <IconSearch size={16} className="ml-2.5 shrink-0 text-zinc-400" />
+            {prefix && (
+              // Cut long folders from the left, the end is closest to the keys
+              <span
+                dir="rtl"
+                title={prefix}
+                className="ml-1.5 max-w-[50%] shrink-0 cursor-text truncate text-sm text-zinc-400"
+              >
+                <span dir="ltr">{prefix}</span>
+              </span>
+            )}
             <Input
               ref={inputRef}
-              placeholder="Search"
-              className={"h-full border-none pr-6"}
+              // A placeholder after the prefix would read like part of the key
+              placeholder={prefix ? undefined : "Search"}
+              className={cn("h-full min-w-0 border-none pr-6", prefix ? "pl-0" : "pl-1.5")}
               onKeyDown={handleKeyDown}
               onChange={(e) => {
                 setState(e.currentTarget.value)

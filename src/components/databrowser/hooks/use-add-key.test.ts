@@ -1,8 +1,10 @@
 import type { SearchFilter } from "@/store"
-import type { DataType, RedisKey } from "@/types"
+import type { DataType } from "@/types"
 import { QueryClient } from "@tanstack/react-query"
 import type { Redis } from "@upstash/redis"
 import { describe, expect, test } from "bun:test"
+
+import type { KeyListEntry } from "@/lib/folders"
 
 import { indexMayContainKey, keyScanMatches, updateCacheAfterAddKey } from "./use-add-key"
 import { FETCH_KEY_TYPE_QUERY_KEY } from "./use-fetch-key-type"
@@ -39,13 +41,18 @@ const setup = () => {
 
   const seedList = (queryKey: unknown[]) =>
     client.setQueryData(queryKey, {
-      pages: [{ keys: [["existing", "string"]] as RedisKey[], hasNextPage: false }],
+      pages: [
+        {
+          entries: [{ kind: "key", key: "existing", type: "string" }] as KeyListEntry[],
+          hasNextPage: false,
+        },
+      ],
       pageParams: ["0"],
     })
   const listKeys = (queryKey: unknown[]) =>
     client
-      .getQueryData<{ pages: { keys: RedisKey[] }[] }>(queryKey)
-      ?.pages[0].keys.map(([key]) => key)
+      .getQueryData<{ pages: { entries: KeyListEntry[] }[] }>(queryKey)
+      ?.pages[0].entries.map(({ key }) => key)
   const isInvalidated = (queryKey: unknown[]) => client.getQueryState(queryKey)?.isInvalidated
 
   const add = async (key: string, type: DataType) => {
@@ -111,6 +118,20 @@ describe("updateCacheAfterAddKey", () => {
     expect(listKeys(otherPattern)).toEqual(["existing"])
     expect(listKeys(otherType)).toEqual(["existing"])
     expect(listKeys(indexList)).toEqual(["existing"])
+  })
+
+  test("refetches folder views instead of inserting the key", async () => {
+    const { seedList, listKeys, isInvalidated, add } = setup()
+    const flat = keyScanKey(emptySearch)
+    const folders = [...keyScanKey(emptySearch), { folder: "user:", delimiter: ":" }]
+    seedList(flat)
+    seedList(folders)
+
+    await add("user:1", "hash")
+
+    expect(listKeys(folders)).toEqual(["existing"])
+    expect(isInvalidated(folders)).toBe(true)
+    expect(isInvalidated(flat)).toBe(false)
   })
 
   test("caches the key type so the key shows even when no list has it", async () => {
