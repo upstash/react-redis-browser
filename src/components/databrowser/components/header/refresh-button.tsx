@@ -13,6 +13,7 @@ import {
   FETCH_TTL_QUERY_KEY,
   useKeys,
 } from "../../hooks"
+import { FETCH_HASH_FIELD_TTLS_QUERY_KEY } from "../../hooks/use-fetch-hash-ttl"
 import { FETCH_KEY_LENGTH_QUERY_KEY } from "../../hooks/use-fetch-key-length"
 import { FETCH_KEY_SIZE_QUERY_KEY } from "../../hooks/use-fetch-key-size"
 import { FETCH_KEY_TYPE_QUERY_KEY } from "../../hooks/use-fetch-key-type"
@@ -25,6 +26,9 @@ const TYPE_DEPENDENT_QUERY_KEYS = new Set([
 ])
 
 const isTypeDependent = (query: Query) => TYPE_DEPENDENT_QUERY_KEYS.has(query.queryKey[0] as string)
+
+// Keyed by [prefix, key, ...] and only valid for hashes
+const isHashFieldTtls = (query: Query) => query.queryKey[0] === FETCH_HASH_FIELD_TTLS_QUERY_KEY
 
 export const invalidateAll = async (
   redis: Pick<Redis, "type">,
@@ -72,13 +76,19 @@ export const invalidateAll = async (
     const [, key, type] = query.queryKey
     return types.get(key as string) === type
   }
+  const isStillHash = (query: Query) => types.get(query.queryKey[1] as string) === "hash"
 
-  await client.invalidateQueries({ predicate: isTypeDependent, refetchType: "none" })
+  await client.invalidateQueries({
+    predicate: (query) => isTypeDependent(query) || isHashFieldTtls(query),
+    refetchType: "none",
+  })
   await Promise.all([
     typeIndependent,
     client.refetchQueries({
       type: "active",
-      predicate: (query) => isTypeDependent(query) && typeIsCurrent(query),
+      predicate: (query) =>
+        (isTypeDependent(query) && typeIsCurrent(query)) ||
+        (isHashFieldTtls(query) && isStillHash(query)),
     }),
   ])
 }

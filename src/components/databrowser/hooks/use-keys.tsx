@@ -439,15 +439,13 @@ export const useKeys = () => {
 }
 
 export const useKeyType = (key?: string) => {
-  const { keys, folderView } = useKeys()
+  const { keys } = useKeys()
 
   const keyTuple = useMemo(() => keys.find(([k, _]) => k === key), [keys, key])
 
-  // In the folder view the open key may not be in the list after going to another folder
-  const { data: fetchedType } = useFetchKeyType(key, {
-    enabled: folderView.enabled && key !== undefined && !keyTuple,
-  })
+  // Fall back to TYPE for keys missing from the list, e.g. a new key not matching the filters
+  // or, in the folder view, a key in another folder
+  const { data: fetchedType } = useFetchKeyType(key)
 
-  if (keyTuple || !folderView.enabled) return keyTuple?.[1]
-  return fetchedType === "none" ? undefined : (fetchedType as DataType)
+  return keyTuple?.[1] ?? (fetchedType === "none" ? undefined : (fetchedType as DataType))
 }
