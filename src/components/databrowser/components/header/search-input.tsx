@@ -3,7 +3,7 @@ import { useDatabrowserStore } from "@/store"
 import { useTab } from "@/tab-provider"
 import { IconSearch, IconX } from "@tabler/icons-react"
 
-import { cn } from "@/lib/utils"
+import { cn, fromKeySearchPattern, toKeySearchPattern } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -19,19 +19,47 @@ const dedupeSearchHistory = (history: string[]) => {
   })
 }
 
+/**
+ * Whether Tab should step through the history list instead of moving focus. Only once the user
+ * entered the list with the keyboard (a hovered row doesn't count), and never past either end,
+ * so Tab can't trap focus in the input.
+ */
+export const isHistoryTab = ({
+  key,
+  shiftKey,
+  isHistoryOpen,
+  focusedIndex,
+  historyLength,
+  isKeyboardNav,
+}: {
+  key: string
+  shiftKey: boolean
+  isHistoryOpen: boolean
+  focusedIndex: number
+  historyLength: number
+  isKeyboardNav: boolean
+}) =>
+  key === "Tab" &&
+  isHistoryOpen &&
+  isKeyboardNav &&
+  focusedIndex >= 0 &&
+  (shiftKey || focusedIndex < historyLength - 1)
+
 export const SearchInput = () => {
   const { setSearchKey, search } = useTab()
   const { folderView } = useKeys()
   const { searchHistory, addSearchHistory } = useDatabrowserStore()
-  const [state, setState] = useState(search.key)
+  const [state, setState] = useState(fromKeySearchPattern(search.key))
 
   // Opening a folder clears the search
   useEffect(() => {
-    setState(search.key)
+    setState(fromKeySearchPattern(search.key))
   }, [search.key])
 
   const [isFocus, setIsFocus] = useState(false)
   const [focusedIndex, setFocusedIndex] = useState(-1)
+  // Whether focusedIndex was set with the keyboard rather than by hovering a row
+  const [isKeyboardNav, setIsKeyboardNav] = useState(false)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const historyItemRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -39,11 +67,12 @@ export const SearchInput = () => {
   // Inside a folder the search is relative to it, so the folder shows as a fixed prefix
   const prefix = folderView.enabled ? folderView.folder : ""
 
+  // The input holds what the user typed; only the applied filter is a glob pattern
   const handleSubmit = (value: string) => {
-    if (value.trim() !== "" && !value.includes("*")) value = `${value}*`
+    const pattern = toKeySearchPattern(value)
     // History keeps the full pattern, so it only comes up again in the same folder
-    if (value) addSearchHistory(prefix + value)
-    setSearchKey(value)
+    if (pattern) addSearchHistory(prefix + pattern)
+    setSearchKey(pattern)
     setState(value)
   }
 
@@ -52,18 +81,28 @@ export const SearchInput = () => {
       .filter((item) => item.startsWith(prefix))
       .map((item) => item.slice(prefix.length))
       .filter((item) => item.trim() !== "" && item.trim() !== "*")
+      // Show stored patterns as the text that produces them
+      .map((item) => fromKeySearchPattern(item))
       .filter((item) => item.includes(state) && item !== state)
-  )
-    .slice(0, 5)
-    // If it has a * in the end, remove it
-    .map((item) => (item.endsWith("*") ? item.slice(0, -1) : item))
+  ).slice(0, 5)
 
   // Reset focused index when filtered history changes
   useEffect(() => {
     setFocusedIndex(-1)
   }, [filteredHistory.length])
 
+  const isHistoryOpen = isFocus && filteredHistory.length > 0
+
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    const isTabInHistory = isHistoryTab({
+      key: e.key,
+      shiftKey: e.shiftKey,
+      isHistoryOpen,
+      focusedIndex,
+      historyLength: filteredHistory.length,
+      isKeyboardNav,
+    })
+
     if (e.key === "Enter") {
       const text =
         focusedIndex >= 0 && focusedIndex < filteredHistory.length
@@ -71,18 +110,21 @@ export const SearchInput = () => {
           : e.currentTarget.value
       handleSubmit(text)
     } else if (e.key === "Escape") {
+      setSearchKey("")
       setState("")
       setFocusedIndex(-1)
       inputRef.current?.blur()
-    } else if (e.key === "ArrowDown" || (e.key === "Tab" && !e.shiftKey)) {
+    } else if (e.key === "ArrowDown" || (isTabInHistory && !e.shiftKey)) {
       e.preventDefault()
+      setIsKeyboardNav(true)
       if (focusedIndex < filteredHistory.length - 1) {
         setFocusedIndex(focusedIndex + 1)
       } else if (filteredHistory.length > 0) {
         setFocusedIndex(0)
       }
-    } else if (e.key === "ArrowUp" || (e.key === "Tab" && e.shiftKey)) {
+    } else if (e.key === "ArrowUp" || (isTabInHistory && e.shiftKey)) {
       e.preventDefault()
+      setIsKeyboardNav(true)
       if (focusedIndex > 0) {
         setFocusedIndex(focusedIndex - 1)
       } else if (filteredHistory.length > 0 && focusedIndex === 0) {
@@ -96,7 +138,7 @@ export const SearchInput = () => {
 
   return (
     <div className="browser-search relative min-w-0 grow">
-      <Popover open={isFocus && filteredHistory.length > 0}>
+      <Popover open={isHistoryOpen}>
         <PopoverTrigger asChild>
           <div
             className="flex h-8 items-center rounded-md border border-zinc-300 bg-white font-normal"
@@ -154,7 +196,10 @@ export const SearchInput = () => {
                   historyItemRefs.current[index] = el
                 }}
                 onClick={() => handleSubmit(item)}
-                onMouseEnter={() => setFocusedIndex(index)}
+                onMouseEnter={() => {
+                  setFocusedIndex(index)
+                  setIsKeyboardNav(false)
+                }}
                 className={`block w-full truncate rounded-sm p-1 text-left transition-colors ${
                   focusedIndex === index ? "bg-zinc-100" : "hover:bg-zinc-100"
                 }`}

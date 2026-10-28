@@ -12,7 +12,8 @@ import { SidebarContextMenu } from "../sidebar-context-menu"
 
 export const KeysList = () => {
   const { keys, entries, folderView } = useKeys()
-  const lastClickedIndexRef = useRef<number | null>(null)
+  // Anchor for shift-click ranges, kept as a key since indexes shift when keys are added or deleted
+  const lastClickedKeyRef = useRef<string>()
 
   // Index of each key among the keys only, for shift click range selection
   let keyIndex = -1
@@ -36,7 +37,7 @@ export const KeysList = () => {
                     : undefined
                 }
                 allKeys={keys}
-                lastClickedIndexRef={lastClickedIndexRef}
+                lastClickedKeyRef={lastClickedKeyRef}
               />
             )}
             {i !== entries.length - 1 && (
@@ -109,14 +110,14 @@ const KeyItem = ({
   index,
   label,
   allKeys,
-  lastClickedIndexRef,
+  lastClickedKeyRef,
 }: {
   data: RedisKey
   index: number
   // The name relative to the open folder in the folder view
   label?: { path: string; name: string }
   allKeys: RedisKey[]
-  lastClickedIndexRef: React.MutableRefObject<number | null>
+  lastClickedKeyRef: React.MutableRefObject<string | undefined>
 }) => {
   const { selectedKeys, setSelectedKeys, setSelectedKey } = useTab()
 
@@ -124,10 +125,14 @@ const KeyItem = ({
   const isKeySelected = selectedKeys.includes(dataKey)
 
   const handleClick = (e: React.MouseEvent) => {
-    if (e.shiftKey && lastClickedIndexRef.current !== null) {
+    const anchorIndex = e.shiftKey
+      ? allKeys.findIndex(([key]) => key === lastClickedKeyRef.current)
+      : -1
+
+    if (anchorIndex !== -1) {
       // Shift+Click: select range
-      const start = Math.min(lastClickedIndexRef.current, index)
-      const end = Math.max(lastClickedIndexRef.current, index)
+      const start = Math.min(anchorIndex, index)
+      const end = Math.max(anchorIndex, index)
       const rangeKeys = allKeys.slice(start, end + 1).map(([key]) => key)
       setSelectedKeys(rangeKeys)
     } else if (e.metaKey || e.ctrlKey) {
@@ -137,11 +142,11 @@ const KeyItem = ({
       } else {
         setSelectedKeys([...selectedKeys, dataKey])
       }
-      lastClickedIndexRef.current = index
+      lastClickedKeyRef.current = dataKey
     } else {
       // Regular click: select single key
       setSelectedKey(dataKey)
-      lastClickedIndexRef.current = index
+      lastClickedKeyRef.current = dataKey
     }
   }
 
