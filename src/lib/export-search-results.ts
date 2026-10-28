@@ -15,7 +15,9 @@ const readDocumentValue = async (
   key: string,
   dataType: IndexDataType
 ): Promise<unknown> => {
-  if (dataType === "json") return await redis.json.get(key)
+  // The client runs with automaticDeserialization disabled, so JSON and string
+  // documents come back as raw JSON text.
+  if (dataType === "json") return parseJsonValue(await redis.json.get(key))
   if (dataType === "hash") {
     const raw = (await redis.hgetall(key)) as unknown
     // hgetall may come back as a flat [field, value, ...] array; normalize to an object.
@@ -26,7 +28,32 @@ const readDocumentValue = async (
         }, {})
       : raw
   }
-  return await redis.get(key)
+  return parseJsonValue(await redis.get(key))
+}
+
+// Not in every engine (or TS lib) yet
+const { rawJSON, isRawJSON } = JSON as unknown as {
+  rawJSON?: (text: string) => object
+  isRawJSON?: (value: unknown) => boolean
+}
+
+const parseJsonValue = (value: unknown): unknown => {
+  if (typeof value !== "string") return value
+  let lossy = false
+  try {
+    const parsed: unknown = JSON.parse(value, (_key, v, context?: { source?: string }) => {
+      if (typeof v !== "number" || !Number.isInteger(v) || Number.isSafeInteger(v)) return v
+      // Integers past 2^53 lose digits as numbers; keep their source text so they serialize as-is
+      const source = context?.source
+      if (source === undefined || !rawJSON) lossy = true
+      else if (/^-?\d+$/.test(source)) return rawJSON(source)
+      return v
+    })
+    // Without engine support the digits can't be kept, so export the document text untouched
+    return lossy ? value : parsed
+  } catch {
+    return value
+  }
 }
 
 export const exportSearchResults = async (opts: {
@@ -139,7 +166,8 @@ export const estimateExportBytes = (
 const serializeJson = (docs: SearchDoc[]): string => {
   const rows = docs.map((d) => ({
     key: d.key,
-    ...(d.data && typeof d.data === "object"
+    // A top-level big integer is a rawJSON object, but it's a value, not fields
+    ...(d.data && typeof d.data === "object" && !isRawJSON?.(d.data)
       ? (d.data as Record<string, unknown>)
       : { value: d.data }),
   }))
@@ -151,7 +179,7 @@ const flatten = (
   prefix: string,
   out: Record<string, unknown>
 ): Record<string, unknown> => {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
+  if (value && typeof value === "object" && !Array.isArray(value) && !isRawJSON?.(value)) {
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
       flatten(v, prefix ? `${prefix}.${k}` : k, out)
     }
@@ -180,7 +208,7 @@ const escapeCsvCell = (value: unknown): string => {
 const serializeCsv = (docs: SearchDoc[]): string => {
   const flatRows = docs.map((d) => {
     const out: Record<string, unknown> = {}
-    if (d.data && typeof d.data === "object") {
+    if (d.data && typeof d.data === "object" && !isRawJSON?.(d.data)) {
       flatten(d.data, "", out)
     } else {
       out.value = d.data
