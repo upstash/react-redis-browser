@@ -2,7 +2,8 @@ import { describe, expect, test } from "bun:test"
 
 import { parseJSObjectLiteral } from "@/lib/utils"
 
-import { parseBuilderQuery, parseQueryString } from "./query-parser"
+import { resolveBuilderQuery } from "./builder-query"
+import { parseQueryString } from "./query-parser"
 import { stringifyQueryState } from "./query-stringify"
 import type { QueryNode } from "./types"
 
@@ -302,7 +303,7 @@ describe("query roundtrip: parse → stringify", () => {
       expect(result).not.toBeUndefined()
       expect(result).toEqual(expected)
       // What the builder writes can always be opened in the builder again
-      expect(parseBuilderQuery(JSON.stringify(expected)).success).toBe(true)
+      expect(resolveBuilderQuery(JSON.stringify(expected), "code").success).toBe(true)
     })
   }
 })
@@ -414,14 +415,14 @@ describe("builder → stringify → parse → stringify is stable", () => {
     test(JSON.stringify(expected), () => {
       const str = stringifyQueryState({ root })
       expect(parseJSObjectLiteral<Record<string, unknown>>(str)).toEqual(expected)
-      const parsed = parseBuilderQuery(str)
+      const parsed = resolveBuilderQuery(str, "code")
       expect(parsed.success).toBe(true)
       if (parsed.success) expect(stringifyQueryState(parsed.state)).toEqual(str)
     })
   }
 })
 
-describe("parseBuilderQuery refuses $or/$should that only boosts the score", () => {
+describe("the builder refuses $or/$should that only boosts the score", () => {
   // Next to a required key in a query object, the server only uses $or/$should for scoring
   const refused = [
     { name: "foo", $should: { age: 18 } },
@@ -434,7 +435,7 @@ describe("parseBuilderQuery refuses $or/$should that only boosts the score", () 
   ]
   for (const query of refused) {
     test(JSON.stringify(query), () => {
-      expect(parseBuilderQuery(JSON.stringify(query)).success).toBe(false)
+      expect(resolveBuilderQuery(JSON.stringify(query), "code").success).toBe(false)
     })
   }
 
@@ -448,7 +449,7 @@ describe("parseBuilderQuery refuses $or/$should that only boosts the score", () 
   ]
   for (const query of accepted) {
     test(JSON.stringify(query), () => {
-      expect(parseBuilderQuery(JSON.stringify(query)).success).toBe(true)
+      expect(resolveBuilderQuery(JSON.stringify(query), "code").success).toBe(true)
     })
   }
 })

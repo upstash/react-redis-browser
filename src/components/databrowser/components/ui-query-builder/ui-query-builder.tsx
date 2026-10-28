@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTab } from "@/tab-provider"
 
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -7,32 +7,24 @@ import type { SearchIndex } from "../../hooks/use-fetch-search-index"
 import { useFetchSearchIndex } from "../../hooks/use-fetch-search-index"
 import { QueryBuilderUIProvider } from "./query-builder-context"
 import { QueryGroup } from "./query-group"
-import type { FieldInfo, FieldType, QueryNode, QueryState } from "./types"
+import type { FieldInfo, FieldType } from "./types"
 import { useQueryStateSync } from "./use-query-state-sync"
 
 export const UIQueryBuilder = ({
   onUnsupportedQuery,
 }: {
-  /** Called when the stored query can't be shown in the builder (e.g. after switching index) */
+  /** Called when the query can't be shown in the builder without changing it */
   onUnsupportedQuery: (error: string) => void
 }) => {
   const { valuesSearch } = useTab()
   const { data: indexDetails } = useFetchSearchIndex(valuesSearch.index)
-  const { queryState, setQueryState, unsupportedError } = useQueryStateSync()
-  const fieldInfos = indexDetails?.schema ? extractFieldInfo(indexDetails.schema) : []
+  const schema = indexDetails?.schema
+  const fieldInfos = useMemo(() => (schema ? extractFieldInfo(schema) : []), [schema])
+  const { queryState, setQueryState, unsupportedError } = useQueryStateSync(fieldInfos)
 
   useEffect(() => {
     if (unsupportedError) onUnsupportedQuery(unsupportedError)
   }, [unsupportedError, onUnsupportedQuery])
-
-  // Normalize query state values on mount (when switching from text editor to UI builder)
-  const hasNormalized = useRef(false)
-  useEffect(() => {
-    if (hasNormalized.current || fieldInfos.length === 0 || unsupportedError) return
-    hasNormalized.current = true
-
-    setQueryState((state) => normalizeQueryState(state, fieldInfos))
-  }, [fieldInfos, setQueryState, unsupportedError])
 
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLElement | null>(null)
@@ -79,68 +71,12 @@ export const UIQueryBuilder = ({
           scrollBarClassName="py-1"
         >
           <div className="p-4">
-            {!unsupportedError && <QueryGroup node={queryState.root} isRoot depth={0} />}
+            <QueryGroup node={queryState.root} isRoot depth={0} />
           </div>
         </ScrollArea>
       </div>
     </QueryBuilderUIProvider>
   )
-}
-
-/** Normalize a value based on the expected field type */
-const normalizeValue = (
-  value: string | number | boolean | string[],
-  fieldType: FieldType
-): string | number | boolean | string[] => {
-  if (fieldType === "number" && typeof value === "string" && value !== "") {
-    const num = Number(value)
-    if (!Number.isNaN(num)) return num
-  }
-
-  if (fieldType === "string" && typeof value === "number") {
-    return String(value)
-  }
-
-  if (fieldType === "boolean") {
-    if (value === "true") return true
-    if (value === "false") return false
-  }
-
-  return value
-}
-
-/** Normalize all condition values in a query node tree */
-const normalizeNode = (node: QueryNode, fieldInfos: FieldInfo[]): QueryNode => {
-  if (node.type === "condition") {
-    const fieldInfo = fieldInfos.find((f) => f.name === node.condition.field)
-    const condition = { ...node.condition }
-
-    if (fieldInfo) condition.value = normalizeValue(condition.value, fieldInfo.type)
-
-    if (condition.phraseSlop !== undefined) {
-      const num = Number(condition.phraseSlop)
-      condition.phraseSlop = Number.isNaN(num) ? undefined : num
-    }
-    if (condition.phrasePrefix !== undefined) {
-      condition.phrasePrefix = Boolean(condition.phrasePrefix)
-    }
-
-    return { ...node, condition }
-  }
-
-  if (node.type === "group") {
-    return {
-      ...node,
-      children: node.children.map((child) => normalizeNode(child, fieldInfos)),
-    }
-  }
-
-  return node
-}
-
-/** Normalize query state values based on field types */
-const normalizeQueryState = (state: QueryState, fieldInfos: FieldInfo[]): QueryState => {
-  return { ...state, root: normalizeNode(state.root, fieldInfos) }
 }
 
 const getFieldType = (schemaType: string): FieldType => {
