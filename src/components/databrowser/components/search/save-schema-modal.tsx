@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRedis } from "@/redis-context"
 
 import { queryClient } from "@/lib/clients"
@@ -13,11 +13,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
+import { toast } from "@/components/ui/use-toast"
 
 import { FETCH_SEARCH_INDEX_QUERY_KEY } from "../../hooks/use-fetch-search-index"
 import { FETCH_SEARCH_INDEXES_QUERY_KEY } from "../../hooks/use-fetch-search-indexes"
 import { FETCH_KEYS_QUERY_KEY } from "../../hooks/use-keys"
+import { replaceIndex } from "./replace-index"
 import { parsePrefixes, parseSchemaFromEditorValue, validateIndexDefinition } from "./schema-parser"
+
+const invalidateIndexQueries = (indexName: string) => {
+  queryClient.invalidateQueries({
+    queryKey: [FETCH_SEARCH_INDEX_QUERY_KEY, indexName],
+  })
+  queryClient.invalidateQueries({
+    queryKey: [FETCH_SEARCH_INDEXES_QUERY_KEY],
+  })
+  queryClient.invalidateQueries({ queryKey: [FETCH_KEYS_QUERY_KEY] })
+}
 
 type FormValues = {
   indexName: string
@@ -39,6 +51,15 @@ export const SaveSchemaModal = ({
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<Error | undefined>()
 
+  // A refetch while the index is re-created (e.g. on window focus) can unmount this modal
+  const isMounted = useRef(true)
+  useEffect(() => {
+    isMounted.current = true
+    return () => {
+      isMounted.current = false
+    }
+  }, [])
+
   // Reset state only when modal opens (not on close, to avoid flashing idle state)
   useEffect(() => {
     if (!values) return
@@ -46,6 +67,12 @@ export const SaveSchemaModal = ({
     setStatus(undefined)
     setError(undefined)
   }, [values])
+
+  const handleClose = () => {
+    // A failed save can leave a temporary index that a refetch listed
+    if (error && values) invalidateIndexQueries(values.indexName)
+    onClose()
+  }
 
   const handleConfirm = async () => {
     if (!values) return
@@ -58,50 +85,49 @@ export const SaveSchemaModal = ({
       const validationError = validateIndexDefinition({ schema: result.schema, prefixes })
       if (validationError) throw new Error(validationError)
 
-      // Drop and recreate index in a transaction
       setStatus("Saving index...")
-      setProgress(33)
+      setProgress(25)
 
-      // const tx = redis.multi()
-      await redis.search.index({ name: values.indexName }).drop()
-
-      try {
-        await redis.search.createIndex({
-          name: values.indexName,
-          dataType: values.dataType as any,
-          prefix: prefixes,
-          language: values.language as any,
-          schema: result.schema as any,
-        })
-      } catch (txError) {
-        const err = txError instanceof Error ? txError : new Error(String(txError))
-        throw new Error(
-          `Your index was deleted, but there was an error when trying to re-create it: ${formatUpstashErrorMessage(err)}`
-        )
-      }
-
-      // Wait for indexing
-      setStatus("Waiting for indexing...")
-      setProgress(66)
-      await redis.search.index({ name: values.indexName }).waitIndexing()
+      await replaceIndex(
+        redis,
+        values.indexName,
+        (name) =>
+          redis.search.createIndex({
+            name,
+            dataType: values.dataType as any,
+            prefix: prefixes,
+            language: values.language as any,
+            schema: result.schema as any,
+          }),
+        (step) => {
+          setStatus(step)
+          setProgress((progress) => progress + 25)
+        }
+      )
 
       // Done
       setStatus("Done")
       setProgress(100)
       await new Promise((resolve) => setTimeout(resolve, 500))
 
-      // Invalidate queries
-      queryClient.invalidateQueries({
-        queryKey: [FETCH_SEARCH_INDEX_QUERY_KEY, values.indexName],
-      })
-      queryClient.invalidateQueries({
-        queryKey: [FETCH_SEARCH_INDEXES_QUERY_KEY],
-      })
-      queryClient.invalidateQueries({ queryKey: [FETCH_KEYS_QUERY_KEY] })
+      invalidateIndexQueries(values.indexName)
 
       onClose()
     } catch (catchedError) {
-      setError(catchedError instanceof Error ? catchedError : new Error(String(catchedError)))
+      const error = catchedError instanceof Error ? catchedError : new Error(String(catchedError))
+      if (!isMounted.current) {
+        // Nothing shows the error anymore, so refetch now and show it in a toast
+        invalidateIndexQueries(values.indexName)
+        toast({
+          variant: "destructive",
+          title: "Saving the schema failed",
+          description: error.message,
+        })
+        // Tells the parent the save is over
+        onClose()
+        return
+      }
+      setError(error)
       setStatus(undefined)
     }
   }
@@ -112,7 +138,7 @@ export const SaveSchemaModal = ({
     <Dialog
       open={values !== undefined}
       onOpenChange={(open) => {
-        if (!open && !isRunning) onClose()
+        if (!open && !isRunning) handleClose()
       }}
     >
       <DialogContent
@@ -127,8 +153,8 @@ export const SaveSchemaModal = ({
           <DialogTitle>Save Schema Changes</DialogTitle>
           {!isRunning && !error && (
             <DialogDescription>
-              Saving will drop and recreate the index. This will temporarily make the index
-              unavailable.
+              Saving will rebuild the index with the new schema. Queries keep working while it
+              rebuilds.
               <br />
               <br />
               Are you sure you want to continue?
@@ -158,7 +184,7 @@ export const SaveSchemaModal = ({
               </Button>
             </>
           )}
-          {error && <Button onClick={onClose}>Close</Button>}
+          {error && <Button onClick={handleClose}>Close</Button>}
         </DialogFooter>
       </DialogContent>
     </Dialog>
