@@ -1,6 +1,6 @@
 import { useState, type PropsWithChildren } from "react"
 import { useDatabrowserStore } from "@/store"
-import { useTab } from "@/tab-provider"
+import { useTab, useTabId } from "@/tab-provider"
 import { ContextMenuSeparator } from "@radix-ui/react-context-menu"
 import { IconCopy, IconExternalLink, IconTrash } from "@tabler/icons-react"
 
@@ -19,13 +19,9 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
   const { mutateAsync: deleteKey } = useDeleteKey()
   const [isAlertOpen, setAlertOpen] = useState(false)
   const [contextKeys, setContextKeys] = useState<string[]>([])
-  const {
-    addTab,
-    setSelectedKey: setSelectedKeyGlobal,
-    selectTab,
-    setSearch,
-  } = useDatabrowserStore()
-  const { search: currentSearch, selectedKeys, isValuesSearchSelected } = useTab()
+  const { openKeyInNewTab } = useDatabrowserStore()
+  const { selectedKeys, isValuesSearchSelected } = useTab()
+  const tabId = useTabId()
 
   return (
     <>
@@ -80,12 +76,7 @@ export const SidebarContextMenu = ({ children }: PropsWithChildren) => {
             Copy key
           </ContextMenuItem>
           <ContextMenuItem
-            onClick={() => {
-              const newTabId = addTab()
-              setSelectedKeyGlobal(newTabId, contextKeys[0])
-              setSearch(newTabId, currentSearch)
-              selectTab(newTabId)
-            }}
+            onClick={() => openKeyInNewTab(tabId, contextKeys[0])}
             className="gap-2"
             disabled={contextKeys.length !== 1}
           >
