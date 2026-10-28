@@ -1,6 +1,8 @@
 import type { DataType } from "@/types"
 import { errors, type Redis, type Requester, type UpstashResponse } from "@upstash/redis"
 
+import { fromKeySearchPattern } from "@/lib/utils"
+
 export const DEFAULT_FOLDER_DELIMITER = ":"
 
 // SCAN ... WITHCOUNT stops counting a folder at this many keys.
@@ -29,11 +31,14 @@ export const getFolderMatch = (folder: string, query: string) =>
   `${escapeGlob(folder)}${query || "*"}`
 
 /**
- * Whether a search box pattern only narrows the open folder by a prefix, like "ses*".
- * Other globs can match keys deep inside folders whose own names do not match.
+ * Whether a search box pattern only narrows the open folder by a prefix, like "ses*" or
+ * escaped plain text like "a\[b*". Other globs can match keys deep inside folders whose own
+ * names do not match.
  */
 export const isPrefixSearch = (query: string) =>
-  query === "" || (query.endsWith("*") && !/[*?[\\]/.test(query.slice(0, -1)))
+  query === "" ||
+  (query.endsWith("*") &&
+    (!/[*?[\\]/.test(query.slice(0, -1)) || fromKeySearchPattern(query) !== query))
 
 // Folder pages are kept this long, so going back to a folder does not scan it again
 export const FOLDER_KEYS_STALE_TIME_MS = 30 * 1000

@@ -51,9 +51,11 @@ export const SearchInput = () => {
   const { searchHistory, addSearchHistory } = useDatabrowserStore()
   const [state, setState] = useState(fromKeySearchPattern(search.key))
 
-  // Opening a folder clears the search
+  // Opening a folder clears the search. Text that already produces the filter is kept as typed.
   useEffect(() => {
-    setState(fromKeySearchPattern(search.key))
+    setState((current) =>
+      toKeySearchPattern(current) === search.key ? current : fromKeySearchPattern(search.key)
+    )
   }, [search.key])
 
   const [isFocus, setIsFocus] = useState(false)

@@ -3,6 +3,7 @@ import { DATA_TYPE_NAMES } from "@/types"
 import { IconArrowLeft, IconFolderOpen } from "@tabler/icons-react"
 
 import { getParentFolder } from "@/lib/folders"
+import { fromKeySearchPattern } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
 import { useKeys } from "../../hooks/use-keys"
@@ -26,6 +27,9 @@ export const FolderEmpty = () => {
 
   const parent = getParentFolder(folder, delimiter)
   const isSearch = search.key !== ""
+  // Plain-text searches unescaped with their trailing "*", user globs as written
+  const searchText = fromKeySearchPattern(search.key)
+  const searchLabel = searchText === search.key ? search.key : `${searchText}*`
   const typeName = search.type ? DATA_TYPE_NAMES[search.type] : undefined
 
   return (
@@ -45,7 +49,7 @@ export const FolderEmpty = () => {
           <p className="text-balance text-sm text-zinc-500">
             {isSearch ? (
               <>
-                Nothing matches <code className="text-zinc-700">{search.key}</code>
+                Nothing matches <code className="text-zinc-700">{searchLabel}</code>
                 {folder ? " in this folder" : ""}.
               </>
             ) : typeName ? (

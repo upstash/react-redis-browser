@@ -89,6 +89,13 @@ describe("isPrefixSearch", () => {
     expect(isPrefixSearch("*")).toBe(true)
   })
 
+  test("accepts plain text with escaped glob characters", () => {
+    expect(isPrefixSearch(String.raw`a\]*`)).toBe(true)
+    expect(isPrefixSearch(String.raw`a\[b*`)).toBe(true)
+    expect(isPrefixSearch(String.raw`a\?b*`)).toBe(true)
+    expect(isPrefixSearch(String.raw`a[\\]b*`)).toBe(true)
+  })
+
   test("rejects other globs", () => {
     expect(isPrefixSearch("*session*")).toBe(false)
     expect(isPrefixSearch("user:*:session")).toBe(false)
