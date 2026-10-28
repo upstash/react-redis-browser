@@ -156,8 +156,8 @@ const NumberFormItem = ({ name, label }: { name: string; label: string }) => {
         name={name}
         render={({ field }) => (
           <input
-            className="plain-input rounded-md border border-zinc-300 bg-white px-3 py-1 shadow-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            type="number"
+            className="plain-input rounded-md border border-zinc-300 bg-white px-3 py-1 shadow-sm"
+            type="text"
             {...field}
           />
         )}
