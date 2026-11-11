@@ -5,7 +5,7 @@ import { PREFIX } from "./databrowser-instance"
 import { QueryEditor } from "./search/query-editor"
 
 export const QueryBuilder = () => {
-  const { valuesSearch, setValuesSearchQuery } = useTab()
+  const { active, valuesSearch, setValuesSearchQuery } = useTab()
   const { data: indexDetails } = useFetchSearchIndex(valuesSearch.index)
 
   const editorValue = PREFIX + (valuesSearch.query || "{}")
@@ -23,6 +23,7 @@ export const QueryBuilder = () => {
               setValuesSearchQuery(queryPart)
             }}
             schema={indexDetails}
+            active={active}
           />
         </div>
       </div>

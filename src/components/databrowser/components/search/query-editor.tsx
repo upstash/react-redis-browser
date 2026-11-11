@@ -10,6 +10,7 @@ type QueryEditorProps = {
   onChange: (value: string) => void
   height?: number
   schema?: SearchIndex
+  active?: boolean
 }
 
 const QUERY_PREFIX = "const query: Query = {"
@@ -19,7 +20,7 @@ const isQueryStringValid = (value: string) => {
   return value.startsWith(QUERY_PREFIX) && value.endsWith("}")
 }
 
-export const QueryEditor = ({ value, onChange, height, schema }: QueryEditorProps) => {
+export const QueryEditor = ({ value, onChange, height, schema, active }: QueryEditorProps) => {
   const typeDefinitions = useMemo(() => generateTypeDefinitions(schema), [schema])
 
   return (
@@ -32,6 +33,7 @@ export const QueryEditor = ({ value, onChange, height, schema }: QueryEditorProp
       defaultValue={QUERY_DEFAULT}
       filePath={`query-types.ts`}
       testLabel="query-editor"
+      active={active}
     />
   )
 }
