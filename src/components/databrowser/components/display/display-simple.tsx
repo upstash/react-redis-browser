@@ -8,6 +8,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { useFetchSimpleKey } from "../../hooks/use-fetch-simple-key"
 import { useSetSimpleKey } from "../../hooks/use-set-simple-key"
 import { DisplayHeader } from "./display-header"
+import { toStoredValues } from "./input/format-json"
 import { useField } from "./input/use-field"
 import { KeyDeleted } from "./key-deleted"
 
@@ -74,7 +75,13 @@ const EditorDisplayForm = ({
 
           <Button
             variant="primary"
-            onClick={form.handleSubmit(async ({ value }) => {
+            onClick={form.handleSubmit(async (values) => {
+              const { value } = toStoredValues(form, values)
+              // An edit that maps back to the stored value (e.g. whitespace in compact JSON)
+              if (value === data) {
+                form.reset({ value: data })
+                return
+              }
               await setKey(value)
             })}
             disabled={!form.formState.isValid || !form.formState.isDirty}
