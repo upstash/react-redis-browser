@@ -4,6 +4,7 @@ import {
   fromKeySearchPattern,
   matchesGlob,
   parseJSObjectLiteral,
+  parseSearchQuery,
   toKeySearchPattern,
 } from "./utils"
 
@@ -55,6 +56,14 @@ describe("parseJSObjectLiteral", () => {
     expect(parseJSObjectLiteral<unknown>(`{ a: 1 } /* x`)).toBeUndefined()
     expect(parseJSObjectLiteral<unknown>(`{ a: 1 }; /* x`)).toBeUndefined()
     expect(parseJSObjectLiteral<unknown>(`{ a: 1 /* x`)).toBeUndefined()
+  })
+})
+
+describe("parseSearchQuery", () => {
+  test("empty query matches everything, invalid query is undefined", () => {
+    expect(parseSearchQuery("  ")).toEqual({})
+    expect(parseSearchQuery(`{ title: "x"`)).toBeUndefined()
+    expect(parseSearchQuery(`[1]`)).toBeUndefined()
   })
 })
 

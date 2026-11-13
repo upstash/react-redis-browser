@@ -13,7 +13,7 @@ import {
   exportSearchResults,
   MAX_EXPORT_RESULTS,
 } from "@/lib/export-search-results"
-import { parseJSObjectLiteral } from "@/lib/utils"
+import { INVALID_QUERY_MESSAGE, parseSearchQuery } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -58,10 +58,11 @@ export const ExportResultsButton = () => {
     ? estimateExportBytes(exportCount ?? 0, estimate.sampleDocs, format)
     : undefined
 
-  const getFilter = () => parseJSObjectLiteral<Record<string, unknown>>(valuesSearch.query) ?? {}
+  // Undefined when the query is invalid, exporting must not fall back to every document
+  const filter = parseSearchQuery(valuesSearch.query)
 
   const runEstimate = async () => {
-    if (!indexName || !indexDetails) return
+    if (!indexName || !indexDetails || !filter) return
 
     estimateControllerRef.current?.abort()
     const controller = new AbortController()
@@ -73,7 +74,7 @@ export const ExportResultsButton = () => {
         searchRedis: redisNoPipeline,
         readRedis: redis,
         indexName,
-        filter: getFilter(),
+        filter,
         dataType,
         signal: controller.signal,
       })
@@ -96,7 +97,12 @@ export const ExportResultsButton = () => {
       setTruncated(false)
       setEstimate(undefined)
       setOpen(true)
-      void runEstimate()
+      if (filter) {
+        void runEstimate()
+      } else {
+        setStatus("error")
+        setErrorMsg(INVALID_QUERY_MESSAGE)
+      }
     } else {
       estimateControllerRef.current?.abort()
       setOpen(false)
@@ -104,7 +110,7 @@ export const ExportResultsButton = () => {
   }
 
   const handleExport = async () => {
-    if (!indexName) return
+    if (!indexName || !filter) return
 
     // A still-running estimate would otherwise resolve and stomp the exporting state.
     estimateControllerRef.current?.abort()
@@ -122,7 +128,7 @@ export const ExportResultsButton = () => {
         searchRedis: redisNoPipeline,
         readRedis: redis,
         indexName,
-        filter: getFilter(),
+        filter,
         dataType,
         format,
         signal: controller.signal,
@@ -275,6 +281,7 @@ export const ExportResultsButton = () => {
                 status === "estimating" ||
                 !indexName ||
                 !indexDetails ||
+                !filter ||
                 estimate?.count === 0
               }
               onClick={handleExport}
