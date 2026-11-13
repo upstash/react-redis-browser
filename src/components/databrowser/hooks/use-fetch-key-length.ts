@@ -8,7 +8,8 @@ export const useFetchKeyLength = ({ dataKey, type }: { dataKey: string; type: Da
   const { redis } = useRedis()
 
   return useQuery({
-    queryKey: [FETCH_KEY_LENGTH_QUERY_KEY, dataKey],
+    // Keyed by type: the command depends on it, so a type change must not reuse this query
+    queryKey: [FETCH_KEY_LENGTH_QUERY_KEY, dataKey, type],
     queryFn: async () => {
       switch (type) {
         case "set": {

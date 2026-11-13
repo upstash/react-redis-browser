@@ -53,6 +53,40 @@ export function parseSchemaFromEditorValue(editorValue: string): ParseResult {
   }
 }
 
+/** Split the comma separated prefixes input into a list */
+export function parsePrefixes(prefixes: string): string[] {
+  return prefixes
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean)
+}
+
+/**
+ * Check what SEARCH.CREATE would reject, so an existing index is never dropped
+ * for a definition that can't be created. Returns the error, or undefined if valid.
+ */
+export function validateIndexDefinition({
+  schema,
+  prefixes,
+}: {
+  schema: FlatSchema
+  prefixes: string[]
+}): string | undefined {
+  if (prefixes.length === 0) return "Please enter at least one prefix"
+
+  // The server rejects prefixes that repeat or start with another prefix
+  for (const [index, prefix] of prefixes.entries()) {
+    const other = prefixes.find((p, i) => i !== index && p.startsWith(prefix))
+    if (other !== undefined) {
+      return other === prefix
+        ? `Duplicate prefix "${prefix}"`
+        : `Prefix "${other}" starts with another prefix "${prefix}"`
+    }
+  }
+
+  if (Object.keys(schema).length === 0) return "Schema must have at least one field"
+}
+
 /**
  * Strip single-line and block comments from code.
  * Preserves comments inside string literals.

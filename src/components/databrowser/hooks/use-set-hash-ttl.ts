@@ -19,6 +19,8 @@ export const useSetHashTTL = () => {
       field: string
       ttl: number
     }) => {
+      // A non-positive TTL would delete the field
+      if (ttl !== undefined && ttl !== TTL_INFINITE && ttl <= 0) throw new Error("Invalid TTL")
       await (ttl === undefined || ttl === TTL_INFINITE
         ? redis.hpersist(dataKey, field)
         : redis.hexpire(dataKey, field, ttl))

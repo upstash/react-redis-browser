@@ -1,9 +1,12 @@
 import { useState } from "react"
+import { useRedis } from "@/redis-context"
+import type { ValuesSearchFilter } from "@/store"
 import { useTab } from "@/tab-provider"
 import type { DataType } from "@/types"
 import { DialogDescription } from "@radix-ui/react-dialog"
 import { IconPlus } from "@tabler/icons-react"
 
+import { queryClient } from "@/lib/clients"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -14,6 +17,7 @@ import { toast } from "@/components/ui/use-toast"
 import { TypeTag } from "@/components/databrowser/components/type-tag"
 import { useAddKey } from "@/components/databrowser/hooks/use-add-key"
 import { useFetchSearchIndex } from "@/components/databrowser/hooks/use-fetch-search-index"
+import { FETCH_KEYS_QUERY_KEY } from "@/components/databrowser/hooks/use-keys"
 
 export function AddIndexKeyButton() {
   const { valuesSearch, setSelectedKey } = useTab()
@@ -28,6 +32,7 @@ export function AddIndexKeyButton() {
   const prefix = indexDetails?.prefixes?.[0] ?? ""
 
   const { mutateAsync: addKey, isPending } = useAddKey()
+  const { redisNoPipeline: redis } = useRedis()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,6 +48,18 @@ export function AddIndexKeyButton() {
       setSelectedKey(key)
       setOpen(false)
       toast({ description: `Key "${key}" created` })
+
+      // Refetch this index's results once the new key is indexed
+      const refetchResults = () =>
+        queryClient.invalidateQueries({
+          queryKey: [FETCH_KEYS_QUERY_KEY],
+          predicate: ({ queryKey }) =>
+            queryKey[3] === true && (queryKey[2] as ValuesSearchFilter).index === indexName,
+        })
+      void redis.search
+        .index({ name: indexName })
+        .waitIndexing()
+        .then(refetchResults, refetchResults)
     } catch (error_) {
       setError(error_ instanceof Error ? error_.message : "Failed to create key")
     }

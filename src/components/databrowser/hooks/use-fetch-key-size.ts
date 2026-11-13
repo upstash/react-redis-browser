@@ -1,7 +1,7 @@
 import { useRedis } from "@/redis-context"
 import { useQuery } from "@tanstack/react-query"
 
-const FETCH_KEY_SIZE_QUERY_KEY = "fetch-key-size"
+export const FETCH_KEY_SIZE_QUERY_KEY = "fetch-key-size"
 
 export const useFetchKeySize = (dataKey: string) => {
   const { redis } = useRedis()

@@ -12,6 +12,7 @@ import { useFetchListItems } from "../../hooks"
 import { useEditListItem } from "../../hooks/use-edit-list-item"
 import { headerLabels } from "./display-list"
 import { HashFieldTTLBadge } from "./hash/hash-field-ttl-badge"
+import { toStoredValues } from "./input/format-json"
 import { useField } from "./input/use-field"
 
 export const ListEditDisplay = ({
@@ -66,7 +67,13 @@ const ListEditForm = ({
 
   const [keyLabel, valueLabel] = headerLabels[type]
 
-  const onSubmit = form.handleSubmit(async ({ key, value }) => {
+  const onSubmit = form.handleSubmit(async (values) => {
+    const { key, value } = toStoredValues(form, values)
+    // An edit that maps back to the stored item (e.g. whitespace in compact JSON)
+    if (!isNew && key === itemKey && value === itemValue) {
+      setSelectedListItem(undefined)
+      return
+    }
     await editItem({
       type: type,
       dataKey,
@@ -156,8 +163,8 @@ const NumberFormItem = ({ name, label }: { name: string; label: string }) => {
         name={name}
         render={({ field }) => (
           <input
-            className="plain-input rounded-md border border-zinc-300 bg-white px-3 py-1 shadow-sm [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            type="number"
+            className="plain-input rounded-md border border-zinc-300 bg-white px-3 py-1 shadow-sm"
+            type="text"
             {...field}
           />
         )}

@@ -128,7 +128,7 @@ test("search, long key details, and create dialog fit a narrow phone", async ({ 
   await expect(page.getByRole("textbox", { name: "editor" })).toHaveValue(`Value for ${longKey}`)
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(320)
   await page.getByRole("button", { name: "Back to keys" }).tap()
-  await expect(search).toHaveValue("session:*")
+  await expect(search).toHaveValue("session:")
   await page.getByTestId("add-key-button").tap()
   const dialog = page.getByRole("dialog")
   await expect(dialog).toBeVisible()

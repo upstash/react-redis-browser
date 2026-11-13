@@ -22,14 +22,11 @@ export const useFetchHashFieldExpires = ({
     queryFn: async () => {
       const cachedExpires = new Map<string, number | undefined>()
 
-      // Collect already cached results from query cache
+      // Collect already cached results from query cache, skipping invalidated ones
       for (const field of fields) {
-        const expireAt = queryClient.getQueryData([
-          FETCH_HASH_FIELD_TTLS_QUERY_KEY,
-          dataKey,
-          field,
-        ]) as number | undefined
-        if (expireAt !== undefined) cachedExpires.set(field, expireAt)
+        const state = queryClient.getQueryState([FETCH_HASH_FIELD_TTLS_QUERY_KEY, dataKey, field])
+        const expireAt = state?.data as number | undefined
+        if (expireAt !== undefined && !state?.isInvalidated) cachedExpires.set(field, expireAt)
       }
 
       // Filter out fields that are already cached

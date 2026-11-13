@@ -9,7 +9,8 @@ export const useFetchSimpleKey = (dataKey: string, type: DataType) => {
   const { redisNoPipeline: redis } = useRedis()
 
   return useQuery({
-    queryKey: [FETCH_SIMPLE_KEY_QUERY_KEY, dataKey],
+    // Keyed by type: the command depends on it, so a type change must not reuse this query
+    queryKey: [FETCH_SIMPLE_KEY_QUERY_KEY, dataKey, type],
     queryFn: async () => {
       let result
       if (type === "string") result = (await redis.get(dataKey)) as string | null
@@ -25,15 +26,12 @@ export const useFetchSimpleKey = (dataKey: string, type: DataType) => {
 }
 
 // Add recursive key sorting to a JSON object
-const sortObject = (obj: unknown): unknown => {
+export const sortObject = (obj: unknown): unknown => {
+  if (Array.isArray(obj)) return obj.map((item) => sortObject(item))
   if (typeof obj !== "object" || obj === null) return obj
   return Object.fromEntries(
     Object.entries(obj)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([key, value]) =>
-        typeof value === "object" && !Array.isArray(value) && value !== null
-          ? [key, sortObject(value)]
-          : [key, value]
-      )
+      .map(([key, value]) => [key, sortObject(value)])
   )
 }

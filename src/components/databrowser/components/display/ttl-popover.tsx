@@ -48,7 +48,12 @@ export function TTLPopover({
   }, [defaultValues])
 
   const onSubmit = handleSubmit(async ({ value, type }) => {
-    await setTTL(value * timeUnits.find((unit) => unit.label === type)!.value)
+    // -1 means no TTL regardless of the selected unit
+    await setTTL(
+      Number(value) === TTL_INFINITE
+        ? TTL_INFINITE
+        : value * timeUnits.find((unit) => unit.label === type)!.value
+    )
     setOpen(false)
   })
 
@@ -84,7 +89,11 @@ export function TTLPopover({
               <Controller
                 rules={{
                   required: "Please enter an expiration time",
-                  min: { value: -1, message: "TTL can't be lower than -1" },
+                  // EXPIRE with a non-positive TTL deletes the key
+                  validate: (value) =>
+                    Number(value) === TTL_INFINITE ||
+                    Number(value) > 0 ||
+                    "TTL must be positive, or -1 for no TTL",
                 }}
                 control={control}
                 name="value"

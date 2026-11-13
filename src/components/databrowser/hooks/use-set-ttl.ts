@@ -12,6 +12,8 @@ export const useSetTTL = () => {
 
   const updateTTL = useMutation({
     mutationFn: async ({ dataKey, ttl }: { dataKey: string; ttl?: number }) => {
+      // A non-positive TTL would delete the key
+      if (ttl !== undefined && ttl !== TTL_INFINITE && ttl <= 0) throw new Error("Invalid TTL")
       await (ttl === undefined || ttl === TTL_INFINITE
         ? redis.persist(dataKey)
         : redis.expire(dataKey, ttl))

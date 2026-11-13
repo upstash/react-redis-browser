@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
-import { parseSchemaFromEditorValue } from "./schema-parser"
+import { parsePrefixes, parseSchemaFromEditorValue, validateIndexDefinition } from "./schema-parser"
 
 describe("Schema Parser", () => {
   test("parses basic string field", () => {
@@ -963,5 +963,22 @@ describe("Schema Parser - Error Handling", () => {
     `
     const result = parseSchemaFromEditorValue(input)
     expect(result.success).toBe(false)
+  })
+})
+
+describe("validateIndexDefinition", () => {
+  const schema = { name: "TEXT" }
+
+  test("accepts a valid definition", () => {
+    expect(validateIndexDefinition({ schema, prefixes: parsePrefixes("user:, post:") })).toBe(
+      undefined
+    )
+  })
+
+  test("rejects what SEARCH.CREATE would reject", () => {
+    expect(validateIndexDefinition({ schema: {}, prefixes: ["user:"] })).toBeString()
+    expect(validateIndexDefinition({ schema, prefixes: parsePrefixes(" , ") })).toBeString()
+    expect(validateIndexDefinition({ schema, prefixes: ["user:", "user:"] })).toBeString()
+    expect(validateIndexDefinition({ schema, prefixes: ["user:admin:", "user:"] })).toBeString()
   })
 })

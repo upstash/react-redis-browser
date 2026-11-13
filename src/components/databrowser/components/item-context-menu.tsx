@@ -1,5 +1,6 @@
 import { useState, type PropsWithChildren } from "react"
 import { useDatabrowserStore } from "@/store"
+import { useTabId } from "@/tab-provider"
 import { type ListDataType } from "@/types"
 import { ContextMenuSeparator } from "@radix-ui/react-context-menu"
 import { IconCopy, IconExternalLink, IconTrash } from "@tabler/icons-react"
@@ -27,7 +28,8 @@ export const ItemContextMenu = ({
   const { mutate: editItem } = useEditListItem()
   const [isAlertOpen, setAlertOpen] = useState(false)
   const [data, setData] = useState<ItemData | undefined>()
-  const { addTab, setSelectedKey, selectTab, setSelectedListItem } = useDatabrowserStore()
+  const { openKeyInNewTab } = useDatabrowserStore()
+  const tabId = useTabId()
 
   return (
     <>
@@ -100,12 +102,7 @@ export const ItemContextMenu = ({
           <ContextMenuItem
             onClick={() => {
               if (!data) return
-              const newTabId = addTab()
-              selectTab(newTabId)
-              setSelectedKey(newTabId, dataKey)
-              setSelectedListItem(newTabId, {
-                key: data.key,
-              })
+              openKeyInNewTab(tabId, dataKey, { key: data.key })
             }}
             className="gap-2"
           >

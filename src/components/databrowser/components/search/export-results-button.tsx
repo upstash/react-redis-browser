@@ -11,6 +11,7 @@ import {
   estimateExport,
   estimateExportBytes,
   exportSearchResults,
+  MAX_EXPORT_RESULTS,
 } from "@/lib/export-search-results"
 import { parseJSObjectLiteral } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -46,13 +47,15 @@ export const ExportResultsButton = () => {
   const [progress, setProgress] = useState<{ count: number; bytes: number }>({ count: 0, bytes: 0 })
   const [estimate, setEstimate] = useState<{ count: number; sampleDocs: SampleDoc[] }>()
   const [errorMsg, setErrorMsg] = useState<string>()
+  const [truncated, setTruncated] = useState(false)
 
   const exportControllerRef = useRef<AbortController | undefined>()
   const estimateControllerRef = useRef<AbortController | undefined>()
 
   const isExporting = status === "exporting"
+  const exportCount = estimate && Math.min(estimate.count, MAX_EXPORT_RESULTS)
   const estimatedBytes = estimate
-    ? estimateExportBytes(estimate.count, estimate.sampleDocs, format)
+    ? estimateExportBytes(exportCount ?? 0, estimate.sampleDocs, format)
     : undefined
 
   const getFilter = () => parseJSObjectLiteral<Record<string, unknown>>(valuesSearch.query) ?? {}
@@ -90,6 +93,7 @@ export const ExportResultsButton = () => {
       setStatus("idle")
       setProgress({ count: 0, bytes: 0 })
       setErrorMsg(undefined)
+      setTruncated(false)
       setEstimate(undefined)
       setOpen(true)
       void runEstimate()
@@ -107,13 +111,14 @@ export const ExportResultsButton = () => {
 
     setStatus("exporting")
     setErrorMsg(undefined)
+    setTruncated(false)
     setProgress({ count: 0, bytes: 0 })
 
     const controller = new AbortController()
     exportControllerRef.current = controller
 
     try {
-      const { content, count, bytes } = await exportSearchResults({
+      const { content, count, bytes, truncated } = await exportSearchResults({
         searchRedis: redisNoPipeline,
         readRedis: redis,
         indexName,
@@ -131,8 +136,13 @@ export const ExportResultsButton = () => {
       )
 
       setProgress({ count, bytes })
+      setTruncated(truncated)
       setStatus("done")
-      toast({ description: `Exported ${formatResults(count)}` })
+      toast({
+        description: truncated
+          ? `Exported the first ${formatResults(count)}, the search limit`
+          : `Exported ${formatResults(count)}`,
+      })
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
         setStatus("idle")
@@ -206,8 +216,15 @@ export const ExportResultsButton = () => {
 
             {status === "idle" && estimate && estimate.count > 0 && (
               <div className="text-sm text-zinc-600">
-                Estimated output: ~{formatResults(estimate.count)}
+                Estimated output: ~{formatResults(exportCount ?? 0)}
                 {estimatedBytes ? ` · ~${bytesLib(estimatedBytes)}` : ""}
+              </div>
+            )}
+
+            {status === "idle" && estimate && estimate.count > MAX_EXPORT_RESULTS && (
+              <div className="text-sm text-amber-600">
+                Search can only page through the first {formatResults(MAX_EXPORT_RESULTS)}, so the
+                export will stop there. Narrow the query to export the rest.
               </div>
             )}
 
@@ -222,6 +239,13 @@ export const ExportResultsButton = () => {
                   {formatResults(progress.count)} {isExporting ? "exported so far" : "exported"}
                   {progress.bytes > 0 && ` · ${bytesLib(progress.bytes)}`}
                 </span>
+              </div>
+            )}
+
+            {status === "done" && truncated && (
+              <div className="text-sm text-amber-600">
+                Stopped at the search limit of {formatResults(MAX_EXPORT_RESULTS)}. Narrow the query
+                to export the rest.
               </div>
             )}
 
