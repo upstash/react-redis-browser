@@ -23,7 +23,7 @@ import { WizardButton } from "./query-wizard/wizard-button"
 import { SearchEmptyState } from "./search-empty-state"
 import { Sidebar } from "./sidebar"
 import { UIQueryBuilder } from "./ui-query-builder"
-import { parseBuilderQuery } from "./ui-query-builder/query-parser"
+import { resolveBuilderQuery } from "./ui-query-builder/builder-query"
 
 export const PREFIX = "const query: Query = "
 
@@ -46,7 +46,9 @@ const QueryBuilderContent = () => {
   const handleModeChange = (value: string) => {
     const newMode = value as QueryBuilderMode
     if (newMode === "ui") {
-      const result = parseBuilderQuery(valuesSearch.query)
+      // Queries typed in the code editor are only opened if the builder keeps them unchanged,
+      // queries the builder wrote are opened as it wrote them
+      const result = resolveBuilderQuery(valuesSearch.query, valuesSearch.queryWrittenBy)
       if (!result.success) {
         setSwitchError(result.error)
         return
@@ -58,7 +60,7 @@ const QueryBuilderContent = () => {
     setQueryBuilderMode(newMode)
   }
 
-  // The builder found a query it can't show (e.g. after switching the index)
+  // The builder found a query it can't represent (e.g. after switching the index)
   const handleUnsupportedQuery = useCallback(
     (error: string) => {
       setSwitchError(error)

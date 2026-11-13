@@ -88,7 +88,7 @@ export const QueryWizardPopover = ({ onClose }: { onClose?: () => void }) => {
           ? (parseJSObjectLiteral<unknown>(result.query) ?? result.query)
           : result.query
       const queryString = toJsLiteral(generated)
-      setValuesSearchQuery(queryString)
+      setValuesSearchQuery(queryString, "code")
 
       setQueryBuilderMode("code")
 

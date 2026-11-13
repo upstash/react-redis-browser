@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { IconGripVertical, IconX } from "@tabler/icons-react"
 
 import {
@@ -111,42 +111,6 @@ export const QueryCondition = ({
     condition.value.trim().includes(" ")
       ? "$regex matches a single token and can't span multiple words — use the phrase operator instead."
       : undefined
-
-  // Normalize values based on field type changes
-  useEffect(() => {
-    if (currentFieldType === "boolean") {
-      // Convert string "true"/"false" to actual booleans
-      if (condition.value === "true") {
-        updateNode(node.id, {
-          ...node,
-          condition: { ...condition, value: true },
-        })
-        return
-      }
-      if (condition.value === "false") {
-        updateNode(node.id, {
-          ...node,
-          condition: { ...condition, value: false },
-        })
-        return
-      }
-      // If the value is not a valid boolean at all, set it to true
-      if (condition.value !== true && condition.value !== false) {
-        updateNode(node.id, {
-          ...node,
-          condition: { ...condition, value: true },
-        })
-      }
-    } else {
-      // If the field is NOT boolean but the value is still a boolean, convert it to string
-      if (typeof condition.value === "boolean") {
-        updateNode(node.id, {
-          ...node,
-          condition: { ...condition, value: condition.value ? "true" : "false" },
-        })
-      }
-    }
-  }, [currentFieldType, condition.value])
 
   const handleFieldChange = (value: string) => {
     // Get the new field's type
