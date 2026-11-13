@@ -326,6 +326,14 @@ const builderStates: [QueryNode, Record<string, unknown>][] = [
     { $or: [{ a: { $eq: "1" } }, { $and: [{}], $mustNot: { b: { $eq: "2" } } }] },
   ],
 
+  // Empty groups add no constraint and are dropped
+  [group("or", [cond("a", "1"), group("and", [])]), { $or: { a: { $eq: "1" } } }],
+  [group("and", [group("or", []), group("and", [group("or", [])])]), {}],
+  [
+    group("or", [cond("a", "1", true), group("and", []), { ...group("or", []), not: true }]),
+    { $or: [{ $mustNot: { a: { $eq: "1" } } }] },
+  ],
+
   // Negated children of an OR are alternatives inside the $or array, not a sibling $mustNot
   // (which the server ANDs with the $or)
   [
