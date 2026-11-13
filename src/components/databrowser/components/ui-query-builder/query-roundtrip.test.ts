@@ -286,6 +286,12 @@ const queries: (Record<string, unknown> | [Record<string, unknown>, Record<strin
     { $and: [{ $and: { name: "a", status: "b" } }, { $or: { active: true, age: 1 } }] },
     { $and: [{ name: "a", status: "b" }, { $or: { active: true, age: 1 } }] },
   ],
+
+  // boost 0 is kept, boost 1 is the default
+  { name: { $smart: "foo", $boost: 0 } },
+  { age: { $eq: 18, $boost: 0 } },
+  [{ name: { $smart: "foo", $boost: 1 } }, { name: "foo" }],
+  { $or: { name: "a", status: "b", $boost: 0 } },
 ]
 
 describe("query roundtrip: parse → stringify", () => {
@@ -324,6 +330,27 @@ const builderStates: [QueryNode, Record<string, unknown>][] = [
   [
     group("or", [cond("a", "1"), group("and", [cond("b", "2", true)])]),
     { $or: [{ a: { $eq: "1" } }, { $and: [{}], $mustNot: { b: { $eq: "2" } } }] },
+  ],
+  [
+    group("or", [cond("a", "1"), cond("b", "2", true)], 0),
+    { $or: [{ a: { $eq: "1" } }, { $mustNot: { b: { $eq: "2" } } }], $boost: 0 },
+  ],
+  [
+    group("and", [cond("a", "1"), group("or", [cond("b", "2"), cond("c", "3")], 0)]),
+    { $and: [{ a: { $eq: "1" } }, { $or: { b: { $eq: "2" }, c: { $eq: "3" } }, $boost: 0 }] },
+  ],
+
+  // A boosted root keeps the boost of its only child group
+  [
+    group("and", [group("or", [cond("a", "1"), cond("b", "2", true)], -1)], 0.5),
+    {
+      $and: [{ $or: [{ a: { $eq: "1" } }, { $mustNot: { b: { $eq: "2" } } }], $boost: -1 }],
+      $boost: 0.5,
+    },
+  ],
+  [
+    group("and", [group("and", [cond("a", "1"), cond("a", "2")], 3)], 2),
+    { $and: [{ $and: [{ a: { $eq: "1" } }, { a: { $eq: "2" } }], $boost: 3 }], $boost: 2 },
   ],
 
   // Empty groups add no constraint and are dropped
