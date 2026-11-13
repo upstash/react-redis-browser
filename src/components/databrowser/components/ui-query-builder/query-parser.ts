@@ -61,6 +61,40 @@ export const hasMustShouldCombination = (queryString: string): boolean => {
   }
 }
 
+const QUERY_GROUP_KEYS = new Set(["$and", "$or", "$must", "$should", "$mustNot"])
+
+/**
+ * Check if a query object (the root or an array item) has $or/$should next to a required
+ * key: a field, $and/$must or a $boost query. The server then only uses the $or/$should to
+ * boost the score, not to filter, and the builder can't show that. Inside an $and/$or object
+ * ({ $and: { a: 1, $or: ... } }) every key filters, so those are fine.
+ */
+const hasOptionalShouldInObject = (obj: unknown, isQueryObject: boolean): boolean => {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false
+  const entries = Object.entries(obj)
+
+  if (isQueryObject && ("$or" in obj || "$should" in obj)) {
+    const hasRequired = entries.some(
+      ([key, value]) =>
+        !isOperatorKey(key) ||
+        key === "$and" ||
+        key === "$must" ||
+        (key === "$boost" && typeof value === "object")
+    )
+    if (hasRequired) return true
+  }
+
+  return entries.some(([key, value]) => {
+    if (key === "$boost") {
+      return hasOptionalShouldInObject((value as { query?: unknown } | undefined)?.query, true)
+    }
+    if (!QUERY_GROUP_KEYS.has(key)) return false
+    return Array.isArray(value)
+      ? value.some((item) => hasOptionalShouldInObject(item, true))
+      : hasOptionalShouldInObject(value, false)
+  })
+}
+
 /**
  * Parse a query string for the UI query builder. Fails for invalid queries and for queries
  * the builder can't show, so the builder never shows (and writes back) a different query.
@@ -70,6 +104,13 @@ export const parseBuilderQuery = (queryString: string): ParseResult => {
     return {
       success: false,
       error: "Queries using both $must and $should are not supported in the UI query builder",
+    }
+  }
+  if (hasOptionalShouldInObject(parseJSObjectLiteral<unknown>(queryString), true)) {
+    return {
+      success: false,
+      error:
+        "Queries with $or or $should next to other conditions only boost the score, which the UI query builder does not support",
     }
   }
   return parseQueryStringWithError(queryString)
