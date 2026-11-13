@@ -211,6 +211,19 @@ export type DatabrowserStoreObject = UseBoundStore<StoreApi<DatabrowserStore>>
 
 const MAX_CLOSED_TAB_GROUPS = 10
 
+/**
+ * The tab to select after closing `id`: its left neighbour (or right, if it was first) in the
+ * tab bar, which shows pinned tabs first rather than in stored order.
+ */
+const getTabToSelectAfterClose = (tabs: [TabId, TabData][], id: TabId): TabId | undefined => {
+  const visualTabs = [
+    ...tabs.filter(([, data]) => data.pinned),
+    ...tabs.filter(([, data]) => !data.pinned),
+  ]
+  const index = visualTabs.findIndex(([tabId]) => tabId === id)
+  return (visualTabs[index - 1] ?? visualTabs[index + 1])?.[0]
+}
+
 const createTabData = (id: TabId): TabData => ({
   id,
   selectedKeys: [],
@@ -289,12 +302,8 @@ export const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
         newTabs.splice(tabIndex, 1)
 
         // If we're removing the selected tab, select the tab to the left
-        let selectedTab = old.selectedTab
-        if (selectedTab === id) {
-          const [newId] = newTabs[tabIndex - 1] ?? newTabs[tabIndex] ?? []
-
-          selectedTab = newTabs.length > 0 ? newId : undefined
-        }
+        const selectedTab =
+          old.selectedTab === id ? getTabToSelectAfterClose(old.tabs, id) : old.selectedTab
 
         return {
           tabs: newTabs,
@@ -315,12 +324,8 @@ export const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
         newTabs.splice(tabIndex, 1)
 
         // If we're removing the selected tab, select the tab to the left
-        let selectedTab = old.selectedTab
-        if (selectedTab === id) {
-          const [newId] = newTabs[tabIndex - 1] ?? newTabs[tabIndex] ?? []
-
-          selectedTab = newTabs.length > 0 ? newId : undefined
-        }
+        const selectedTab =
+          old.selectedTab === id ? getTabToSelectAfterClose(old.tabs, id) : old.selectedTab
 
         return {
           tabs: newTabs,
