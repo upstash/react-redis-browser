@@ -13,12 +13,12 @@ type QueryEditorProps = {
   active?: boolean
 }
 
-const QUERY_PREFIX = "const query: Query = {"
+const QUERY_PREFIX = "const query: Query = "
 const QUERY_DEFAULT = "const query: Query = {}"
 
-const isQueryStringValid = (value: string) => {
-  return value.startsWith(QUERY_PREFIX) && value.endsWith("}")
-}
+// Only the prefix is required, so a stored query that isn't an object (e.g. `[1]`, or one
+// missing its closing brace) stays as it is to be corrected instead of being replaced with `{}`
+const isQueryStringValid = (value: string) => value.startsWith(QUERY_PREFIX)
 
 export const QueryEditor = ({ value, onChange, height, schema, active }: QueryEditorProps) => {
   const typeDefinitions = useMemo(() => generateTypeDefinitions(schema), [schema])
