@@ -90,7 +90,7 @@ const editorText = () =>
 const setQuery = async (index: string, query: string) => {
   await act(async () => {
     store.setValuesSearchIndex(tabId(), index)
-    store.setValuesSearchQuery(tabId(), query)
+    store.setValuesSearchQuery(tabId(), query, "code")
   })
 }
 
