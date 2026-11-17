@@ -10,7 +10,8 @@ permissions:
 
 jobs:
   mobile:
-    runs-on: ubuntu-latest
+    # Playwright 1.56 (pinned in bun.lockb) does not install browsers on ubuntu-26.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
