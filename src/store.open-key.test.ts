@@ -14,7 +14,7 @@ describe("openKeyInNewTab", () => {
     const source = store.getState().addTab()
     store.getState().setIsValuesSearchSelected(source, true)
     store.getState().setValuesSearchIndex(source, "users")
-    store.getState().setValuesSearchQuery(source, "{ name: 'a' }")
+    store.getState().setValuesSearchQuery(source, "{ name: 'a' }", "code")
     store.getState().setSearch(source, { key: "user:*", type: "hash" })
     store.getState().setSelectedKey(source, "other")
 
@@ -30,6 +30,7 @@ describe("openKeyInNewTab", () => {
       valuesSearch: {
         index: "users",
         queries: { users: "{ name: 'a' }" },
+        queryWrittenBy: { users: "code" },
         queryBuilderMode: "ui",
       },
       isValuesSearchSelected: true,

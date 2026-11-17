@@ -26,97 +26,6 @@ export type ParseResult = { success: true; state: QueryState } | { success: fals
 const isOperatorKey = (key: string): boolean => key.startsWith("$")
 
 /**
- * Check if an object contains both $must and $should at the same level,
- * which is not supported in UI query builder.
- * Only catches { $must: ..., $should: ... } pattern, NOT $and/$or combinations.
- */
-const hasMustShouldCombinationInObject = (obj: unknown): boolean => {
-  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false
-
-  // Only error if BOTH $must AND $should are present at this level
-  if ("$must" in obj && "$should" in obj) return true
-
-  return Object.values(obj).some(
-    (value) =>
-      hasMustShouldCombinationInObject(value) ||
-      (Array.isArray(value) && value.some((item) => hasMustShouldCombinationInObject(item)))
-  )
-}
-
-/**
- * Check if a query string contains both $must and $should,
- * which is not supported in the UI query builder.
- */
-export const hasMustShouldCombination = (queryString: string): boolean => {
-  if (!queryString || queryString.trim() === "" || queryString.trim() === "{}") {
-    return false
-  }
-
-  try {
-    const obj = parseJSObjectLiteral<Record<string, unknown>>(queryString)
-    if (!obj) return false
-    return hasMustShouldCombinationInObject(obj)
-  } catch {
-    return false
-  }
-}
-
-const QUERY_GROUP_KEYS = new Set(["$and", "$or", "$must", "$should", "$mustNot"])
-
-/**
- * Check if a query object (the root or an array item) has $or/$should next to a required
- * key: a field, $and/$must or a $boost query. The server then only uses the $or/$should to
- * boost the score, not to filter, and the builder can't show that. Inside an $and/$or object
- * ({ $and: { a: 1, $or: ... } }) every key filters, so those are fine.
- */
-const hasOptionalShouldInObject = (obj: unknown, isQueryObject: boolean): boolean => {
-  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false
-  const entries = Object.entries(obj)
-
-  if (isQueryObject && ("$or" in obj || "$should" in obj)) {
-    const hasRequired = entries.some(
-      ([key, value]) =>
-        !isOperatorKey(key) ||
-        key === "$and" ||
-        key === "$must" ||
-        (key === "$boost" && typeof value === "object")
-    )
-    if (hasRequired) return true
-  }
-
-  return entries.some(([key, value]) => {
-    if (key === "$boost") {
-      return hasOptionalShouldInObject((value as { query?: unknown } | undefined)?.query, true)
-    }
-    if (!QUERY_GROUP_KEYS.has(key)) return false
-    return Array.isArray(value)
-      ? value.some((item) => hasOptionalShouldInObject(item, true))
-      : hasOptionalShouldInObject(value, false)
-  })
-}
-
-/**
- * Parse a query string for the UI query builder. Fails for invalid queries and for queries
- * the builder can't show, so the builder never shows (and writes back) a different query.
- */
-export const parseBuilderQuery = (queryString: string): ParseResult => {
-  if (hasMustShouldCombination(queryString)) {
-    return {
-      success: false,
-      error: "Queries using both $must and $should are not supported in the UI query builder",
-    }
-  }
-  if (hasOptionalShouldInObject(parseJSObjectLiteral<unknown>(queryString), true)) {
-    return {
-      success: false,
-      error:
-        "Queries with $or or $should next to other conditions only boost the score, which the UI query builder does not support",
-    }
-  }
-  return parseQueryStringWithError(queryString)
-}
-
-/**
  * Normalize operator keys: $must → $and, $should → $or
  */
 const normalizeOperators = (obj: unknown): unknown => {
@@ -331,7 +240,7 @@ const parseGroup = (
 }
 
 /** Parse a raw query object into a QueryNode */
-const objectToQueryNode = (obj: Record<string, unknown>): QueryNode | null => {
+const objectToQueryNode = (obj: Record<string, unknown>, isRoot = false): QueryNode | null => {
   if (!obj || typeof obj !== "object") return null
 
   const keys = Object.keys(obj)
@@ -343,6 +252,7 @@ const objectToQueryNode = (obj: Record<string, unknown>): QueryNode | null => {
 
   // Handle $and/$or groups (possibly with $mustNot or field conditions as siblings)
   if (hasGroup) {
+    const hasBothGroups = "$and" in obj && "$or" in obj
     const operator: GroupOperator = "$and" in obj ? "and" : "or"
     const groupValue = obj["$and"] ?? obj["$or"]
     const boost = "$boost" in obj ? (obj.$boost as number) : undefined
@@ -351,24 +261,48 @@ const objectToQueryNode = (obj: Record<string, unknown>): QueryNode | null => {
     // An $and takes the sibling $mustNot as negated children. The server ANDs an $or with
     // its siblings ({ $or: a, $mustNot: b } is a and not b), so then it is wrapped in an AND.
     const isLoneGroup =
-      nonOperatorKeys.length === 0 && (operator === "and" || negatedChildren.length === 0)
-    const groupNode = parseGroup(groupValue, operator, isLoneGroup ? boost : undefined)
+      nonOperatorKeys.length === 0 &&
+      !hasBothGroups &&
+      (operator === "and" || negatedChildren.length === 0)
+    let groupNode = parseGroup(groupValue, operator)
     if (!groupNode || groupNode.type !== "group") return groupNode
 
     if (isLoneGroup) {
-      groupNode.children.push(...negatedChildren)
+      if (boost !== undefined) {
+        // { $and: { ..., $boost: a }, $boost: b } has two boosts, keep both
+        groupNode =
+          groupNode.boost === undefined
+            ? { ...groupNode, boost }
+            : {
+                id: generateId(),
+                type: "group",
+                groupOperator: "and",
+                children: [groupNode],
+                boost,
+              }
+      }
+      if (groupNode.type === "group") groupNode.children.push(...negatedChildren)
       return groupNode
     }
 
-    // Sibling field conditions: { field: value, $and: [...] } → wrap in AND.
+    // Sibling field conditions, a sibling $mustNot next to an $or, or $and next to $or (as
+    // older builders wrote an AND group containing both) → wrap in AND.
     // An $or without conditions ([{}]) matches every document, so it adds nothing.
     const fieldChildren = nonOperatorKeys.map((key) => parseFieldCondition(key, obj[key]))
-    const isMatchAll = groupNode.groupOperator === "or" && groupNode.children.length === 0
+    const orNode = hasBothGroups ? parseGroup(obj.$or, "or") : null
+    const isMatchAll = (node: QueryNode | null) =>
+      node?.type === "group" && node.groupOperator === "or" && node.children.length === 0
     return {
       id: generateId(),
       type: "group",
       groupOperator: "and",
-      children: [...fieldChildren, ...(isMatchAll ? [] : [groupNode]), ...negatedChildren],
+      children: [
+        ...fieldChildren,
+        ...[groupNode, orNode].filter(
+          (node): node is QueryNode => node !== null && !isMatchAll(node)
+        ),
+        ...negatedChildren,
+      ],
       boost,
     }
   }
@@ -389,8 +323,20 @@ const objectToQueryNode = (obj: Record<string, unknown>): QueryNode | null => {
   if (nonOperatorKeys.length === 1) {
     const field = nonOperatorKeys[0]
     const condition = parseFieldCondition(field, obj[field])
-    if (nodeBoost !== undefined) condition.boost = nodeBoost
-    return condition
+    if (nodeBoost === undefined) return condition
+    // A numeric node boost can move onto the field, unless the field has its own boost.
+    // At the root it stays on the root group, where the builder put it.
+    if (!isRoot && typeof nodeBoost === "number" && condition.boost === undefined) {
+      condition.boost = nodeBoost
+      return condition
+    }
+    return {
+      id: generateId(),
+      type: "group",
+      groupOperator: "and",
+      children: [condition],
+      boost: nodeBoost,
+    }
   }
 
   // Multiple fields at root → implicit AND
@@ -427,7 +373,7 @@ export const parseQueryStringWithError = (queryString: string): ParseResult => {
     // Normalize $must → $and, $should → $or
     const normalizedObj = normalizeOperators(obj) as Record<string, unknown>
 
-    const root = objectToQueryNode(normalizedObj)
+    const root = objectToQueryNode(normalizedObj, true)
     if (root) {
       // Ensure root is always a group
       if (root.type === "condition") {

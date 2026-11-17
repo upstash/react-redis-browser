@@ -150,9 +150,15 @@ const groupToObject = (
   if (isRoot && groupOperator === "and" && negatedChildren.length === 0) {
     // Single child: just unwrap it, unless both have a boost (one $boost key can't hold both)
     if (normalChildren.length === 1) {
-      const result = queryNodeToObject(normalChildren[0], false)
+      const [child] = normalChildren
+      // An unboosted group child takes the root's boost. An AND child is written like the
+      // root, so either way it reads back as the tree it is written as.
+      if (child.type === "group" && !hasBoost(child.boost)) {
+        return groupToObject({ ...child, boost }, child.groupOperator === "and")
+      }
+      const result = queryNodeToObject(child, false)
       if (!hasBoost(boost)) return result
-      if (!("$boost" in result)) {
+      if (!("$boost" in result) && !("$mustNot" in result)) {
         result.$boost = boost
         return result
       }
