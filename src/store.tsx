@@ -174,6 +174,8 @@ type DatabrowserStore = {
   closedTabs: TabData[][]
 
   addTab: () => TabId
+  // Opens `key` in a new tab that keeps the source tab's search, so the key is listed there too
+  openKeyInNewTab: (sourceTabId: TabId, key: string, listItem?: SelectedItem) => TabId
   removeTab: (id: TabId) => void
   forceRemoveTab: (id: TabId) => void
   selectTab: (id: TabId) => void
@@ -214,6 +216,28 @@ export type DatabrowserStoreObject = UseBoundStore<StoreApi<DatabrowserStore>>
 
 const MAX_CLOSED_TAB_GROUPS = 10
 
+/**
+ * The tab to select after closing `id`: its left neighbour (or right, if it was first) in the
+ * tab bar, which shows pinned tabs first rather than in stored order.
+ */
+const getTabToSelectAfterClose = (tabs: [TabId, TabData][], id: TabId): TabId | undefined => {
+  const visualTabs = [
+    ...tabs.filter(([, data]) => data.pinned),
+    ...tabs.filter(([, data]) => !data.pinned),
+  ]
+  const index = visualTabs.findIndex(([tabId]) => tabId === id)
+  return (visualTabs[index - 1] ?? visualTabs[index + 1])?.[0]
+}
+
+const createTabData = (id: TabId): TabData => ({
+  id,
+  selectedKeys: [],
+  search: { key: "", type: undefined },
+  valuesSearch: { index: "", queries: {}, queryBuilderMode: "ui" },
+  isValuesSearchSelected: false,
+  pinned: false,
+})
+
 export const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
   const pushClosedTabs = (tabs: TabData[]) =>
     tabs.length > 0 ? [...get().closedTabs, tabs].slice(-MAX_CLOSED_TAB_GROUPS) : get().closedTabs
@@ -226,19 +250,32 @@ export const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
     addTab: () => {
       const id = crypto.randomUUID() as TabId
 
-      const newTabData: TabData = {
-        id,
-        selectedKeys: [],
-        search: { key: "", type: undefined },
-        valuesSearch: { index: "", queries: {}, queryBuilderMode: "ui" },
-        isValuesSearchSelected: false,
-        pinned: false,
-      }
-
       set((old) => ({
-        tabs: [...old.tabs, [id, newTabData]],
+        tabs: [...old.tabs, [id, createTabData(id)]],
         selectedTab: id,
       }))
+
+      return id
+    },
+
+    openKeyInNewTab: (sourceTabId, key, listItem) => {
+      const id = crypto.randomUUID() as TabId
+
+      set((old) => {
+        const source = old.tabs.find(([tabId]) => tabId === sourceTabId)?.[1]
+        const newTabData: TabData = {
+          ...createTabData(id),
+          ...(source && {
+            search: source.search,
+            valuesSearch: source.valuesSearch,
+            isValuesSearchSelected: source.isValuesSearchSelected,
+          }),
+          selectedKeys: [key],
+          selectedListItem: listItem,
+        }
+
+        return { tabs: [...old.tabs, [id, newTabData]], selectedTab: id }
+      })
 
       return id
     },
@@ -270,12 +307,8 @@ export const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
         newTabs.splice(tabIndex, 1)
 
         // If we're removing the selected tab, select the tab to the left
-        let selectedTab = old.selectedTab
-        if (selectedTab === id) {
-          const [newId] = newTabs[tabIndex - 1] ?? newTabs[tabIndex] ?? []
-
-          selectedTab = newTabs.length > 0 ? newId : undefined
-        }
+        const selectedTab =
+          old.selectedTab === id ? getTabToSelectAfterClose(old.tabs, id) : old.selectedTab
 
         return {
           tabs: newTabs,
@@ -296,12 +329,8 @@ export const storeCreator: StateCreator<DatabrowserStore> = (set, get) => {
         newTabs.splice(tabIndex, 1)
 
         // If we're removing the selected tab, select the tab to the left
-        let selectedTab = old.selectedTab
-        if (selectedTab === id) {
-          const [newId] = newTabs[tabIndex - 1] ?? newTabs[tabIndex] ?? []
-
-          selectedTab = newTabs.length > 0 ? newId : undefined
-        }
+        const selectedTab =
+          old.selectedTab === id ? getTabToSelectAfterClose(old.tabs, id) : old.selectedTab
 
         return {
           tabs: newTabs,
