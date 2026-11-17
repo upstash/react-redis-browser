@@ -29,7 +29,7 @@ export const PREFIX = "const query: Query = "
 
 type QueryBuilderMode = "ui" | "code"
 
-const QueryBuilderContent = () => {
+export const QueryBuilderContent = () => {
   const compact = useCompactLayout()
   const { valuesSearch, queryBuilderMode, setQueryBuilderMode } = useTab()
   const { query } = useKeys()
