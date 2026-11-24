@@ -19,6 +19,13 @@ type EditorWithTypesProps = {
 }
 
 export const EditorWithTypes = (props: EditorWithTypesProps) => {
+  const { value, onChange, validateValue, defaultValue } = props
+
+  // If the value is somehow invalid, restore it
+  useEffect(() => {
+    if (!validateValue(value)) onChange(defaultValue)
+  }, [value, onChange, validateValue, defaultValue])
+
   return isTest ? <TestEditor {...props} /> : <MonacoEditorWithTypes {...props} />
 }
 
@@ -100,11 +107,6 @@ const MonacoEditorWithTypes = ({
       editorRef.current?.setValue?.(valueRef.current)
     }
   }
-
-  // If the value is somehow invalid, restore it
-  useEffect(() => {
-    if (!validateValue(value)) onChange(defaultValue)
-  }, [value, onChange, validateValue, defaultValue])
 
   return (
     <div
